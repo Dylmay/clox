@@ -11,16 +11,25 @@ static void list_init(list_t *);
 
 size_t list_write_to(list_t *lst, void *val)
 {
-	if (lst->cap < lst->cnt + 1) {
-		int old_cap = lst->cap;
+	return list_write_bulk(lst, val, 1);
+}
 
-		lst->cap = GROW_CAPACITY(old_cap);
+size_t list_write_bulk(list_t *lst, void *val, size_t cnt)
+{
+	size_t idx = lst->cnt;
+
+	if (lst->cap < lst->cnt + cnt) {
+		size_t old_cap = lst->cap;
+
+		lst->cap = GROW_CAPACITY_AT_LEAST(lst->cnt + cnt, old_cap);
 		lst->data =
 			GROW_LIST(lst->type_sz, lst->data, old_cap, lst->cap);
 	}
-	memcpy(lst->data + ((lst->cnt) * lst->type_sz), val, lst->type_sz);
+	memcpy(lst->data + (lst->cnt * lst->type_sz), val, lst->type_sz * cnt);
 
-	return lst->cnt++;
+	lst->cnt += cnt;
+
+	return idx;
 }
 
 void list_free(list_t *lst)

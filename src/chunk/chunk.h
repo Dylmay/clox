@@ -5,8 +5,6 @@
 #include "util/defines.h"
 #include "util/list/list.h"
 
-typedef enum { OP_CONSTANT, OP_RETURN } op_code_t;
-
 typedef uint8_t code_t;
 
 enum encode_type { TOKEN_LINE, EMPTY_LINE };
@@ -27,6 +25,8 @@ typedef struct {
 		    list_new(lox_val_t) })
 
 size_t chunk_write_code(chunk_t *chunk, code_t code, int line);
+size_t chunk_write_code_bulk(chunk_t *chunk, code_t code, int line, void *data,
+			     size_t data_cnt);
 
 size_t chunk_write_const(chunk_t *chunk, lox_val_t const_val);
 

@@ -3,10 +3,7 @@
 
 static int s_prev_line = 0;
 
-static struct line_encode chunk_get_encoding(chunk_t *chunk, size_t idx)
-{
-	return *((struct line_encode *)list_get(&chunk->lines, idx));
-}
+static struct line_encode chunk_get_encoding(chunk_t *chunk, size_t idx);
 
 struct line_encode encode_empty_lines(int begin_pos, int end_pos)
 {
@@ -40,6 +37,22 @@ size_t chunk_write_code(chunk_t *chunk, code_t code, int line)
 	return list_write_to(&chunk->code, &code);
 }
 
+size_t chunk_write_code_bulk(chunk_t *chunk, code_t code, int line, void *data,
+			     size_t data_cnt)
+{
+	chunk_write_code(chunk, code, line);
+
+	assert(("A code must be written before bulk insertion of data",
+		chunk->lines.cnt));
+
+	struct line_encode *encoding = (struct line_encode *)list_get(
+		&chunk->lines, *(&chunk->lines.cnt) - 1);
+
+	encoding->count += data_cnt;
+
+	return list_write_bulk(&chunk->code, data, data_cnt);
+}
+
 size_t chunk_write_const(chunk_t *chunk, lox_val_t const_val)
 {
 	return list_write_to(&(chunk->consts), &const_val);
@@ -57,7 +70,7 @@ int chunk_get_line(chunk_t *chunk, size_t offset)
 	int line_cnt = 0;
 
 	while (counted_code <= offset) {
-		assert(("Offset is not valid", cur_idx < &chunk->lines.cnt));
+		assert(("Offset is not valid", cur_idx < chunk->lines.cnt));
 
 		struct line_encode encoding =
 			chunk_get_encoding(chunk, cur_idx++);
@@ -82,4 +95,9 @@ void chunk_free(chunk_t *chunk)
 	list_free(&(chunk->code));
 	list_free(&(chunk->consts));
 	list_free(&(chunk->lines));
+}
+
+static struct line_encode chunk_get_encoding(chunk_t *chunk, size_t idx)
+{
+	return *((struct line_encode *)list_get(&chunk->lines, idx));
 }

@@ -3,6 +3,9 @@
 
 #include "util/common.h"
 
+#define GROW_CAPACITY_AT_LEAST(min, cap)                                       \
+	(min < GROW_CAPACITY(cap) ? GROW_CAPACITY(cap) : min)
+
 #define GROW_CAPACITY(cap) ((cap) < 8 ? 8 : (cap)*2)
 
 #define GROW_ARRAY(type, pointer, old_cnt, new_cnt)                            \

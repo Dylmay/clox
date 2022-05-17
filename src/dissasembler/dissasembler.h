@@ -1,6 +1,7 @@
 #ifndef __CLOX_DISASSEMBLER_H__
 #define __CLOX__DISASSEMBLER_H__
 
+#include "ops/ops.h"
 #include "chunk/chunk.h"
 
 void disassem_chunk(chunk_t *chunk, const char *name);

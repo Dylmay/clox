@@ -15,6 +15,8 @@ typedef struct list {
 
 size_t list_write_to(list_t *lst, void *value);
 
+size_t list_write_bulk(list_t *lst, void *value, size_t cnt);
+
 char *list_get(list_t *lst, size_t idx);
 void list_free(list_t *lst);
 
