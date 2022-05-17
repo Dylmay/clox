@@ -2,7 +2,13 @@
 
 size_t chunk_write_code(chunk_t *chunk, code_t code, int line)
 {
-	list_write_to(&chunk->lines, &line);
+	if (!chunk->lines.cnt ||
+	    line != chunk_get_line(chunk, chunk->lines.cnt - 1)) {
+		list_write_to(&chunk->lines, 0);
+	}
+	char *token_cnt = list_get(&chunk->lines, chunk->lines.cnt - 1);
+	token_cnt++;
+
 	return list_write_to(&chunk->code, &code);
 }
 
