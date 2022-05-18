@@ -5,11 +5,11 @@ static int s_prev_line = 0;
 
 static struct line_encode chunk_get_encoding(chunk_t *chunk, size_t idx);
 
-struct line_encode encode_empty_lines(int begin_pos, int end_pos)
+struct line_encode line_encode_diff(int begin_pos, int end_pos)
 {
 	assert(("end_pos must be greater than begin_pos", end_pos > begin_pos));
 
-	return (struct line_encode){ EMPTY_LINE, end_pos - begin_pos };
+	return (struct line_encode){ end_pos - begin_pos, 1 };
 }
 
 size_t chunk_write_code(chunk_t *chunk, code_t code, int line)
@@ -17,13 +17,8 @@ size_t chunk_write_code(chunk_t *chunk, code_t code, int line)
 	assert(("passed line can not be zero", line != 0));
 
 	if (s_prev_line != line) {
-		struct line_encode encoding = { TOKEN_LINE, 1 };
-		struct line_encode skipped_lines =
-			encode_empty_lines(s_prev_line, line);
-
-		if (skipped_lines.count) {
-			list_write_to(&chunk->lines, &skipped_lines);
-		}
+		struct line_encode encoding =
+			line_encode_diff(s_prev_line, line);
 
 		list_write_to(&chunk->lines, &encoding);
 
@@ -75,11 +70,8 @@ int chunk_get_line(chunk_t *chunk, size_t offset)
 		struct line_encode encoding =
 			chunk_get_encoding(chunk, cur_idx++);
 
-		if (encoding.type == TOKEN_LINE) {
-			counted_code += encoding.count;
-		} else {
-			line_cnt += encoding.count;
-		}
+		line_cnt += encoding.offset;
+		counted_code += encoding.count;
 	}
 
 	return line_cnt;

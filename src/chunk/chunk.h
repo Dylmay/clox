@@ -7,11 +7,9 @@
 
 typedef uint8_t code_t;
 
-enum encode_type { TOKEN_LINE, EMPTY_LINE };
-
 struct line_encode {
-	enum encode_type type;
-	unsigned int count;
+	uint32_t offset;
+	uint32_t count;
 };
 
 typedef struct {
