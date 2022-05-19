@@ -13,6 +13,13 @@
 		 vm->ip < vm->chunk->code.data + (vm->chunk->code.cnt *        \
 						  vm->chunk->code.type_sz))))
 
+#define BINARY_OP(vm, op)                                                      \
+	do {                                                                   \
+		lox_val_t b = __vm_pop_const(vm);                              \
+		lox_val_t a = __vm_pop_const(vm);                              \
+		__vm_push_const(vm, a op b);                                   \
+	} while (false)
+
 static vm_res_t __vm_run(vm_t *vm);
 static void __vm_push_const(vm_t *vm, lox_val_t val);
 static lox_val_t __vm_pop_const(vm_t *vm);
@@ -64,6 +71,22 @@ static vm_res_t __vm_run(vm_t *vm)
 		case OP_CONSTANT_LONG:
 			ASSERT_IP_VALID();
 			__vm_proc_const_long(vm);
+			break;
+
+		case OP_ADD:
+			BINARY_OP(vm, +);
+			break;
+
+		case OP_SUBTRACT:
+			BINARY_OP(vm, -);
+			break;
+
+		case OP_MULTIPLY:
+			BINARY_OP(vm, *);
+			break;
+
+		case OP_DIVIDE:
+			BINARY_OP(vm, /);
 			break;
 
 		case OP_NEGATE:
