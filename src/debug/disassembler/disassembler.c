@@ -3,9 +3,9 @@
 #include "disassembler.h"
 #include "ops/ops.h"
 
-static int simple_instr(const char *, size_t);
-static int const_instr(const char *, chunk_t *, size_t);
-static int const_long_instr(const char *, chunk_t *, size_t);
+static size_t __simple_instr(const char *, size_t);
+static size_t __const_instr(const char *, chunk_t *, size_t);
+static size_t __const_long_instr(const char *, chunk_t *, size_t);
 
 void disassem_chunk(chunk_t *chnk, const char *name)
 {
@@ -33,13 +33,13 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 
 	switch (instruction) {
 	case OP_RETURN:
-		return simple_instr("OP_RETURN", offset);
+		return __simple_instr("OP_RETURN", offset);
 
 	case OP_CONSTANT:
-		return const_instr("OP_CONSTANT", chunk, offset);
+		return __const_instr("OP_CONSTANT", chunk, offset);
 
 	case OP_CONSTANT_LONG:
-		return const_long_instr("OP_CONSTANT_LONG", chunk, offset);
+		return __const_long_instr("OP_CONSTANT_LONG", chunk, offset);
 
 	default:
 		printf("Unknown opcode %u\n", instruction);
@@ -47,14 +47,14 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 	}
 }
 
-static int simple_instr(const char *name, size_t offset)
+static size_t __simple_instr(const char *name, size_t offset)
 {
 	printf("%s\n", name);
 
 	return offset + 1;
 }
 
-static int const_instr(const char *name, chunk_t *chunk, size_t offset)
+static size_t __const_instr(const char *name, chunk_t *chunk, size_t offset)
 {
 	code_t const_pos = chunk_get_code(chunk, offset + 1);
 	printf(" %-20s | %5d | ", name, const_pos);
@@ -64,7 +64,8 @@ static int const_instr(const char *name, chunk_t *chunk, size_t offset)
 	return offset + 2;
 }
 
-static int const_long_instr(const char *name, chunk_t *chunk, size_t offset)
+static size_t __const_long_instr(const char *name, chunk_t *chunk,
+				 size_t offset)
 {
 #define GET_CONST_POS()                                                        \
 	(*((uint32_t *)list_get(&chunk->code, offset + 1)) & CONST_LONG_MASK)

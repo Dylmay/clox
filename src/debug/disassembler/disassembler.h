@@ -1,5 +1,5 @@
 #ifndef __CLOX_DISASSEMBLER_H__
-#define __CLOX__DISASSEMBLER_H__
+#define __CLOX_DISASSEMBLER_H__
 
 #include "util/common.h"
 #include "chunk/chunk.h"
