@@ -16,15 +16,16 @@ typedef struct {
 	list_t code;
 	list_t lines;
 	list_t consts;
+	uint32_t prev_line;
 } chunk_t;
 
 #define chunk_new()                                                            \
 	((chunk_t){ list_new(code_t), list_new(struct line_encode),            \
-		    list_new(lox_val_t) })
+		    list_new(lox_val_t), 0 })
 
 size_t chunk_write_code(chunk_t *chunk, code_t code, int line);
-size_t chunk_write_code_bulk(chunk_t *chunk, code_t code, int line, void *data,
-			     size_t data_cnt);
+size_t chunk_write_code_bulk(chunk_t *chunk, code_t code, int line,
+			     const void *__restrict__ data, size_t data_cnt);
 
 size_t chunk_write_const(chunk_t *chunk, lox_val_t const_val);
 
