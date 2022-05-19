@@ -1,6 +1,9 @@
 #ifndef __CLOX_OPS_H__
 #define __CLOX_OPS_H__
 
+#define CONST_LONG_SZ (sizeof(char) * 3)
+#define CONST_LONG_MASK (0x00ffffff)
+
 #include "chunk/chunk.h"
 
 typedef enum { OP_CONSTANT, OP_CONSTANT_LONG, OP_RETURN } op_code_t;
