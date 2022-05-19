@@ -25,7 +25,7 @@ size_t list_write_bulk(list_t *lst, const void *__restrict__ val, size_t cnt)
 	}
 	memcpy(lst->head, val, lst->type_sz * cnt);
 
-	__list_adj_head(lst, cnt);
+	__list_adj_head(lst, (int)cnt);
 
 	return idx;
 }
@@ -44,7 +44,7 @@ uint8_t *list_pop(list_t *lst)
 
 uint8_t *list_peek(list_t *lst)
 {
-	return lst->head;
+	return lst->head - lst->type_sz;
 }
 
 void list_reset(list_t *lst)
@@ -97,6 +97,3 @@ static void __list_adj_head(list_t *lst, int cnt)
 	lst->cnt += cnt;
 	lst->head += lst->type_sz * cnt;
 }
-
-#undef GROW_LIST
-#undef FREE_LIST
