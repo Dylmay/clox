@@ -1,4 +1,4 @@
-#include "chunk/chunk.h"
+#include "chunk.h"
 #include <assert.h>
 
 static int s_prev_line = 0;
