@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
-#include "dissasembler.h"
+#include "disassembler.h"
+#include "ops/ops.h"
 
 static int simple_instr(const char *, size_t);
 static int const_instr(const char *, chunk_t *, size_t);
@@ -65,9 +66,10 @@ static int const_instr(const char *name, chunk_t *chunk, size_t offset)
 
 static int const_long_instr(const char *name, chunk_t *chunk, size_t offset)
 {
-	uint32_t const_offset = 0;
-	memcpy(&const_offset, list_get(&chunk->code, offset + 1),
-	       sizeof(char) * 3);
+#define GET_CONST_POS()                                                        \
+	(*((uint32_t *)list_get(&chunk->code, offset + 1)) & CONST_LONG_MASK)
+
+	uint32_t const_offset = GET_CONST_POS();
 
 	printf(" %-20s | %5d | ", name, const_offset);
 	PRINT_VAL(chunk_get_const(chunk, const_offset));
@@ -75,4 +77,5 @@ static int const_long_instr(const char *name, chunk_t *chunk, size_t offset)
 	puts("");
 
 	return offset + 4;
+#undef GET_CONST_LONG
 }
