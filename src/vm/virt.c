@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "util/common.h"
 #include "virt.h"
@@ -7,12 +8,18 @@
 #include "debug/debug.h"
 
 #define READ_BYTE() (*vm->ip++)
+#define ASSERT_IP_VALID()                                                      \
+	(assert(("Instruction pointer has passed code end",                    \
+		 vm->ip < vm->chunk->code.data + (vm->chunk->code.cnt *        \
+						  vm->chunk->code.type_sz))))
 
 static vm_res_t __vm_run(vm_t *vm);
 static void __vm_push_const(vm_t *vm, lox_val_t val);
 static lox_val_t __vm_pop_const(vm_t *vm);
 static void __vm_proc_const(vm_t *vm);
 static void __vm_proc_const_long(vm_t *vm);
+static void __vm_proc_negate_in_place(vm_t *vm);
+static lox_val_t *__vm_peek_const_ptr(vm_t *vm);
 
 vm_t vm_init()
 {
@@ -39,7 +46,7 @@ static vm_res_t __vm_run(vm_t *vm)
 	while (true) {
 		uint8_t instr;
 #ifdef DEBUG_TRACE_EXECUTION
-		printf("		[");
+		printf("\t\t[");
 		for (size_t idx = 0; idx < vm->stack.cnt; idx++) {
 			PRINT_VAL(*((lox_val_t *)list_get(&vm->stack, idx)));
 			printf(", ");
@@ -50,17 +57,29 @@ static vm_res_t __vm_run(vm_t *vm)
 
 		switch (instr = READ_BYTE()) {
 		case OP_CONSTANT:
+			ASSERT_IP_VALID();
 			__vm_proc_const(vm);
 			break;
 
 		case OP_CONSTANT_LONG:
+			ASSERT_IP_VALID();
 			__vm_proc_const_long(vm);
+			break;
+
+		case OP_NEGATE:
+			ASSERT_IP_VALID();
+			__vm_proc_negate_in_place(vm);
 			break;
 
 		case OP_RETURN:
 			PRINT_VAL(__vm_pop_const(vm));
 			puts(" returned");
 			return INTERPRET_OK;
+
+		default:
+			ASSERT_IP_VALID();
+			printf("UNKNOWN OPCODE: %d\n", instr);
+			break;
 		}
 	}
 }
@@ -81,6 +100,22 @@ static void __vm_proc_const_long(vm_t *vm)
 #undef GET_CONST_LONG
 }
 
+static void __vm_proc_negate_in_place(vm_t *vm)
+{
+#define PEEK_LIST_PTR() ((lox_val_t *)list_peek(&vm->stack))
+
+	assert(("value stack can not be empty", vm->stack.cap));
+
+	*(__vm_peek_const_ptr(vm)) = -*(__vm_peek_const_ptr(vm));
+
+#undef PEEK_LIST_PTR
+}
+
+static lox_val_t *__vm_peek_const_ptr(vm_t *vm)
+{
+	return (lox_val_t *)list_peek(&vm->stack);
+}
+
 static lox_val_t __vm_pop_const(vm_t *vm)
 {
 	return *((lox_val_t *)list_pop(&vm->stack));
@@ -90,5 +125,3 @@ static void __vm_push_const(vm_t *vm, lox_val_t val)
 {
 	list_push(&vm->stack, &val);
 }
-
-#undef READ_BYTE

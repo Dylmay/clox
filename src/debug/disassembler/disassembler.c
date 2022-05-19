@@ -41,6 +41,9 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 	case OP_CONSTANT_LONG:
 		return __const_long_instr("OP_CONSTANT_LONG", chunk, offset);
 
+	case OP_NEGATE:
+		return __simple_instr("OP_NEGATE", offset);
+
 	default:
 		printf("Unknown opcode %u\n", instruction);
 		return offset + 1;
