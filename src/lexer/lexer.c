@@ -17,7 +17,7 @@ static token_t _lexer_str_token(lexer_t *lexer);
 static token_t _lexer_id_token(lexer_t *lexer);
 static token_t _lexer_num_token(lexer_t *lexer);
 
-#define TOKEN(name)                                                            \
+#define TOKEN(lexer, name)                                                     \
 	((token_t){                                                            \
 		type: name,                                                    \
 		start: lexer->start,                                           \
@@ -25,7 +25,7 @@ static token_t _lexer_num_token(lexer_t *lexer);
 		line: lexer->line                                              \
 	})
 
-#define ERROR(msg)                                                             \
+#define ERROR(lexer, msg)                                                      \
 	((token_t){                                                            \
 		type: TKN_ERR,                                                 \
 		start: msg,                                                    \
@@ -43,7 +43,7 @@ token_t lexer_next_token(lexer_t *lexer)
 	lexer->start = lexer->current;
 
 	if (_lexer_at_end(lexer)) {
-		return TOKEN(TKN_EOF);
+		return TOKEN(lexer, TKN_EOF);
 	}
 
 	char c = _lexer_advance(lexer);
@@ -58,46 +58,49 @@ token_t lexer_next_token(lexer_t *lexer)
 
 	switch (c) {
 	case '(':
-		return TOKEN(TKN_LEFT_PAREN);
+		return TOKEN(lexer, TKN_LEFT_PAREN);
 	case ')':
-		return TOKEN(TKN_RIGHT_PAREN);
+		return TOKEN(lexer, TKN_RIGHT_PAREN);
 	case '{':
-		return TOKEN(TKN_LEFT_BRACE);
+		return TOKEN(lexer, TKN_LEFT_BRACE);
 	case '}':
-		return TOKEN(TKN_RIGHT_BRACE);
+		return TOKEN(lexer, TKN_RIGHT_BRACE);
 	case ';':
-		return TOKEN(TKN_SEMICOLON);
+		return TOKEN(lexer, TKN_SEMICOLON);
 	case ',':
-		return TOKEN(TKN_COMMA);
+		return TOKEN(lexer, TKN_COMMA);
 	case '.':
-		return TOKEN(TKN_DOT);
+		return TOKEN(lexer, TKN_DOT);
 	case '-':
-		return TOKEN(TKN_MINUS);
+		return TOKEN(lexer, TKN_MINUS);
 	case '+':
-		return TOKEN(TKN_PLUS);
+		return TOKEN(lexer, TKN_PLUS);
 	case '/':
-		return TOKEN(TKN_SLASH);
+		return TOKEN(lexer, TKN_SLASH);
 	case '*':
-		return TOKEN(TKN_STAR);
+		return TOKEN(lexer, TKN_STAR);
 	case '!':
-		return TOKEN(_lexer_match_char(lexer, '=') ? TKN_BANG_EQ :
-								   TKN_BANG);
+		return TOKEN(lexer, _lexer_match_char(lexer, '=') ?
+					    TKN_BANG_EQ :
+						  TKN_BANG);
 	case '=':
-		return TOKEN(_lexer_match_char(lexer, '=') ? TKN_EQ_EQ :
-								   TKN_EQ);
+		return TOKEN(lexer, _lexer_match_char(lexer, '=') ? TKN_EQ_EQ :
+									  TKN_EQ);
 	case '<':
-		return TOKEN(_lexer_match_char(lexer, '=') ? TKN_LESS_EQ :
-								   TKN_LESS);
+		return TOKEN(lexer, _lexer_match_char(lexer, '=') ?
+					    TKN_LESS_EQ :
+						  TKN_LESS);
 	case '>':
-		return TOKEN(_lexer_match_char(lexer, '=') ? TKN_GREATER_EQ :
-								   TKN_GREATER);
+		return TOKEN(lexer, _lexer_match_char(lexer, '=') ?
+					    TKN_GREATER_EQ :
+						  TKN_GREATER);
 
 		break;
 	case '"':
 		return _lexer_str_token(lexer);
 	}
 
-	return ERROR("Unexpected character");
+	return ERROR(lexer, "Unexpected character");
 }
 
 static bool _lexer_at_end(const lexer_t *lexer)
@@ -175,11 +178,11 @@ static token_t _lexer_str_token(lexer_t *lexer)
 	}
 
 	if (_lexer_at_end(lexer)) {
-		return ERROR("Unterminated string.");
+		return ERROR(lexer, "Unterminated string.");
 	}
 
 	_lexer_advance(lexer);
-	return TOKEN(TKN_STR);
+	return TOKEN(lexer, TKN_STR);
 }
 
 static token_t _lexer_num_token(lexer_t *lexer)
@@ -196,7 +199,7 @@ static token_t _lexer_num_token(lexer_t *lexer)
 		_lexer_advance(lexer);
 	}
 
-	return TOKEN(TKN_NUM);
+	return TOKEN(lexer, TKN_NUM);
 }
 
 static token_t _lexer_id_token(lexer_t *lexer)
@@ -206,6 +209,7 @@ static token_t _lexer_id_token(lexer_t *lexer)
 		_lexer_advance(lexer);
 	}
 
-	return TOKEN(keyword_traverse(lexer->start,
+	return TOKEN(lexer,
+		     keyword_traverse(lexer->start,
 				      (int)(lexer->current - lexer->start)));
 }

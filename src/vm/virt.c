@@ -6,27 +6,24 @@
 #include "virt.h"
 #include "ops/ops.h"
 #include "debug/debug.h"
-
-#define READ_BYTE() (*vm->ip++)
-#define ASSERT_IP_VALID()                                                      \
-	(assert(("Instruction pointer has passed code end",                    \
-		 vm->ip < vm->chunk->code.data + (vm->chunk->code.cnt *        \
-						  vm->chunk->code.type_sz))))
+#include "compiler/compiler.h"
 
 #define BINARY_OP(vm, op)                                                      \
 	do {                                                                   \
-		lox_val_t b = __vm_pop_const(vm);                              \
-		lox_val_t a = __vm_pop_const(vm);                              \
-		__vm_push_const(vm, a op b);                                   \
+		lox_val_t b = _vm_pop_const(vm);                               \
+		lox_val_t a = _vm_pop_const(vm);                               \
+		_vm_push_const(vm, a op b);                                    \
 	} while (false)
 
-static vm_res_t __vm_run(vm_t *vm);
-static void __vm_push_const(vm_t *vm, lox_val_t val);
-static lox_val_t __vm_pop_const(vm_t *vm);
-static void __vm_proc_const(vm_t *vm);
-static void __vm_proc_const_long(vm_t *vm);
-static void __vm_proc_negate_in_place(vm_t *vm);
-static lox_val_t *__vm_peek_const_ptr(vm_t *vm);
+static enum vm_res _vm_run(vm_t *vm);
+static void _vm_push_const(vm_t *vm, lox_val_t val);
+static lox_val_t _vm_pop_const(vm_t *vm);
+static void _vm_proc_const(vm_t *vm);
+static void _vm_proc_const_long(vm_t *vm);
+static void _vm_proc_negate_in_place(vm_t *vm);
+static lox_val_t *_vm_peek_const_ptr(vm_t *vm);
+static inline void _vm_assert_inst_ptr_valid(const vm_t *vm);
+static inline char _vm_read_byte(vm_t *vm);
 
 vm_t vm_init()
 {
@@ -36,11 +33,22 @@ vm_t vm_init()
 	return vm;
 }
 
-vm_res_t vm_interpret(vm_t *vm, chunk_t *chunk)
+enum vm_res vm_interpret(vm_t *vm, const char *src)
 {
-	vm->chunk = chunk;
+	enum vm_res res;
+	chunk_t chunk = chunk_new();
+
+	if (!compile(src, &chunk)) {
+		chunk_free(&chunk);
+		return INTERPRET_COMPILE_ERROR;
+	}
+
+	vm->chunk = &chunk;
 	vm->ip = vm->chunk->code.data;
-	return __vm_run(vm);
+
+	res = _vm_run(vm);
+	chunk_free(&chunk);
+	return res;
 }
 
 void vm_free(vm_t *vm)
@@ -48,7 +56,7 @@ void vm_free(vm_t *vm)
 	list_free(&vm->stack);
 }
 
-static vm_res_t __vm_run(vm_t *vm)
+static enum vm_res _vm_run(vm_t *vm)
 {
 	while (true) {
 		uint8_t instr;
@@ -62,15 +70,13 @@ static vm_res_t __vm_run(vm_t *vm)
 		disassem_inst(vm->chunk, (int)(vm->ip - vm->chunk->code.data));
 #endif // DEBUG_TRACE_EXECUTION
 
-		switch (instr = READ_BYTE()) {
+		switch (instr = _vm_read_byte(vm)) {
 		case OP_CONSTANT:
-			ASSERT_IP_VALID();
-			__vm_proc_const(vm);
+			_vm_proc_const(vm);
 			break;
 
 		case OP_CONSTANT_LONG:
-			ASSERT_IP_VALID();
-			__vm_proc_const_long(vm);
+			_vm_proc_const_long(vm);
 			break;
 
 		case OP_ADD:
@@ -90,61 +96,73 @@ static vm_res_t __vm_run(vm_t *vm)
 			break;
 
 		case OP_NEGATE:
-			ASSERT_IP_VALID();
-			__vm_proc_negate_in_place(vm);
+			_vm_proc_negate_in_place(vm);
 			break;
 
 		case OP_RETURN:
-			PRINT_VAL(__vm_pop_const(vm));
+			PRINT_VAL(_vm_pop_const(vm));
 			puts(" returned");
 			return INTERPRET_OK;
 
 		default:
-			ASSERT_IP_VALID();
 			printf("UNKNOWN OPCODE: %d\n", instr);
 			break;
 		}
 	}
 }
 
-static void __vm_proc_const(vm_t *vm)
+static void _vm_proc_const(vm_t *vm)
 {
-	__vm_push_const(vm, chunk_get_const(vm->chunk, READ_BYTE()));
+	_vm_assert_inst_ptr_valid(vm);
+	_vm_push_const(vm, chunk_get_const(vm->chunk, _vm_read_byte(vm)));
 }
 
-static void __vm_proc_const_long(vm_t *vm)
+static void _vm_proc_const_long(vm_t *vm)
 {
 #define GET_CONST_LONG()                                                       \
 	chunk_get_const(vm->chunk, *((uint32_t *)vm->ip) & CONST_LONG_MASK)
 
-	__vm_push_const(vm, GET_CONST_LONG());
+	_vm_assert_inst_ptr_valid(vm);
+	_vm_push_const(vm, GET_CONST_LONG());
 	vm->ip += CONST_LONG_SZ;
 
 #undef GET_CONST_LONG
 }
 
-static void __vm_proc_negate_in_place(vm_t *vm)
+static void _vm_proc_negate_in_place(vm_t *vm)
 {
 #define PEEK_LIST_PTR() ((lox_val_t *)list_peek(&vm->stack))
 
 	assert(("value stack can not be empty", vm->stack.cap));
 
-	*(__vm_peek_const_ptr(vm)) = -*(__vm_peek_const_ptr(vm));
+	*(_vm_peek_const_ptr(vm)) = -*(_vm_peek_const_ptr(vm));
 
 #undef PEEK_LIST_PTR
 }
 
-static lox_val_t *__vm_peek_const_ptr(vm_t *vm)
+static lox_val_t *_vm_peek_const_ptr(vm_t *vm)
 {
 	return (lox_val_t *)list_peek(&vm->stack);
 }
 
-static lox_val_t __vm_pop_const(vm_t *vm)
+static lox_val_t _vm_pop_const(vm_t *vm)
 {
 	return *((lox_val_t *)list_pop(&vm->stack));
 }
 
-static void __vm_push_const(vm_t *vm, lox_val_t val)
+static void _vm_push_const(vm_t *vm, lox_val_t val)
 {
 	list_push(&vm->stack, &val);
+}
+
+static inline void _vm_assert_inst_ptr_valid(const vm_t *vm)
+{
+	assert(("Instruction pointer has passed code end",
+		vm->ip < vm->chunk->code.data + (vm->chunk->code.cnt *
+						 vm->chunk->code.type_sz)));
+}
+
+static inline char _vm_read_byte(vm_t *vm)
+{
+	return *vm->ip++;
 }

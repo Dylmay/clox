@@ -9,14 +9,10 @@ typedef struct {
 	list_t stack;
 } vm_t;
 
-typedef enum {
-	INTERPRET_OK,
-	INTERPRET_COMPILE_ERROR,
-	INTERPRET_RUNTIME_ERROR
-} vm_res_t;
+enum vm_res { INTERPRET_OK, INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR };
 
 vm_t vm_init();
-vm_res_t vm_interpret(vm_t *vm, chunk_t *chunk);
+enum vm_res vm_interpret(vm_t *vm, const char *src);
 void vm_free(vm_t *vm);
 
 #endif // __CLOX_VM_VIRT_H__

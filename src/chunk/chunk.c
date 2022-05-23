@@ -1,7 +1,7 @@
 #include "chunk.h"
 #include <assert.h>
 
-static struct line_encode chunk_get_encoding(chunk_t *chunk, size_t idx);
+static struct line_encode _chunk_get_line_encode(chunk_t *chunk, size_t idx);
 
 struct line_encode line_encode_diff(int begin_pos, int end_pos)
 {
@@ -66,7 +66,7 @@ int chunk_get_line(chunk_t *chunk, size_t offset)
 		assert(("Offset is not valid", cur_idx < chunk->lines.cnt));
 
 		struct line_encode encoding =
-			chunk_get_encoding(chunk, cur_idx);
+			_chunk_get_line_encode(chunk, cur_idx);
 
 		line_cnt += encoding.offset;
 		counted_code += encoding.count;
@@ -90,7 +90,7 @@ void chunk_free(chunk_t *chunk)
 	chunk->prev_line = 0;
 }
 
-static struct line_encode chunk_get_encoding(chunk_t *chunk, size_t idx)
+static struct line_encode _chunk_get_line_encode(chunk_t *chunk, size_t idx)
 {
 	return *((struct line_encode *)list_get(&chunk->lines, idx));
 }
