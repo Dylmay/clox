@@ -1,13 +1,6 @@
 #ifndef __CLOX_SCANNER_TOKENS_H__
 #define __CLOX_SCANNER_TOKENS_H__
 
-typedef struct {
-	enum tkn_type type;
-	const char *start;
-	int len;
-	int line;
-} token_t;
-
 enum tkn_type {
 	// single char tokens
 	TKN_LEFT_PAREN,
@@ -53,5 +46,12 @@ enum tkn_type {
 	TKN_ERR,
 	TKN_EOF
 };
+
+typedef struct {
+	enum tkn_type type;
+	const char *start;
+	int len;
+	int line;
+} token_t;
 
 #endif // __CLOX_SCANNER_TOKENS_H__

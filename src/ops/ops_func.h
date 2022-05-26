@@ -1,7 +1,12 @@
-#include "ops.h"
+#ifndef __CLOX_COMPILER_OPS_FUNC_H__
+#define __CLOX_COMPILER_OPS_FUNC_H__
+
 #include <assert.h>
 
-void op_write_const(chunk_t *chunk, lox_val_t const_val, int line)
+#include "ops.h"
+#include "chunk/chunk.h"
+
+static inline void op_write_const(chunk_t *chunk, lox_val_t const_val, int line)
 {
 	size_t const_offset = chunk_write_const(chunk, const_val);
 
@@ -17,32 +22,34 @@ void op_write_const(chunk_t *chunk, lox_val_t const_val, int line)
 	}
 }
 
-void op_write_add(chunk_t *chunk, int line)
+static inline void op_write_add(chunk_t *chunk, int line)
 {
 	chunk_write_code(chunk, OP_ADD, line);
 }
 
-void op_write_sub(chunk_t *chunk, int line)
+static inline void op_write_sub(chunk_t *chunk, int line)
 {
 	chunk_write_code(chunk, OP_SUBTRACT, line);
 }
 
-void op_write_mult(chunk_t *chunk, int line)
+static inline void op_write_mult(chunk_t *chunk, int line)
 {
 	chunk_write_code(chunk, OP_MULTIPLY, line);
 }
 
-void op_write_div(chunk_t *chunk, int line)
+static inline void op_write_div(chunk_t *chunk, int line)
 {
 	chunk_write_code(chunk, OP_DIVIDE, line);
 }
 
-void op_write_negate(chunk_t *chunk, int line)
+static inline void op_write_negate(chunk_t *chunk, int line)
 {
 	chunk_write_code(chunk, OP_NEGATE, line);
 }
 
-void op_write_return(chunk_t *chunk, int line)
+static inline void op_write_return(chunk_t *chunk, int line)
 {
 	chunk_write_code(chunk, OP_RETURN, line);
 }
+
+#endif // __CLOX_COMPILER_OPS_FUNC_H__
