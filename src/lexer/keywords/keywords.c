@@ -9,7 +9,7 @@ static enum tkn_type __keyword_check(const char *start, int start_len,
 enum tkn_type keyword_traverse(const char *identifier, int id_len)
 {
 #define MATCH(id, offset, match, tkn)                                          \
-	(__keyword_check(id + offset, id_len - offset, *match,                 \
+	(__keyword_check(id + offset, id_len - offset, match,                  \
 			 sizeof(match) - 1, tkn))
 
 	switch (*identifier) {

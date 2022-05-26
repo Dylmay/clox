@@ -40,6 +40,7 @@ lexer_t lexer_init(const char *src)
 
 token_t lexer_next_token(lexer_t *lexer)
 {
+	__lexer_skip_space(lexer);
 	lexer->start = lexer->current;
 
 	if (__lexer_at_end(lexer)) {
@@ -53,7 +54,8 @@ token_t lexer_next_token(lexer_t *lexer)
 	}
 
 	if (CHAR_IS_DIGIT(c)) {
-		return __lexer_num_token(lexer);
+		token_t tkn = __lexer_num_token(lexer);
+		return tkn;
 	}
 
 	switch (c) {
@@ -156,6 +158,16 @@ static void __lexer_skip_space(lexer_t *lexer)
 			return;
 		}
 	}
+}
+
+static char __lexer_peek(const lexer_t *lexer)
+{
+	return *lexer->current;
+}
+
+static char __lexer_peek_next(const lexer_t *lexer)
+{
+	return __lexer_at_end(lexer) ? '\0' : lexer->current[1];
 }
 
 static bool __lexer_consume_comment(lexer_t *lexer)

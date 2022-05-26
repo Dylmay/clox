@@ -42,6 +42,7 @@ enum tkn_type {
 	TKN_SUPER,
 	TKN_THIS,
 	TKN_TRUE,
+	TKN_WHILE,
 	TKN_VAR,
 	TKN_ERR,
 	TKN_EOF
