@@ -37,14 +37,14 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_PLUS] = { NULL, __parse_binary, PREC_TERM },
 	[TKN_SEMICOLON] = { NULL, NULL, PREC_NONE },
 	[TKN_SLASH] = { NULL, __parse_binary, PREC_FACTOR },
-	[TKN_STAR] = { NULL, __parse_binary, PREC_NONE },
+	[TKN_STAR] = { NULL, __parse_binary, PREC_FACTOR },
 	[TKN_BANG] = { NULL, NULL, PREC_NONE },
 	[TKN_LESS] = { NULL, NULL, PREC_NONE },
-	[TKN_GREATER] = { NULL, __parse_binary, PREC_NONE },
+	[TKN_GREATER] = { NULL, NULL, PREC_NONE },
 	[TKN_EQ] = { NULL, NULL, PREC_NONE },
 	// multi-char tokens
 	[TKN_BANG_EQ] = { NULL, NULL, PREC_NONE },
-	[TKN_EQ_EQ] = { __parse_unary, __parse_binary, PREC_NONE },
+	[TKN_EQ_EQ] = { NULL, NULL, PREC_NONE },
 	[TKN_GREATER_EQ] = { NULL, NULL, PREC_NONE },
 	[TKN_LESS_EQ] = { NULL, NULL, PREC_NONE },
 	// Literals
@@ -134,7 +134,7 @@ static void __parse_expr(parser_t *prsr)
 static void __parse_number(parser_t *prsr)
 {
 	double val = strtod(prsr->previous.start, NULL);
-	op_write_const(prsr->stack, val, prsr->previous.line);
+	op_write_const(prsr->stack, NUMBER_VAL(val), prsr->previous.line);
 }
 
 static void __parse_grouping(parser_t *prsr)
