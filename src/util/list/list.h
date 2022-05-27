@@ -25,8 +25,13 @@ void list_free(list_t *lst);
 
 void list_push(list_t *lst, const void *__restrict__ value);
 uint8_t *list_pop(list_t *lst);
-uint8_t *list_peek(list_t *lst);
+uint8_t *list_peek_offset(list_t *lst, size_t offset);
 void list_reset(list_t *lst);
+
+static inline uint8_t *list_peek(list_t *lst)
+{
+	return list_peek_offset(lst, 0);
+}
 
 void list_for_each (list_t *lst, const void (*func)(void *));
 

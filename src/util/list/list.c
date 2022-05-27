@@ -42,9 +42,9 @@ uint8_t *list_pop(list_t *lst)
 	return lst->head;
 }
 
-uint8_t *list_peek(list_t *lst)
+uint8_t *list_peek_offset(list_t *lst, size_t offset)
 {
-	return lst->head - lst->type_sz;
+	return lst->head - ((offset + 1) * lst->type_sz);
 }
 
 void list_reset(list_t *lst)
