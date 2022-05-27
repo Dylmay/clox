@@ -12,6 +12,7 @@
 static void __run_repl(vm_t *vm);
 static void __run_file(vm_t *vm, const char *path);
 static char *__read_file(const char *path);
+static void __proc_cmd(const char *cmd, const size_t cmd_sz);
 
 int main(int argc, const char *argv[])
 {
@@ -44,7 +45,23 @@ static void __run_repl(vm_t *vm)
 			break;
 		}
 
+		if (line_buf[0] == '.') {
+			__proc_cmd(line_buf + 1, sizeof(line_buf));
+			continue;
+		}
+
 		vm_interpret(vm, line_buf);
+	}
+}
+
+static void __proc_cmd(const char *cmd, const size_t cmd_sz)
+{
+	if (strncmp(cmd, "exit\n", cmd_sz) == 0) {
+		puts("Exiting");
+		exit(0);
+	} else {
+		fprintf(stdout, "Unknown command: .%s\n", cmd);
+		return;
 	}
 }
 
