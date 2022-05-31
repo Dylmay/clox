@@ -2,7 +2,7 @@
 #define __CLOX_CHUNK_H__
 
 #include "util/common.h"
-#include "util/defines.h"
+#include "val/val.h"
 #include "util/list/list.h"
 
 typedef uint8_t code_t;

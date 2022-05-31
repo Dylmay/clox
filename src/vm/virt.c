@@ -7,6 +7,7 @@
 #include "virt.h"
 #include "debug/debug.h"
 #include "ops/ops.h"
+#include "val/val_func.h"
 #include "compiler/compiler.h"
 
 static enum vm_res __vm_run(vm_t *vm);
@@ -19,6 +20,7 @@ static lox_val_t *__vm_peek_const_ptr(vm_t *vm, size_t dist);
 static inline void __vm_assert_inst_ptr_valid(const vm_t *vm);
 static inline char __vm_read_byte(vm_t *vm);
 static inline int __vm_instr_offset(vm_t *vm);
+static bool __val_compare(lox_val_t a, lox_val_t b);
 static void __vm_runtime_error(vm_t *vm, const char *fmt, ...);
 
 #define VM_PEEK_NUM(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.number)
@@ -57,28 +59,31 @@ void vm_free(vm_t *vm)
 
 static enum vm_res __vm_run(vm_t *vm)
 {
-#define BINARY_OP(vm, op)                                                      \
+#define BINARY_OP(vm, val_type, op)                                            \
 	do {                                                                   \
-		if (!IS_NUMBER(*(__vm_peek_const_ptr(vm, 1)))) {               \
+		if (!VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 1)))) {           \
 			puts("top Not number");                                \
 			printf("type %d", __vm_peek_const_ptr(vm, 1)->type);   \
 		}                                                              \
-		if (!IS_NUMBER(*(__vm_peek_const_ptr(vm, 0))) ||               \
-		    !IS_NUMBER(*(__vm_peek_const_ptr(vm, 1)))) {               \
+		if (!VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 0))) ||           \
+		    !VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 1)))) {           \
 			__vm_runtime_error(vm, "Operands must be numbers.");   \
 			return INTERPRET_RUNTIME_ERROR;                        \
 		}                                                              \
 		lox_num_t b = __vm_pop_const(vm).as.number;                    \
 		lox_num_t a = __vm_pop_const(vm).as.number;                    \
-		__vm_push_const(vm, NUMBER_VAL(a op b));                       \
+		__vm_push_const(vm, val_type(a op b));                         \
 	} while (false)
+
+#define NUMERICAL_OP(vm, op) BINARY_OP(vm, VAL_CREATE_NUMBER, op)
+#define COMPARISON_OP(vm, op) BINARY_OP(vm, VAL_CREATE_BOOL, op)
 
 	while (true) {
 		uint8_t instr;
 #ifdef DEBUG_TRACE_EXECUTION
 		printf("\t\t[");
 		for (size_t idx = 0; idx < vm->stack.cnt; idx++) {
-			PRINT_VAL(*((lox_val_t *)list_get(&vm->stack, idx)));
+			val_print(*((lox_val_t *)list_get(&vm->stack, idx)));
 			printf(", ");
 		}
 		puts("]");
@@ -94,24 +99,50 @@ static enum vm_res __vm_run(vm_t *vm)
 			__vm_proc_const_long(vm);
 			break;
 
+		case OP_NIL:
+			__vm_push_const(vm, VAL_CREATE_NIL);
+			break;
+
+		case OP_TRUE:
+			__vm_push_const(vm, VAL_CREATE_BOOL(true));
+			break;
+
+		case OP_FALSE:
+			__vm_push_const(vm, VAL_CREATE_BOOL(false));
+			break;
+
 		case OP_ADD:
-			BINARY_OP(vm, +);
+			NUMERICAL_OP(vm, +);
 			break;
 
 		case OP_SUBTRACT:
-			BINARY_OP(vm, -);
+			NUMERICAL_OP(vm, -);
 			break;
 
 		case OP_MULTIPLY:
-			BINARY_OP(vm, *);
+			NUMERICAL_OP(vm, *);
 			break;
 
 		case OP_DIVIDE:
-			BINARY_OP(vm, /);
+			NUMERICAL_OP(vm, /);
 			break;
 
+		case OP_GREATER:
+			COMPARISON_OP(vm, >);
+			break;
+
+		case OP_LESS:
+			COMPARISON_OP(vm, <);
+
+		case OP_EQUAL: {
+			lox_val_t b = __vm_pop_const(vm);
+			lox_val_t a = __vm_pop_const(vm);
+			__vm_push_const(vm,
+					VAL_CREATE_BOOL(__val_compare(a, b)));
+		} break;
+
 		case OP_NEGATE:
-			if (!IS_NUMBER(*(__vm_peek_const_ptr(vm, 0)))) {
+			if (!VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 0)))) {
 				__vm_runtime_error(vm,
 						   "Operand must be a number");
 				return INTERPRET_RUNTIME_ERROR;
@@ -119,8 +150,13 @@ static enum vm_res __vm_run(vm_t *vm)
 			__vm_proc_negate_in_place(vm);
 			break;
 
+		case OP_NOT:
+			__vm_push_const(vm, VAL_CREATE_BOOL(val_is_falsey(
+						    __vm_pop_const(vm))));
+			break;
+
 		case OP_RETURN:
-			PRINT_VAL(__vm_pop_const(vm));
+			val_print(__vm_pop_const(vm));
 			puts(" returned");
 			return INTERPRET_OK;
 
@@ -131,6 +167,8 @@ static enum vm_res __vm_run(vm_t *vm)
 	}
 
 #undef BINARY_OP
+#undef NUMERICAL_OP
+#undef COMPARISON_OP
 }
 
 static void __vm_proc_const(vm_t *vm)
@@ -204,4 +242,26 @@ static inline char __vm_read_byte(vm_t *vm)
 static inline int __vm_instr_offset(vm_t *vm)
 {
 	return (int)(vm->ip - vm->chunk->code.data);
+}
+
+static bool __val_compare(lox_val_t a, lox_val_t b)
+{
+	if (a.type != b.type) {
+		return false;
+	}
+
+	switch (a.type) {
+	case VAL_BOOL:
+		return a.as.boolean == b.as.boolean;
+
+	case VAL_NIL:
+		return true;
+
+	case VAL_NUMBER:
+		return a.as.number == b.as.number;
+
+	default:
+		assert(("Unexpected comparison type", 0));
+		return false;
+	}
 }

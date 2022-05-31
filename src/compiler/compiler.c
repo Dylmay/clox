@@ -5,8 +5,8 @@
 #include "compiler.h"
 #include "parser.h"
 #include "error/handler.h"
-#include "ops/ops.h"
 #include "ops/ops_func.h"
+#include "val/val_func.h"
 #include "lexer/lexer.h"
 
 #ifdef DEBUG_PRINT_CODE
@@ -24,6 +24,7 @@ static void __parse_unary(parser_t *);
 static void __parse_binary(parser_t *);
 static void __parse_grouping(parser_t *);
 static void __parse_number(parser_t *);
+static void __parse_lit(parser_t *);
 
 static struct parse_rule PARSE_RULES[] = {
 	// single char tokens
@@ -38,15 +39,15 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_SEMICOLON] = { NULL, NULL, PREC_NONE },
 	[TKN_SLASH] = { NULL, __parse_binary, PREC_FACTOR },
 	[TKN_STAR] = { NULL, __parse_binary, PREC_FACTOR },
-	[TKN_BANG] = { NULL, NULL, PREC_NONE },
-	[TKN_LESS] = { NULL, NULL, PREC_NONE },
-	[TKN_GREATER] = { NULL, NULL, PREC_NONE },
+	[TKN_BANG] = { __parse_unary, NULL, PREC_NONE },
+	[TKN_LESS] = { NULL, __parse_binary, PREC_COMPARISON },
+	[TKN_GREATER] = { NULL, __parse_binary, PREC_COMPARISON },
 	[TKN_EQ] = { NULL, NULL, PREC_NONE },
 	// multi-char tokens
-	[TKN_BANG_EQ] = { NULL, NULL, PREC_NONE },
-	[TKN_EQ_EQ] = { NULL, NULL, PREC_NONE },
-	[TKN_GREATER_EQ] = { NULL, NULL, PREC_NONE },
-	[TKN_LESS_EQ] = { NULL, NULL, PREC_NONE },
+	[TKN_BANG_EQ] = { NULL, __parse_binary, PREC_EQUALITY },
+	[TKN_EQ_EQ] = { NULL, __parse_binary, PREC_EQUALITY },
+	[TKN_GREATER_EQ] = { NULL, __parse_binary, PREC_COMPARISON },
+	[TKN_LESS_EQ] = { NULL, __parse_binary, PREC_COMPARISON },
 	// Literals
 	[TKN_ID] = { NULL, NULL, PREC_NONE },
 	[TKN_STR] = { NULL, NULL, PREC_NONE },
@@ -58,13 +59,14 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_FOR] = { NULL, NULL, PREC_NONE },
 	[TKN_FN] = { NULL, NULL, PREC_NONE },
 	[TKN_IF] = { NULL, NULL, PREC_NONE },
-	[TKN_NIL] = { NULL, NULL, PREC_NONE },
+	[TKN_NIL] = { __parse_lit, NULL, PREC_NONE },
 	[TKN_OR] = { NULL, NULL, PREC_NONE },
 	[TKN_PRINT] = { NULL, NULL, PREC_NONE },
 	[TKN_RET] = { NULL, NULL, PREC_NONE },
 	[TKN_SUPER] = { NULL, NULL, PREC_NONE },
 	[TKN_THIS] = { NULL, NULL, PREC_NONE },
-	[TKN_TRUE] = { NULL, NULL, PREC_NONE },
+	[TKN_TRUE] = { __parse_lit, NULL, PREC_NONE },
+	[TKN_FALSE] = { __parse_lit, NULL, PREC_NONE },
 	[TKN_VAR] = { NULL, NULL, PREC_NONE },
 	[TKN_WHILE] = { NULL, NULL, PREC_NONE },
 	[TKN_ERR] = { NULL, NULL, PREC_NONE },
@@ -83,7 +85,7 @@ bool compile(const char *src, chunk_t *chunk)
 	__parse_expr(&prsr);
 	__compiler_consume_token(&prsr, TKN_EOF, "Expect end of expression.");
 
-	op_write_return(chunk, prsr.current.line);
+	OP_RETURN_WRITE(chunk, prsr.current.line);
 #ifdef DEBUG_PRINT_CODE
 	if (!prsr.had_err) {
 		disassem_chunk(chunk, "code");
@@ -134,7 +136,8 @@ static void __parse_expr(parser_t *prsr)
 static void __parse_number(parser_t *prsr)
 {
 	double val = strtod(prsr->previous.start, NULL);
-	op_write_const(prsr->stack, NUMBER_VAL(val), prsr->previous.line);
+	OP_CONST_WRITE(prsr->stack, VAL_CREATE_NUMBER(val),
+		       prsr->previous.line);
 }
 
 static void __parse_grouping(parser_t *prsr)
@@ -154,8 +157,15 @@ static void __parse_unary(parser_t *prsr)
 
 	switch (tkn_type) {
 	case TKN_MINUS:
-		op_write_negate(prsr->stack, line_num);
+		OP_NEGATE_WRITE(prsr->stack, line_num);
+		break;
+
+	case TKN_BANG:
+		OP_NOT_WRITE(prsr->stack, line_num);
+		break;
+
 	default:
+		assert(("Unexpected unary type", 0));
 		return;
 	}
 }
@@ -167,19 +177,41 @@ static void __parse_binary(parser_t *prsr)
 	__parse_precedence(prsr, (enum precedence)(rule->prec + 1));
 
 	switch (tkn_type) {
+	case TKN_BANG_EQ:
+		OP_EQUAL_WRITE(prsr->stack, prsr->previous.line);
+		OP_NOT_WRITE(prsr->stack, prsr->previous.line);
+		break;
+	case TKN_EQ_EQ:
+		OP_EQUAL_WRITE(prsr->stack, prsr->previous.line);
+		break;
+	case TKN_GREATER:
+		OP_GREATER_WRITE(prsr->stack, prsr->previous.line);
+		break;
+	case TKN_GREATER_EQ:
+		OP_LESS_WRITE(prsr->stack, prsr->previous.line);
+		OP_NOT_WRITE(prsr->stack, prsr->previous.line);
+		break;
+	case TKN_LESS:
+		OP_LESS_WRITE(prsr->stack, prsr->previous.line);
+		break;
+	case TKN_LESS_EQ:
+		OP_GREATER_WRITE(prsr->stack, prsr->previous.line);
+		OP_NOT_WRITE(prsr->stack, prsr->previous.line);
+		break;
 	case TKN_PLUS:
-		op_write_add(prsr->stack, prsr->previous.line);
+		OP_ADD_WRITE(prsr->stack, prsr->previous.line);
 		break;
 	case TKN_MINUS:
-		op_write_sub(prsr->stack, prsr->previous.line);
+		OP_SUBTRACT_WRITE(prsr->stack, prsr->previous.line);
 		break;
 	case TKN_STAR:
-		op_write_mult(prsr->stack, prsr->previous.line);
+		OP_MULTIPLY_WRITE(prsr->stack, prsr->previous.line);
 		break;
 	case TKN_SLASH:
-		op_write_sub(prsr->stack, prsr->previous.line);
+		OP_DIVIDE_WRITE(prsr->stack, prsr->previous.line);
 		break;
 	default:
+		assert(("Unexpected binary type", 0));
 		return;
 	}
 }
@@ -199,5 +231,26 @@ static void __parse_precedence(parser_t *prsr, enum precedence prec)
 	while (prec <= __compiler_get_rule(prsr->current.type)->prec) {
 		__compiler_advance(prsr);
 		__compiler_get_rule(prsr->previous.type)->infix(prsr);
+	}
+}
+
+static void __parse_lit(parser_t *prsr)
+{
+	switch (prsr->previous.type) {
+	case TKN_FALSE:
+		OP_FALSE_WRITE(prsr->stack, prsr->previous.line);
+		break;
+
+	case TKN_TRUE:
+		OP_TRUE_WRITE(prsr->stack, prsr->previous.line);
+		break;
+
+	case TKN_NIL:
+		OP_NIL_WRITE(prsr->stack, prsr->previous.line);
+		break;
+
+	default:
+		assert(("Unexpected literal type", 0));
+		return;
 	}
 }

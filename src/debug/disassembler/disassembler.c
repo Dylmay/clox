@@ -2,6 +2,7 @@
 #include <string.h>
 #include "disassembler.h"
 #include "ops/ops.h"
+#include "val/val_func.h"
 
 static size_t __simple_instr(const char *, size_t);
 static size_t __const_instr(const char *, chunk_t *, size_t);
@@ -32,8 +33,9 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 	code_t instruction = chunk_get_code(chunk, offset);
 
 	switch (instruction) {
-	case OP_RETURN:
-		return __simple_instr("OP_RETURN", offset);
+#define CASE_SIMPLE_INSTR(instr)                                               \
+	case instr:                                                            \
+		return __simple_instr(#instr, offset)
 
 	case OP_CONSTANT:
 		return __const_instr("OP_CONSTANT", chunk, offset);
@@ -41,24 +43,37 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 	case OP_CONSTANT_LONG:
 		return __const_long_instr("OP_CONSTANT_LONG", chunk, offset);
 
-	case OP_ADD:
-		return __simple_instr("OP_ADD", offset);
+		CASE_SIMPLE_INSTR(OP_RETURN);
 
-	case OP_SUBTRACT:
-		return __simple_instr("OP_SUBTRACT", offset);
+		CASE_SIMPLE_INSTR(OP_NIL);
 
-	case OP_DIVIDE:
-		return __simple_instr("OP_DIVIDE", offset);
+		CASE_SIMPLE_INSTR(OP_TRUE);
 
-	case OP_MULTIPLY:
-		return __simple_instr("OP_MULTIPLY", offset);
+		CASE_SIMPLE_INSTR(OP_FALSE);
 
-	case OP_NEGATE:
-		return __simple_instr("OP_NEGATE", offset);
+		CASE_SIMPLE_INSTR(OP_ADD);
+
+		CASE_SIMPLE_INSTR(OP_SUBTRACT);
+
+		CASE_SIMPLE_INSTR(OP_DIVIDE);
+
+		CASE_SIMPLE_INSTR(OP_MULTIPLY);
+
+		CASE_SIMPLE_INSTR(OP_NEGATE);
+
+		CASE_SIMPLE_INSTR(OP_NOT);
+
+		CASE_SIMPLE_INSTR(OP_EQUAL);
+
+		CASE_SIMPLE_INSTR(OP_GREATER);
+
+		CASE_SIMPLE_INSTR(OP_LESS);
 
 	default:
 		printf("Unknown opcode %u\n", instruction);
 		return offset + 1;
+
+#undef CASE_SIMPLE_INSTR
 	}
 }
 
@@ -73,7 +88,7 @@ static size_t __const_instr(const char *name, chunk_t *chunk, size_t offset)
 {
 	code_t const_pos = chunk_get_code(chunk, offset + 1);
 	printf(" %-20s | %5d | ", name, const_pos);
-	PRINT_VAL(chunk_get_const(chunk, const_pos));
+	val_print(chunk_get_const(chunk, const_pos));
 	puts("");
 
 	return offset + 2;
@@ -88,10 +103,10 @@ static size_t __const_long_instr(const char *name, chunk_t *chunk,
 	uint32_t const_offset = GET_CONST_POS();
 
 	printf(" %-20s | %5d | ", name, const_offset);
-	PRINT_VAL(chunk_get_const(chunk, const_offset));
+	val_print(chunk_get_const(chunk, const_offset));
 
 	puts("");
 
 	return offset + 4;
-#undef GET_CONST_LONG
+#undef GET_CONST_POS
 }
