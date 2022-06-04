@@ -294,18 +294,7 @@ static void __vm_free_objects(vm_t *vm)
 
 	while (obj) {
 		struct object *next = obj->next;
-
-		switch (obj->type) {
-		case OBJ_STRING: {
-			struct object_str *str = (struct object_str *)obj;
-			FREE_ARRAY(char, str->chars, str->len + 1);
-			FREE(struct object_str, str);
-		} break;
-
-		default:
-			break;
-		}
-
+		object_free(obj);
 		obj = next;
 	}
 }

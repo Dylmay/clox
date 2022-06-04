@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 void val_print(lox_val_t val)
 {
@@ -20,6 +21,9 @@ void val_print(lox_val_t val)
 		break;
 	case VAL_OBJ:
 		object_print(val);
+		break;
+	default:
+		assert(("Unknown val type on val print", 0));
 		break;
 	}
 }

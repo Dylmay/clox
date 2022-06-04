@@ -3,6 +3,7 @@
 #include "util/mem/mem.h"
 
 #include <string.h>
+#include <assert.h>
 
 #define ALLOCATE_OBJECT(type, type_id)                                         \
 	((type *)__allocate_object(sizeof(type), type_id))
@@ -31,6 +32,22 @@ struct object_str *object_str_concat(const struct object_str *a,
 	concat->chars[new_len] = '\0';
 
 	return concat;
+}
+
+void object_free(struct object *obj)
+{
+	switch (obj->type) {
+	case OBJ_STRING: {
+		struct object_str *str = (struct object_str *)obj;
+		reallocate(str,
+			   sizeof(struct object_str) +
+				   (sizeof(char) * str->len),
+			   0);
+	} break;
+
+	default:
+		break;
+	}
 }
 
 void object_print(lox_val_t val)
