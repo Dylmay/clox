@@ -12,7 +12,8 @@ void report_error(parser_t *prsr, const token_t *tkn, const char *msg)
 	if (tkn->type == TKN_EOF) {
 		fprintf(stderr, " at end");
 	} else if (tkn->type != TKN_ERR) {
-		fprintf(stderr, " at '%.*s'", tkn->len, tkn->start);
+		fprintf(stderr, " at '%.*s'", (unsigned int)tkn->len,
+			tkn->start);
 	}
 
 	fprintf(stderr, ": %s\n", msg);

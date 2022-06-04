@@ -21,7 +21,7 @@ static token_t __lexer_num_token(lexer_t *lexer);
 	((token_t){                                                            \
 		type: name,                                                    \
 		start: lexer->start,                                           \
-		len: (unsigned int)(lexer->current - lexer->start),            \
+		len: (size_t)(lexer->current - lexer->start),                  \
 		line: lexer->line                                              \
 	})
 
@@ -225,5 +225,5 @@ static token_t __lexer_id_token(lexer_t *lexer)
 
 	return TOKEN(lexer,
 		     keyword_traverse(lexer->start,
-				      (int)(lexer->current - lexer->start)));
+				      (size_t)(lexer->current - lexer->start)));
 }

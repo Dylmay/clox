@@ -2,11 +2,11 @@
 
 #include <string.h>
 
-static enum tkn_type __keyword_check(const char *start, int start_len,
-				     const char *match, int match_len,
+static enum tkn_type __keyword_check(const char *start, size_t start_len,
+				     const char *match, size_t match_len,
 				     enum tkn_type tkn);
 
-enum tkn_type keyword_traverse(const char *identifier, int id_len)
+enum tkn_type keyword_traverse(const char *identifier, size_t id_len)
 {
 #define MATCH(id, offset, match, tkn)                                          \
 	(__keyword_check(id + offset, id_len - offset, match,                  \
@@ -74,8 +74,8 @@ enum tkn_type keyword_traverse(const char *identifier, int id_len)
 #undef MATCH
 }
 
-static enum tkn_type __keyword_check(const char *start, int start_len,
-				     const char *match, int len,
+static enum tkn_type __keyword_check(const char *start, size_t start_len,
+				     const char *match, size_t len,
 				     enum tkn_type tkn)
 {
 	if (start_len == len && memcmp(start, match, len) == 0) {

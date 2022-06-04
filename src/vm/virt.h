@@ -2,11 +2,13 @@
 #define __CLOX_VM_VIRT_H__
 
 #include "chunk/chunk.h"
+#include "val/object.h"
 
 typedef struct {
 	chunk_t *chunk;
 	uint8_t *ip;
 	list_t stack;
+	struct object *objects;
 } vm_t;
 
 enum vm_res { INTERPRET_OK, INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR };

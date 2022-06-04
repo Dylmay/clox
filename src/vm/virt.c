@@ -7,7 +7,8 @@
 #include "virt.h"
 #include "debug/debug.h"
 #include "ops/ops.h"
-#include "val/val_func.h"
+#include "val/func/val_func.h"
+#include "val/func/object_func.h"
 #include "compiler/compiler.h"
 
 static enum vm_res __vm_run(vm_t *vm);
@@ -16,19 +17,27 @@ static lox_val_t __vm_pop_const(vm_t *vm);
 static void __vm_proc_const(vm_t *vm);
 static void __vm_proc_const_long(vm_t *vm);
 static void __vm_proc_negate_in_place(vm_t *vm);
+static lox_val_t __vm_peek_const(vm_t *vm, size_t dist);
 static lox_val_t *__vm_peek_const_ptr(vm_t *vm, size_t dist);
 static inline void __vm_assert_inst_ptr_valid(const vm_t *vm);
 static inline char __vm_read_byte(vm_t *vm);
-static inline int __vm_instr_offset(vm_t *vm);
-static bool __val_compare(lox_val_t a, lox_val_t b);
+static inline int __vm_instr_offset(const vm_t *vm);
 static void __vm_runtime_error(vm_t *vm, const char *fmt, ...);
+static void __vm_assign_object(vm_t *vm, struct object *obj);
+static void __vm_str_concat(vm_t *vm);
+static void __vm_free_objects(vm_t *vm);
 
 #define VM_PEEK_NUM(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.number)
 #define VM_PEEK_BOOL(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.boolean)
 
 vm_t vm_init()
 {
-	vm_t vm = (vm_t){ NULL, NULL, list_new(lox_val_t) };
+	vm_t vm = (vm_t){
+		NULL,
+		NULL,
+		list_new(lox_val_t),
+		NULL,
+	};
 	list_reset(&vm.stack);
 
 	return vm;
@@ -55,6 +64,7 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 void vm_free(vm_t *vm)
 {
 	list_free(&vm->stack);
+	__vm_free_objects(vm);
 }
 
 static enum vm_res __vm_run(vm_t *vm)
@@ -112,7 +122,18 @@ static enum vm_res __vm_run(vm_t *vm)
 			break;
 
 		case OP_ADD:
-			NUMERICAL_OP(vm, +);
+			if (OBJECT_IS_STRING(__vm_peek_const(vm, 0)) &&
+			    OBJECT_IS_STRING(__vm_peek_const(vm, 1))) {
+				__vm_str_concat(vm);
+			} else if (VAL_IS_NUMBER(__vm_peek_const(vm, 0)) &&
+				   VAL_IS_NUMBER(__vm_peek_const(vm, 1))) {
+				NUMERICAL_OP(vm, +);
+			} else {
+				__vm_runtime_error(
+					vm,
+					"Operands must be two numbers or two strings.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
 			break;
 
 		case OP_SUBTRACT:
@@ -137,12 +158,12 @@ static enum vm_res __vm_run(vm_t *vm)
 		case OP_EQUAL: {
 			lox_val_t b = __vm_pop_const(vm);
 			lox_val_t a = __vm_pop_const(vm);
-			__vm_push_const(vm,
-					VAL_CREATE_BOOL(__val_compare(a, b)));
+
+			__vm_push_const(vm, VAL_CREATE_BOOL(val_equals(a, b)));
 		} break;
 
 		case OP_NEGATE:
-			if (!VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 0)))) {
+			if (!VAL_IS_NUMBER(__vm_peek_const(vm, 0))) {
 				__vm_runtime_error(vm,
 						   "Operand must be a number");
 				return INTERPRET_RUNTIME_ERROR;
@@ -196,6 +217,11 @@ static void __vm_proc_negate_in_place(vm_t *vm)
 	VM_PEEK_NUM(vm, 0) = -VM_PEEK_NUM(vm, 0);
 }
 
+static lox_val_t __vm_peek_const(vm_t *vm, size_t dist)
+{
+	return *(__vm_peek_const_ptr(vm, dist));
+}
+
 static lox_val_t *__vm_peek_const_ptr(vm_t *vm, size_t dist)
 {
 	return (lox_val_t *)(list_peek_offset(&vm->stack, dist));
@@ -203,6 +229,8 @@ static lox_val_t *__vm_peek_const_ptr(vm_t *vm, size_t dist)
 
 static lox_val_t __vm_pop_const(vm_t *vm)
 {
+	assert(("Stack cannot be empty on pop", vm->stack.cnt));
+
 	return *((lox_val_t *)list_pop(&vm->stack));
 }
 
@@ -239,29 +267,45 @@ static inline char __vm_read_byte(vm_t *vm)
 	return *vm->ip++;
 }
 
-static inline int __vm_instr_offset(vm_t *vm)
+static inline int __vm_instr_offset(const vm_t *vm)
 {
 	return (int)(vm->ip - vm->chunk->code.data);
 }
 
-static bool __val_compare(lox_val_t a, lox_val_t b)
+static void __vm_str_concat(vm_t *vm)
 {
-	if (a.type != b.type) {
-		return false;
-	}
+	const struct object_str *b_str = OBJECT_AS_STRING(__vm_pop_const(vm));
+	const struct object_str *a_str = OBJECT_AS_STRING(__vm_pop_const(vm));
+	const struct object_str *concat_str = object_str_concat(a_str, b_str);
 
-	switch (a.type) {
-	case VAL_BOOL:
-		return a.as.boolean == b.as.boolean;
+	__vm_assign_object(vm, (struct object *)concat_str);
+	__vm_push_const(vm, VAL_CREATE_OBJ(concat_str));
+}
 
-	case VAL_NIL:
-		return true;
+static void __vm_assign_object(vm_t *vm, struct object *obj)
+{
+	obj->next = vm->objects;
+	vm->objects = obj->next;
+}
 
-	case VAL_NUMBER:
-		return a.as.number == b.as.number;
+static void __vm_free_objects(vm_t *vm)
+{
+	struct object *obj = vm->objects;
 
-	default:
-		assert(("Unexpected comparison type", 0));
-		return false;
+	while (obj) {
+		struct object *next = obj->next;
+
+		switch (obj->type) {
+		case OBJ_STRING: {
+			struct object_str *str = (struct object_str *)obj;
+			FREE_ARRAY(char, str->chars, str->len + 1);
+			FREE(struct object_str, str);
+		} break;
+
+		default:
+			break;
+		}
+
+		obj = next;
 	}
 }

@@ -2,7 +2,7 @@
 #include <string.h>
 #include "disassembler.h"
 #include "ops/ops.h"
-#include "val/val_func.h"
+#include "val/func/val_func.h"
 
 static size_t __simple_instr(const char *, size_t);
 static size_t __const_instr(const char *, chunk_t *, size_t);

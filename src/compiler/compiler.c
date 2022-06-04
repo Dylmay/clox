@@ -6,7 +6,8 @@
 #include "parser.h"
 #include "error/handler.h"
 #include "ops/ops_func.h"
-#include "val/val_func.h"
+#include "val/func/val_func.h"
+#include "val/func/object_func.h"
 #include "lexer/lexer.h"
 
 #ifdef DEBUG_PRINT_CODE
@@ -25,6 +26,7 @@ static void __parse_binary(parser_t *);
 static void __parse_grouping(parser_t *);
 static void __parse_number(parser_t *);
 static void __parse_lit(parser_t *);
+static void __parse_string(parser_t *);
 
 static struct parse_rule PARSE_RULES[] = {
 	// single char tokens
@@ -50,7 +52,7 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_LESS_EQ] = { NULL, __parse_binary, PREC_COMPARISON },
 	// Literals
 	[TKN_ID] = { NULL, NULL, PREC_NONE },
-	[TKN_STR] = { NULL, NULL, PREC_NONE },
+	[TKN_STR] = { __parse_string, NULL, PREC_NONE },
 	[TKN_NUM] = { __parse_number, NULL, PREC_NONE },
 	// Keywords
 	[TKN_AND] = { NULL, NULL, PREC_NONE },
@@ -253,4 +255,13 @@ static void __parse_lit(parser_t *prsr)
 		assert(("Unexpected literal type", 0));
 		return;
 	}
+}
+
+static void __parse_string(parser_t *prsr)
+{
+	struct object_str *string = object_str_new(prsr->previous.start + 1,
+						   prsr->previous.len - 2);
+
+	OP_CONST_WRITE(prsr->stack, VAL_CREATE_OBJ(string),
+		       prsr->previous.line);
 }
