@@ -51,7 +51,7 @@ enum tkn_type {
 typedef struct {
 	enum tkn_type type;
 	const char *start;
-	int len;
+	unsigned int len;
 	int line;
 } token_t;
 

@@ -21,7 +21,7 @@ static token_t __lexer_num_token(lexer_t *lexer);
 	((token_t){                                                            \
 		type: name,                                                    \
 		start: lexer->start,                                           \
-		len: (int)*lexer->current - *lexer->start,                     \
+		len: (unsigned int)(lexer->current - lexer->start),            \
 		line: lexer->line                                              \
 	})
 
