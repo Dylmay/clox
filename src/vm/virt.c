@@ -297,4 +297,5 @@ static void __vm_free_objects(vm_t *vm)
 		object_free(obj);
 		obj = next;
 	}
+	vm->objects = NULL;
 }
