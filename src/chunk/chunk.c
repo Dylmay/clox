@@ -3,6 +3,17 @@
 
 static struct line_encode __chunk_get_line_encode(chunk_t *chunk, size_t idx);
 
+chunk_t chunk_new()
+{
+	return (chunk_t){
+		list_of_type(code_t),
+		list_of_type(struct line_encode),
+		list_of_type(lox_val_t),
+		intern_new(),
+		0,
+	};
+}
+
 struct line_encode line_encode_diff(int begin_pos, int end_pos)
 {
 	assert(("end_pos must be greater than begin_pos", end_pos > begin_pos));
@@ -87,10 +98,16 @@ void chunk_free(chunk_t *chunk)
 	list_free(&(chunk->code));
 	list_free(&(chunk->consts));
 	list_free(&(chunk->lines));
+	intern_free(&(chunk->strings));
 	chunk->prev_line = 0;
 }
 
 static struct line_encode __chunk_get_line_encode(chunk_t *chunk, size_t idx)
 {
 	return *((struct line_encode *)list_get(&chunk->lines, idx));
+}
+struct object_str *chunk_intern_string(chunk_t *chunk, const char *chars,
+				       size_t len)
+{
+	return intern_string(&chunk->strings, chars, len);
 }

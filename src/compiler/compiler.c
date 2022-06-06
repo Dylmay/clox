@@ -259,8 +259,8 @@ static void __parse_lit(parser_t *prsr)
 
 static void __parse_string(parser_t *prsr)
 {
-	struct object_str *string = object_str_new(prsr->previous.start + 1,
-						   prsr->previous.len - 2);
+	struct object_str *string = chunk_intern_string(
+		prsr->stack, prsr->previous.start + 1, prsr->previous.len - 2);
 
 	OP_CONST_WRITE(prsr->stack, VAL_CREATE_OBJ(string),
 		       prsr->previous.line);
