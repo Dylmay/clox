@@ -4,10 +4,7 @@
 
 #include "util/common.h"
 #include "chunk/chunk.h"
-#include "ops/ops.h"
 #include "vm/virt.h"
-#include "debug/debug.h"
-#include "compiler/compiler.h"
 
 static void __run_repl(vm_t *vm);
 static void __run_file(vm_t *vm, const char *path);

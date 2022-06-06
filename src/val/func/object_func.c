@@ -2,6 +2,7 @@
 
 #include "util/mem/mem.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
@@ -70,13 +71,8 @@ bool object_equals(const struct object *a, const struct object *b)
 	}
 
 	switch (a->type) {
-	case OBJ_STRING: {
-		const struct object_str *a_str = (struct object_str *)a;
-		const struct object_str *b_str = (struct object_str *)b;
-
-		return a_str->len == b_str->len &&
-		       memcmp(a_str->chars, b_str->chars, a_str->len) == 0;
-	}
+	case OBJ_STRING:
+		return a == b;
 	default:
 		assert(("Unknown object comparison type", 0));
 		return false;
