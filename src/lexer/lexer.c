@@ -19,23 +19,27 @@ static token_t __lexer_num_token(lexer_t *lexer);
 
 #define TOKEN(lexer, name)                                                     \
 	((token_t){                                                            \
-		type: name,                                                    \
-		start: lexer->start,                                           \
-		len: (size_t)(lexer->current - lexer->start),                  \
-		line: lexer->line                                              \
+		.type = name,                                                  \
+		.start = lexer->start,                                         \
+		.len = (size_t)(lexer->current - lexer->start),                \
+		.line = lexer->line,                                           \
 	})
 
 #define ERROR(lexer, msg)                                                      \
 	((token_t){                                                            \
-		type: TKN_ERR,                                                 \
-		start: msg,                                                    \
-		len: sizeof(msg) - 1,                                          \
-		line: lexer->line                                              \
+		.type = TKN_ERR,                                               \
+		.start = msg,                                                  \
+		.len = sizeof(msg) - 1,                                        \
+		.line = lexer->line,                                           \
 	})
 
 lexer_t lexer_init(const char *src)
 {
-	return (lexer_t){ start: src, current: src, line: 1 };
+	return (lexer_t){
+		.start = src,
+		.current = src,
+		.line = 1,
+	};
 }
 
 token_t lexer_next_token(lexer_t *lexer)

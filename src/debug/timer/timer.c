@@ -89,7 +89,7 @@ static struct timespec __timespec_diff(struct timespec start,
 static struct timespec __timespec_avg(struct timespec a, struct timespec b)
 {
 	return (struct timespec){
-		tv_nsec: (a.tv_nsec + b.tv_nsec) / 2,
-		tv_sec: (a.tv_sec + b.tv_sec) / 2
+		.tv_nsec = (a.tv_nsec + b.tv_nsec) / 2,
+		.tv_sec = (a.tv_sec + b.tv_sec) / 2,
 	};
 }
