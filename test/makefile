@@ -24,8 +24,6 @@ CFLAGS = -Wall -Wno-unused-value -g
 
 
 $(EXEC_DIR)/$(TARGET_EXEC): $(OBJS) $(PROG_OBJS)
-	echo $(SRCS)
-	echo $(OBJS)
 	$(MKDIR_P) $(BUILD_DIR)
 	$(CC) $(OBJS) $(PROG_OBJS) -o $@ $(LDFLAGS)
 # c source

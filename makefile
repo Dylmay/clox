@@ -1,5 +1,8 @@
 CC = clang
 BUILD_ROOT = build/
+DBG_DEFINES = "-DDEBUG_TRACE_EXECUTION -DDEBUG_PRINT_CODE"
+REL_DEFINES = "-DNDEBUG"
+VALGRIND ?= valgrind "--leak-check=yes"
 
 build/clox:
 	make -C src/
@@ -15,13 +18,13 @@ clean:
 test: $(BUILD_DIR)/$(TARGET_EXEC)
 	make dbg
 	make -C test/ CC=$(CC)
-	./build/clox_test
+	$(VALGRIND) ./build/clox_test
 
 dbg:
-	make -C src/ CC=$(CC)
+	make -C src/ CC=$(CC) DEFINES=$(DBG_DEFINES)
 
 rel:
 	make -C src/ clean
-	make -C src/ CFLAGS="-Wall -Wno-unused-value -O3" CC=$(CC)
+	make -C src/ CFLAGS="-Wall -Wno-unused-value -O3" CC=$(CC) DEFINES=$(REL_DEFINES)
 
 MKDIR_P ?= mkdir -p

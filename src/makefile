@@ -19,17 +19,13 @@ $(EXEC_DIR)/$(TARGET_EXEC): $(OBJS)
 # c source
 $(BUILD_DIR)/%.c.o: %.c
 	$(MKDIR_P) $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) $(DEFINES) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 .PHONY: clean
 .PHONY: test
 
 clean:
 	$(RM) -r $(BUILD_DIR)
-
-test: $(BUILD_DIR)/$(TARGET_EXEC)
-	make -C test/
-	./build/clox_test
 
 -include $(DEPS)
 
