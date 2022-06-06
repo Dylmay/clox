@@ -1,5 +1,6 @@
 #include "list.h"
 #include <string.h>
+#include <assert.h>
 
 #define GROW_LIST(data_sz, pointer, old_cnt, new_cnt)                          \
 	(reallocate(pointer, (data_sz)*old_cnt, (data_sz)*new_cnt))
@@ -44,6 +45,9 @@ uint8_t *list_pop(list_t *lst)
 
 uint8_t *list_peek_offset(list_t *lst, size_t offset)
 {
+	assert(("list is empty", lst->head != NULL));
+	assert(("Offset will fall out of array", offset + 1 <= lst->cnt));
+
 	return lst->head - ((offset + 1) * lst->type_sz);
 }
 
@@ -61,6 +65,8 @@ void list_free(list_t *lst)
 
 uint8_t *list_get(list_t *lst, size_t idx)
 {
+	assert(("Index cannot be greater than list size", idx < lst->cnt));
+
 	return lst->data + (idx * (lst->type_sz));
 }
 
@@ -92,8 +98,16 @@ static void __list_init(list_t *lst)
 	lst->head = NULL;
 }
 
-static void __list_adj_head(list_t *lst, int cnt)
+static void __list_adj_head(list_t *lst, int adj)
 {
-	lst->cnt += cnt;
-	lst->head += lst->type_sz * cnt;
+	if (adj < 0) {
+		assert(("adjustment will cause overflow error",
+			(-adj) <= lst->cnt));
+	} else {
+		assert(("head will be outside of alloc",
+			lst->cnt + (size_t)adj <= lst->cap));
+	}
+
+	lst->cnt += adj;
+	lst->head += lst->type_sz * adj;
 }

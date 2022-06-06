@@ -3,6 +3,7 @@
 
 #include "chunk/chunk.h"
 #include "val/object.h"
+#include "util/list/list.h"
 
 typedef struct {
 	chunk_t *chunk;

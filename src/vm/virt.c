@@ -35,7 +35,7 @@ vm_t vm_init()
 	vm_t vm = (vm_t){
 		NULL,
 		NULL,
-		list_new(lox_val_t),
+		list_of_type(lox_val_t),
 		NULL,
 	};
 	list_reset(&vm.stack);

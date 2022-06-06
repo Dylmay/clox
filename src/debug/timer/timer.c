@@ -50,7 +50,7 @@ void print_time(struct timespec time, bool formatTime)
 
 static void __print_fmtd_time(time_t time)
 {
-	list_t time_list = list_new(uint8_t);
+	list_t time_list = list_of_type(uint8_t);
 	do {
 		__uint8_t temp_time = time % 10;
 		time /= 10;
