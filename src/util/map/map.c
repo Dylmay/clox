@@ -43,7 +43,7 @@ static struct map_entry *__map_find(const hashmap_t *map, const void *key,
 	struct map_entry *tombstone = NULL;
 
 	while (true) {
-		size_t offset = sizeof(struct map_entry) + map->data_sz;
+		size_t offset = SIZEOF_ENTRY(map);
 		size_t idx_off = offset * idx;
 		struct map_entry *entry = map->entries + idx_off;
 
@@ -133,6 +133,19 @@ void *map_find(const hashmap_t *map, matcher_t *matcher)
 		}
 
 		idx = (idx + 1) % map->cap;
+	}
+}
+
+void map_keys_for_each(hashmap_t *map, void (*for_each)(void *key))
+{
+	for (size_t i = 0; i < map->cap; i++) {
+		struct map_entry *entry = ENTRY_AT(map, i);
+
+		if (entry->key == NULL) {
+			continue;
+		}
+
+		for_each(entry->key);
 	}
 }
 

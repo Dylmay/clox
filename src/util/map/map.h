@@ -23,7 +23,7 @@ typedef struct {
 	size_t cnt;
 	size_t cap;
 	size_t data_sz;
-	struct map_entry *entries;
+	void *entries;
 	hash_fn hash;
 } hashmap_t;
 
@@ -59,5 +59,7 @@ void map_insert_all(const hashmap_t *from, hashmap_t *to);
 
 void *map_get(const hashmap_t *map, const void *key);
 void *map_find(const hashmap_t *map, matcher_t *matcher);
+
+void map_keys_for_each(hashmap_t *map, void (*for_each)(void *key));
 
 #endif // __CLOX_UTIL_MAP_H__

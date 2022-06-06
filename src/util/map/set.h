@@ -7,7 +7,7 @@ typedef hashmap_t hashset_t;
 
 #define SET_MAX_LOAD MAP_MAX_LOAD
 
-#define set_new(fn) (map_new(sizeof(bool), fn))
+#define set_new(fn) (map_new(0, fn))
 #define set_free(set) (map_free(set))
 #define set_insert(set, key) (map_insert(set, key, NULL))
 #define set_remove(set, key) (map_remove(set, key))
@@ -15,5 +15,6 @@ typedef hashmap_t hashset_t;
 #define set_get(set, key) (map_get(set, key))
 #define set_get_by_hash(set, hash) (map_get_by_hash(set, hash))
 #define set_find(set, matcher) (map_find(set, matcher))
+#define set_for_each(set, func) (map_keys_for_each(set, func))
 
 #endif // __CLOX_UTIL_SET_H__
