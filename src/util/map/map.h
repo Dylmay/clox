@@ -21,6 +21,7 @@ struct map_entry {
 
 typedef struct {
 	size_t cnt;
+	size_t tomb_cnt;
 	size_t cap;
 	size_t data_sz;
 	void *entries;
@@ -35,6 +36,7 @@ static inline hashmap_t map_new(size_t val_sz, hash_fn hasher)
 {
 	return (hashmap_t){
 		.cnt = 0,
+		.tomb_cnt = 0,
 		.cap = 0,
 		.data_sz = val_sz,
 		.entries = NULL,
@@ -50,11 +52,17 @@ static inline void map_free(hashmap_t *map)
 		   (sizeof(struct map_entry) + map->data_sz) * map->cap, 0);
 	map->cap = 0;
 	map->cnt = 0;
+	map->tomb_cnt = 0;
 	map->entries = NULL;
 }
 
+static inline size_t map_size(const hashmap_t *map)
+{
+	return map->cnt - map->tomb_cnt;
+}
+
 bool map_insert(hashmap_t *map, void *key, const void *value);
-bool map_remove(hashmap_t *map, void *key);
+bool map_remove(hashmap_t *map, const void *key);
 void map_insert_all(const hashmap_t *from, hashmap_t *to);
 
 void *map_get(const hashmap_t *map, const void *key);

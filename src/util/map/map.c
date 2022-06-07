@@ -81,7 +81,7 @@ void map_insert_all(const hashmap_t *from, hashmap_t *to)
 	}
 }
 
-bool map_remove(hashmap_t *map, void *key)
+bool map_remove(hashmap_t *map, const void *key)
 {
 	if (!map->cnt) {
 		return false;
@@ -95,6 +95,7 @@ bool map_remove(hashmap_t *map, void *key)
 
 	entry->key = NULL;
 	entry->tombstoned = true;
+	map->tomb_cnt++;
 	return true;
 }
 
@@ -152,14 +153,18 @@ void map_keys_for_each(hashmap_t *map, void (*for_each)(void *key))
 static void __map_rebuild(hashmap_t *map, size_t new_cap)
 {
 	size_t cnt = 0;
+	size_t prev_cap = map->cap;
+	void *prev_entries = map->entries;
 
-	struct map_entry *entries = (struct map_entry *)reallocate(
+	map->cap = new_cap;
+	map->entries = (struct map_entry *)reallocate(
 		NULL, 0, SIZEOF_ENTRY(map) * new_cap);
 
-	memset(entries, 0, SIZEOF_ENTRY(map) * new_cap);
+	memset(map->entries, 0, SIZEOF_ENTRY(map) * new_cap);
 
-	for (size_t i = 0; i < map->cap; i++) {
-		struct map_entry *entry = ENTRY_AT(map, i);
+	for (size_t i = 0; i < prev_cap; i++) {
+		struct map_entry *entry =
+			prev_entries + (SIZEOF_ENTRY(map) * i);
 
 		if (entry->key == NULL) {
 			continue;
@@ -167,13 +172,13 @@ static void __map_rebuild(hashmap_t *map, size_t new_cap)
 
 		struct map_entry *dest =
 			__map_find(map, entry->key, entry->hash);
+
 		dest->key = entry->key;
 		memcpy(dest->value, entry->value, map->data_sz);
 		cnt++;
 	}
 
-	map_free(map);
-	map->cap = new_cap;
 	map->cnt = cnt;
-	map->entries = entries;
+
+	reallocate(prev_entries, SIZEOF_ENTRY(map) * prev_cap, 0);
 }

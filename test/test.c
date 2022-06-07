@@ -14,4 +14,5 @@ int main(int argc, const char *argv[])
 {
 	list_test_all();
 	map_test_all();
+	map_bench_all();
 }
