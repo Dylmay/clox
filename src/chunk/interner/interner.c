@@ -10,10 +10,11 @@ struct object_str_matcher {
 	size_t len;
 };
 
-struct object_str_matcher create_matcher(const char *chars, size_t len);
-bool match(const void *a, matcher_t *m);
 hash_t str_gen_hash(const char *chars, size_t str_sz);
 hash_t obj_str_gen_hash(const void *key);
+bool match(const void *a, matcher_t *m);
+static struct object_str_matcher __create_matcher(const char *chars,
+						  size_t len);
 
 interner_t intern_new()
 {
@@ -29,7 +30,7 @@ void intern_free(interner_t *interner)
 struct object_str *intern_string(interner_t *interner, const char *chars,
 				 size_t len)
 {
-	struct object_str_matcher matcher = create_matcher(chars, len);
+	struct object_str_matcher matcher = __create_matcher(chars, len);
 	struct object_str *interned = set_find(interner, (matcher_t *)&matcher);
 
 	if (!interned) {
@@ -50,15 +51,6 @@ bool match(const void *a, matcher_t *m)
 	       memcmp(str->chars, matcher->chars, matcher->len) == 0;
 }
 
-struct object_str_matcher create_matcher(const char *chars, size_t len)
-{
-	return (struct object_str_matcher){
-		.m = { .is_match = &match, .hash = str_gen_hash(chars, len) },
-		.len = len,
-		.chars = chars,
-	};
-}
-
 hash_t str_gen_hash(const char *chars, size_t str_sz)
 {
 	uint32_t hash = 216613626UL;
@@ -76,4 +68,13 @@ hash_t obj_str_gen_hash(const void *key)
 	const struct object_str *str = (const struct object_str *)key;
 
 	return str_gen_hash(str->chars, str->len);
+}
+
+static struct object_str_matcher __create_matcher(const char *chars, size_t len)
+{
+	return (struct object_str_matcher){
+		.m = { .is_match = &match, .hash = str_gen_hash(chars, len) },
+		.len = len,
+		.chars = chars,
+	};
 }
