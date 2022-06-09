@@ -173,6 +173,7 @@ static void __tombstone_entry(hashmap_t *map, struct map_entry *entry)
 
 	map->tomb_cnt++;
 	entry->tombstoned = true;
+	entry->key = NULL;
 }
 
 static void __revive_entry(hashmap_t *map, struct map_entry *entry)
