@@ -8,6 +8,11 @@ struct timespec time_function(void (*func)(void));
 
 struct timespec time_function_mean(void (*func)(void), size_t run_cnt);
 
-void print_time(struct timespec time, bool formatTime);
+struct timespec timer_start(struct timespec *timer);
+struct timespec timer_end(const struct timespec end);
+
+struct timespec timespec_diff(struct timespec start, struct timespec end);
+struct timespec timespec_avg(struct timespec a, struct timespec b);
+void timespec_print(struct timespec time, bool formatTime);
 
 #endif // __CLOX_DEBUG_TIMER_H__
