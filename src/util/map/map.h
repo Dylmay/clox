@@ -24,7 +24,7 @@ typedef struct {
 	size_t tomb_cnt;
 	size_t cap;
 	size_t data_sz;
-	void *entries;
+	uint8_t *entries;
 	hash_fn hash;
 } hashmap_t;
 

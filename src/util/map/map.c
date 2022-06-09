@@ -1,13 +1,18 @@
 #include "map.h"
 
+#include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #define SIZEOF_ENTRY(map) (sizeof(struct map_entry) + map->data_sz)
-#define ENTRY_AT(map, idx) (map->entries + (SIZEOF_ENTRY(map) * idx))
+#define ENTRY_AT(map, idx)                                                     \
+	((struct map_entry *)(map->entries + (SIZEOF_ENTRY(map) * idx)))
 
 static struct map_entry *__map_find(const hashmap_t *map, const void *key,
 				    hash_t hash);
 static void __map_rebuild(hashmap_t *map, size_t cap);
+static void __tombstone_entry(hashmap_t *map, struct map_entry *entry);
+static void __revive_entry(hashmap_t *map, struct map_entry *entry);
 
 bool map_insert(hashmap_t *map, void *key, const void *value)
 {
@@ -25,7 +30,9 @@ bool map_insert(hashmap_t *map, void *key, const void *value)
 	}
 
 	bucket->key = key;
-	bucket->tombstoned = false;
+	if (bucket->tombstoned) {
+		__revive_entry(map, bucket);
+	}
 	bucket->hash = hash;
 	if (value) {
 		memcpy(bucket->value, value, map->data_sz);
@@ -43,9 +50,7 @@ static struct map_entry *__map_find(const hashmap_t *map, const void *key,
 	struct map_entry *tombstone = NULL;
 
 	while (true) {
-		size_t offset = SIZEOF_ENTRY(map);
-		size_t idx_off = offset * idx;
-		struct map_entry *entry = map->entries + idx_off;
+		struct map_entry *entry = ENTRY_AT(map, idx);
 
 		if (!entry->key) {
 			if (!entry->tombstoned) {
@@ -75,7 +80,7 @@ void map_insert_all(const hashmap_t *from, hashmap_t *to)
 	for (size_t i = 0; i < from->cap; i++) {
 		const struct map_entry *entry = ENTRY_AT(from, i);
 
-		if (entry->key) {
+		if (entry->key && !entry->tombstoned) {
 			map_insert(to, entry->key, entry->value);
 		}
 	}
@@ -93,9 +98,7 @@ bool map_remove(hashmap_t *map, const void *key)
 		return false;
 	}
 
-	entry->key = NULL;
-	entry->tombstoned = true;
-	map->tomb_cnt++;
+	__tombstone_entry(map, entry);
 	return true;
 }
 
@@ -142,7 +145,7 @@ void map_keys_for_each(hashmap_t *map, void (*for_each)(void *key))
 	for (size_t i = 0; i < map->cap; i++) {
 		struct map_entry *entry = ENTRY_AT(map, i);
 
-		if (entry->key == NULL) {
+		if (entry->key == NULL || entry->tombstoned) {
 			continue;
 		}
 
@@ -152,33 +155,32 @@ void map_keys_for_each(hashmap_t *map, void (*for_each)(void *key))
 
 static void __map_rebuild(hashmap_t *map, size_t new_cap)
 {
-	size_t cnt = 0;
-	size_t prev_cap = map->cap;
-	void *prev_entries = map->entries;
+	hashmap_t new_map = map_new(map->data_sz, map->hash);
+	new_map.cap = new_cap;
 
-	map->cap = new_cap;
-	map->entries = (struct map_entry *)reallocate(
-		NULL, 0, SIZEOF_ENTRY(map) * new_cap);
+	new_map.entries = reallocate(NULL, 0, SIZEOF_ENTRY(map) * new_map.cap);
+	memset(new_map.entries, 0, SIZEOF_ENTRY(map) * new_map.cap);
 
-	memset(map->entries, 0, SIZEOF_ENTRY(map) * new_cap);
+	map_insert_all(map, &new_map);
+	free(map->entries);
+	memcpy(map, &new_map, sizeof(hashmap_t));
+}
 
-	for (size_t i = 0; i < prev_cap; i++) {
-		struct map_entry *entry =
-			prev_entries + (SIZEOF_ENTRY(map) * i);
+static void __tombstone_entry(hashmap_t *map, struct map_entry *entry)
+{
+	assert(("entry must be alive before being tombstoned",
+		entry->tombstoned == false));
 
-		if (entry->key == NULL) {
-			continue;
-		}
+	map->tomb_cnt++;
+	entry->tombstoned = true;
+}
 
-		struct map_entry *dest =
-			__map_find(map, entry->key, entry->hash);
+static void __revive_entry(hashmap_t *map, struct map_entry *entry)
+{
+	assert(("no tombs found within map", map->tomb_cnt != 0));
+	assert(("entry must be tombstoned before revival",
+		entry->tombstoned == true));
 
-		dest->key = entry->key;
-		memcpy(dest->value, entry->value, map->data_sz);
-		cnt++;
-	}
-
-	map->cnt = cnt;
-
-	reallocate(prev_entries, SIZEOF_ENTRY(map) * prev_cap, 0);
+	map->tomb_cnt--;
+	entry->tombstoned = false;
 }
