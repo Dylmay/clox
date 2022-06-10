@@ -138,7 +138,7 @@ void list_test_write_to_bulk()
 		},
 	};
 
-	list_write_bulk(&lst, val_arr, 9);
+	list_write_bulk(&lst, val_arr, sizeof(val_arr) / sizeof(struct value));
 	assert(("Unexpected count", lst.cnt == 9));
 
 	list_free(&lst);
