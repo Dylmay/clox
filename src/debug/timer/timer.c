@@ -5,7 +5,7 @@
 
 static void __print_fmtd_time(time_t time);
 
-struct timespec timer_start(struct timespec *timer)
+void timer_start(struct timespec *timer)
 {
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, timer);
 }

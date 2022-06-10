@@ -8,7 +8,7 @@ struct timespec time_function(void (*func)(void));
 
 struct timespec time_function_mean(void (*func)(void), size_t run_cnt);
 
-struct timespec timer_start(struct timespec *timer);
+void timer_start(struct timespec *timer);
 struct timespec timer_end(const struct timespec end);
 
 struct timespec timespec_diff(struct timespec start, struct timespec end);
