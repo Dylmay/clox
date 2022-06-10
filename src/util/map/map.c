@@ -161,7 +161,21 @@ static void __map_rebuild(hashmap_t *map, size_t new_cap)
 	new_map.entries = reallocate(NULL, 0, SIZEOF_ENTRY(map) * new_map.cap);
 	memset(new_map.entries, 0, SIZEOF_ENTRY(map) * new_map.cap);
 
-	map_insert_all(map, &new_map);
+	for (size_t i = 0; i < map->cap; i++) {
+		struct map_entry *entry = ENTRY_AT(map, i);
+
+		if (entry->key && !entry->tombstoned) {
+			new_map.cnt++;
+
+			struct map_entry *new_entry =
+				__map_find(&new_map, entry->key, entry->hash);
+
+			new_entry->key = entry->key;
+			new_entry->hash = entry->hash;
+			memcpy(new_entry->value, &entry->value, map->data_sz);
+		}
+	}
+
 	free(map->entries);
 	memcpy(map, &new_map, sizeof(hashmap_t));
 }
