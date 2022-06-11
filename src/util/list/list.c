@@ -11,12 +11,12 @@
 static void __list_init(list_t *);
 static void __list_adj_head(list_t *lst, int cnt);
 
-size_t list_write_to(list_t *lst, const void *__restrict__ val)
+size_t list_write_to(list_t *lst, const void *restrict val)
 {
 	return list_write_bulk(lst, val, 1);
 }
 
-size_t list_write_bulk(list_t *lst, const void *__restrict__ val, size_t cnt)
+size_t list_write_bulk(list_t *lst, const void *restrict val, size_t cnt)
 {
 	size_t idx = lst->cnt;
 
@@ -31,7 +31,7 @@ size_t list_write_bulk(list_t *lst, const void *__restrict__ val, size_t cnt)
 	return idx;
 }
 
-void list_push(list_t *lst, const void *__restrict__ value)
+void list_push(list_t *lst, const void *restrict value)
 {
 	list_write_to(lst, value);
 }

@@ -1,3 +1,6 @@
 build/
 .vscode/
 *.d
+vgcore*
+.vs/
+*.vcxproj.user

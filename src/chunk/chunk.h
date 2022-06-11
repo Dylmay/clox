@@ -26,7 +26,7 @@ chunk_t chunk_new();
 
 size_t chunk_write_code(chunk_t *chunk, code_t code, int line);
 size_t chunk_write_code_bulk(chunk_t *chunk, code_t code, int line,
-			     const void *__restrict__ data, size_t data_cnt);
+			     const void *restrict data, size_t data_cnt);
 
 size_t chunk_write_const(chunk_t *chunk, lox_val_t const_val);
 

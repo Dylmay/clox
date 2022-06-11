@@ -2,7 +2,7 @@
 #define __CLOX_UTIL_MAP_H__
 
 #include <stdbool.h>
-#include "list.h"
+#include "util/list/list.h"
 
 typedef uint32_t hash_t;
 typedef hash_t (*hash_fn)(const void *a);
