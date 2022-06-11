@@ -241,6 +241,8 @@ static void __parse_stmnt(parser_t * prsr)
 {
 	if (parser_match(prsr, TKN_PRINT)) {
 		__parse_print(prsr);
+	} else {
+		__parse_expr_stmt(prsr);
 	}
 }
 
@@ -249,4 +251,11 @@ static void __parse_print(parser_t *prsr)
 	__parse_expr(prsr);
 	parser_consume(prsr, TKN_SEMICOLON, "Expected ';' after value.");
 	OP_PRINT_WRITE(prsr->stack, prsr->previous.line);
+}
+
+static void __parse_expr_stmt(parser_t *prsr)
+{
+	__parse_expr(prsr);
+	parser_consume(prsr, TKN_SEMICOLON, "Expected ';' after expression.");
+	OP_POP_WRITE(prsr->stack, prsr->previous.line);
 }

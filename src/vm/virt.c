@@ -165,7 +165,11 @@ static enum vm_res __vm_run(vm_t *vm)
 		case OP_PRINT:
 			val_print(__vm_pop_const(vm));
 			puts("");
-		break;
+			break;
+
+		case OP_POP:
+			__vm_pop_const(vm);
+			break;
 
 		case OP_NEGATE:
 			if (!VAL_IS_NUMBER(__vm_peek_const(vm, 0))) {
