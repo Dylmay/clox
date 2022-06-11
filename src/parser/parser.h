@@ -42,6 +42,7 @@ bool parser_match(parser_t *prsr, enum tkn_type type);
 void parser_advance(parser_t *prsr);
 void parser_consume(parser_t *prsr, enum tkn_type tkn, const char *err_msg);
 void parser_error(parser_t *prsr, const token_t *tkn, const char *msg);
+void parser_sync(parser_t *prsr);
 
 static inline void parser_error_at_current(parser_t *prsr, const char *msg)
 {

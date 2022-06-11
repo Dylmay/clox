@@ -70,3 +70,31 @@ void parser_error(parser_t *prsr, const token_t *tkn, const char *msg)
 	prsr->had_err = true;
 	prsr->panic_mode = true;
 }
+
+void parser_sync(parser_t* prsr)
+{
+	prsr->panic_mode = false;
+
+	while (!parser_check(prsr, TKN_EOF)) {
+		if (parser_check(prsr, TKN_SEMICOLON)) {
+			return;
+		}
+
+		switch (prsr->current.type) {
+			case TKN_CLS:
+      case TKN_FN:
+      case TKN_VAR:
+      case TKN_FOR:
+      case TKN_IF:
+      case TKN_WHILE:
+      case TKN_PRINT:
+      case TKN_RET:
+        return;
+
+			default:
+        break;
+		}
+
+		parser_advance(prsr);
+	}
+}
