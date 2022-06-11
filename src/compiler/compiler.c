@@ -23,6 +23,9 @@ static void __parse_grouping(parser_t *);
 static void __parse_number(parser_t *);
 static void __parse_lit(parser_t *);
 static void __parse_string(parser_t *);
+static void __parse_decl(parser_t *);
+static void __parse_stmnt(parser_t *);
+static void __parse_print(parser_t *);
 
 static struct parse_rule PARSE_RULES[] = {
 	// single char tokens
@@ -59,7 +62,7 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_IF] = { NULL, NULL, PREC_NONE },
 	[TKN_NIL] = { __parse_lit, NULL, PREC_NONE },
 	[TKN_OR] = { NULL, NULL, PREC_NONE },
-	[TKN_PRINT] = { NULL, NULL, PREC_NONE },
+	[TKN_PRINT] = { __parse_print, NULL, PREC_NONE },
 	[TKN_RET] = { NULL, NULL, PREC_NONE },
 	[TKN_SUPER] = { NULL, NULL, PREC_NONE },
 	[TKN_THIS] = { NULL, NULL, PREC_NONE },
@@ -80,9 +83,9 @@ bool compile(const char *src, chunk_t *chunk)
 {
 	parser_t prsr = parser_new(src, chunk);
 
-
-	__parse_expr(&prsr);
-	__compiler_consume_token(&prsr, TKN_EOF, "Expect end of expression.");
+	while (!parser_match(&prsr, TKN_EOF)) {
+		__parse_decl(&prsr);
+	}
 
 	OP_RETURN_WRITE(chunk, prsr.current.line);
 #ifdef DEBUG_PRINT_CODE
@@ -227,4 +230,23 @@ static void __parse_string(parser_t *prsr)
 
 	OP_CONST_WRITE(prsr->stack, VAL_CREATE_OBJ(string),
 		       prsr->previous.line);
+}
+
+static void __parse_decl(parser_t * prsr)
+{
+	__parse_stmnt(prsr);
+}
+
+static void __parse_stmnt(parser_t * prsr)
+{
+	if (parser_match(prsr, TKN_PRINT)) {
+		__parse_print(prsr);
+	}
+}
+
+static void __parse_print(parser_t *prsr)
+{
+	__parse_expr(prsr);
+	parser_consume(prsr, TKN_SEMICOLON, "Expected ';' after value.");
+	OP_PRINT_WRITE(prsr->stack, prsr->previous.line);
 }

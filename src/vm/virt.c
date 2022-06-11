@@ -162,6 +162,11 @@ static enum vm_res __vm_run(vm_t *vm)
 			__vm_push_const(vm, VAL_CREATE_BOOL(val_equals(a, b)));
 		} break;
 
+		case OP_PRINT:
+			val_print(__vm_pop_const(vm));
+			puts("");
+		break;
+
 		case OP_NEGATE:
 			if (!VAL_IS_NUMBER(__vm_peek_const(vm, 0))) {
 				__vm_runtime_error(vm,
@@ -177,13 +182,11 @@ static enum vm_res __vm_run(vm_t *vm)
 			break;
 
 		case OP_RETURN:
-			val_print(__vm_pop_const(vm));
-			puts(" returned");
 			return INTERPRET_OK;
 
 		default:
 			printf("UNKNOWN OPCODE: %d\n", instr);
-			break;
+			return INTERPRET_RUNTIME_ERROR;
 		}
 	}
 
@@ -276,7 +279,7 @@ static void __vm_str_concat(vm_t *vm)
 {
 	const struct object_str *b_str = OBJECT_AS_STRING(__vm_pop_const(vm));
 	const struct object_str *a_str = OBJECT_AS_STRING(__vm_pop_const(vm));
-	const struct object_str *concat_str = object_str_concat(a_str, b_str);
+	struct object_str *concat_str = object_str_concat(a_str, b_str);
 
 	__vm_assign_object(vm, (struct object *)concat_str);
 	__vm_push_const(vm, VAL_CREATE_OBJ(concat_str));

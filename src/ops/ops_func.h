@@ -9,8 +9,8 @@
 static inline void OP_CONST_WRITE(chunk_t *chunk, lox_val_t const_val, int line)
 {
 	size_t const_offset = chunk_write_const(chunk, const_val);
-
-	if (const_offset <= __UINT8_MAX__) {
+	
+	if (const_offset <= UINT8_MAX) {
 		chunk_write_code(chunk, OP_CONSTANT, line);
 		chunk_write_code(chunk, (code_t)const_offset, line);
 	} else {
@@ -42,6 +42,7 @@ CREATE_WRITE_FUNC(OP_RETURN)
 CREATE_WRITE_FUNC(OP_EQUAL)
 CREATE_WRITE_FUNC(OP_GREATER)
 CREATE_WRITE_FUNC(OP_LESS)
+CREATE_WRITE_FUNC(OP_PRINT)
 
 #undef CREATE_WRITE_FUNC
 #undef FUNC_NAME_OF
