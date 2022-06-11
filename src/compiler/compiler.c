@@ -3,8 +3,7 @@
 
 #include "util/common.h"
 #include "compiler.h"
-#include "parser.h"
-#include "error/handler.h"
+#include "parser/parser.h"
 #include "ops/ops_func.h"
 #include "val/func/val_func.h"
 #include "val/func/object_func.h"
@@ -14,9 +13,6 @@
 #include "debug/debug.h"
 #endif
 
-static parser_t __compiler_create_parser(const char *, chunk_t *);
-static void __compiler_advance(parser_t *);
-static void __compiler_consume_token(parser_t *, enum tkn_type, const char *);
 static const struct parse_rule *__compiler_get_rule(enum tkn_type);
 
 static void __parse_expr(parser_t *);
@@ -82,7 +78,8 @@ static const struct parse_rule *__compiler_get_rule(enum tkn_type tkn)
 
 bool compile(const char *src, chunk_t *chunk)
 {
-	parser_t prsr = __compiler_create_parser(src, chunk);
+	parser_t prsr = parser_new(src, chunk);
+
 
 	__parse_expr(&prsr);
 	__compiler_consume_token(&prsr, TKN_EOF, "Expect end of expression.");
@@ -94,40 +91,6 @@ bool compile(const char *src, chunk_t *chunk)
 	}
 #endif
 	return !prsr.had_err;
-}
-
-static parser_t __compiler_create_parser(const char *src, chunk_t *chunk)
-{
-	lexer_t lexer = lexer_init(src);
-	parser_t prsr = (parser_t){ lexer, chunk };
-	__compiler_advance(&prsr);
-
-	return prsr;
-}
-
-static void __compiler_advance(parser_t *prsr)
-{
-	prsr->previous = prsr->current;
-
-	while (true) {
-		prsr->current = lexer_next_token(&prsr->lexer);
-
-		if (prsr->current.type != TKN_ERR)
-			break;
-
-		report_error_at_current(prsr, prsr->current.start);
-	}
-}
-
-static void __compiler_consume_token(parser_t *prsr, enum tkn_type tkn,
-				     const char *msg)
-{
-	if (prsr->current.type == tkn) {
-		__compiler_advance(prsr);
-		return;
-	}
-
-	report_error_at_current(prsr, msg);
 }
 
 static void __parse_expr(parser_t *prsr)
@@ -145,7 +108,7 @@ static void __parse_number(parser_t *prsr)
 static void __parse_grouping(parser_t *prsr)
 {
 	__parse_expr(prsr);
-	__compiler_consume_token(prsr, TKN_RIGHT_PAREN,
+	parser_consume(prsr, TKN_RIGHT_PAREN,
 				 "Expect ')' after expression.");
 }
 
@@ -220,18 +183,18 @@ static void __parse_binary(parser_t *prsr)
 
 static void __parse_precedence(parser_t *prsr, enum precedence prec)
 {
-	__compiler_advance(prsr);
+	parser_advance(prsr);
 	parse_fn prefix_rule = __compiler_get_rule(prsr->previous.type)->prefix;
 
 	if (!prefix_rule) {
-		report_error(prsr, &prsr->previous, "Expect expression.");
+		parser_error(prsr, &prsr->previous, "Expect expression.");
 		return;
 	}
 
 	prefix_rule(prsr);
 
 	while (prec <= __compiler_get_rule(prsr->current.type)->prec) {
-		__compiler_advance(prsr);
+		parser_advance(prsr);
 		__compiler_get_rule(prsr->previous.type)->infix(prsr);
 	}
 }
