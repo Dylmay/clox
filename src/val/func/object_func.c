@@ -31,6 +31,7 @@ struct object_str *object_str_concat(const struct object_str *a,
 	memcpy(concat->chars, a->chars, a->len);
 	memcpy(concat->chars + a->len, b->chars, b->len);
 	concat->chars[new_len] = '\0';
+	concat->len = new_len;
 
 	return concat;
 }
