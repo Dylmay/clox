@@ -273,7 +273,8 @@ static  void __parse_var_decl(parser_t *prsr)
 	parser_consume(prsr, TKN_SEMICOLON,
 		       "Expected ';' after variable declaration.");
 
-	OP_GLOBAL_DEFINE_WRITE(prsr->stack, VAL_CREATE_OBJ(str), def_ln);
+	uint32_t glbl_idx = lookup_by_name(&prsr->stack->vals.lookup, str);
+	OP_GLOBAL_DEFINE_WRITE(prsr->stack, glbl_idx, def_ln);
 }
 
 static void __parse_stmnt(parser_t *prsr)
@@ -306,8 +307,10 @@ static void __parse_var(parser_t *prsr)
 
 	if (prsr->can_assign && parser_match(prsr, TKN_EQ)) {
 		__parse_expr(prsr);
-    OP_GLOBAL_SET_WRITE(prsr->stack, VAL_CREATE_OBJ(str), prsr->previous.line);
+		uint32_t glbl_idx = lookup_by_name(&prsr->stack->vals.lookup, str);
+		OP_GLOBAL_SET_WRITE(prsr->stack, glbl_idx, prsr->previous.line);
 	} else {
-    OP_GLOBAL_GET_WRITE(prsr->stack, VAL_CREATE_OBJ(str), prsr->previous.line);
+		uint32_t glbl_idx = lookup_by_name(&prsr->stack->vals.lookup, str);
+		OP_GLOBAL_GET_WRITE(prsr->stack, glbl_idx, prsr->previous.line);
 	}
 }

@@ -6,12 +6,12 @@
 #include "util/map/hash_util.h"
 
 struct object_str_matcher {
-	matcher_t m;
+	key_matcher_t m;
 	const char *chars;
 	size_t len;
 };
 
-bool match(const void *a, matcher_t *m);
+bool match(const void *a, key_matcher_t *m);
 static struct object_str_matcher __create_matcher(const char *chars,
 						  size_t len);
 
@@ -22,7 +22,11 @@ interner_t intern_new()
 
 void intern_free(interner_t *interner)
 {
-	set_for_each(interner, &object_free);
+	for_each_key_t for_each = (for_each_key_t){
+		.func = (void (*)(void *, struct __for_each_k *)) &object_free,
+	};
+
+	set_for_each(interner, &for_each);
 	set_free(interner);
 }
 
@@ -30,7 +34,7 @@ struct object_str *intern_string(interner_t *interner, const char *chars,
 				 size_t len)
 {
 	struct object_str_matcher matcher = __create_matcher(chars, len);
-	struct object_str *interned = set_find(interner, (matcher_t *)&matcher);
+	struct object_str *interned = set_find(interner, (key_matcher_t *)&matcher);
 
 	if (!interned) {
 		interned = object_str_new(chars, len);
@@ -40,7 +44,7 @@ struct object_str *intern_string(interner_t *interner, const char *chars,
 	return interned;
 }
 
-bool match(const void *a, matcher_t *m)
+bool match(const void *a, key_matcher_t *m)
 {
 	const struct object_str *str = (struct object_str *)a;
 	const struct object_str_matcher *matcher =

@@ -12,7 +12,7 @@ struct value {
 };
 
 struct val_matcher {
-	matcher_t matcher;
+	key_matcher_t matcher;
 	int match_val;
 };
 
@@ -245,7 +245,7 @@ void map_test_get()
 	map_free(&map);
 }
 
-bool match_on_num(const void *entry, matcher_t *matcher)
+bool match_on_num(const void *entry, key_matcher_t *matcher)
 {
 	const struct value *val = (struct value *)entry;
 	const struct val_matcher *val_m = (struct val_matcher *)matcher;
@@ -274,7 +274,7 @@ void map_test_find()
 			.match_val = i,
 		};
 
-		const struct value *val = map_find(&map, (matcher_t *)&matcher);
+		const struct value *val = map_find(&map, (key_matcher_t *)&matcher);
 
 		assert(("Unable to find value", val != NULL));
 		assert(("Retrieved value does not match",
@@ -335,7 +335,7 @@ void map_test_find()
 			.match_val = rand_val,
 		};
 
-		const struct value *val = map_find(&map, (matcher_t *)&matcher);
+		const struct value *val = map_find(&map, (key_matcher_t *)&matcher);
 
 		assert(("Unable to find value", val != NULL));
 		assert(("Retrieved value does not match",
@@ -611,7 +611,7 @@ struct timespec __map_test_find()
 	};
 
 	timer_start(&timer);
-	map_find(&map, (matcher_t *)&matcher);
+	map_find(&map, (key_matcher_t *)&matcher);
 	timer = timer_end(timer);
 
 	map_free(&map);

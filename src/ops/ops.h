@@ -1,8 +1,8 @@
 #ifndef __CLOX_OPS_H__
 #define __CLOX_OPS_H__
 
-#define CONST_LONG_SZ (sizeof(char) * 3)
-#define CONST_LONG_MASK (0x00ffffff)
+#define EXT_CODE_SZ (sizeof(char) * 3)
+#define EXT_CODE_MASK (0x00ffffff)
 
 typedef enum {
 	OP_CONSTANT,
@@ -22,8 +22,11 @@ typedef enum {
 	OP_PRINT,
 	OP_POP,
 	OP_GLOBAL_DEFINE,
+	OP_GLOBAL_DEFINE_LONG,
 	OP_GLOBAL_GET,
+	OP_GLOBAL_GET_LONG,
 	OP_GLOBAL_SET,
+	OP_GLOBAL_SET_LONG,
 	OP_RETURN
 } op_code_t;
 

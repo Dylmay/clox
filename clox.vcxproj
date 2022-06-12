@@ -157,6 +157,7 @@
     <ClCompile Include="src/main.c" />
     <ClCompile Include="src\chunk\chunk.c" />
     <ClCompile Include="src\chunk\interner\interner.c" />
+    <ClCompile Include="src\chunk\lookup\lookup.c" />
     <ClCompile Include="src\compiler\compiler.c" />
     <ClCompile Include="src\debug\disassembler\disassembler.c" />
     <ClCompile Include="src\debug\timer\timer.c" />
@@ -174,6 +175,8 @@
   <ItemGroup>
     <ClInclude Include="src\chunk\chunk.h" />
     <ClInclude Include="src\chunk\interner\interner.h" />
+    <ClInclude Include="src\chunk\lookup\lookup.h" />
+    <ClInclude Include="src\chunk\state.h" />
     <ClInclude Include="src\compiler\compiler.h" />
     <ClInclude Include="src\debug\debug.h" />
     <ClInclude Include="src\debug\disassembler\disassembler.h" />

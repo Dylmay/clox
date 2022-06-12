@@ -6,39 +6,43 @@
 #include "ops.h"
 #include "chunk/chunk.h"
 
-static inline void OP_CONST_WRITE(chunk_t *chunk, lox_val_t const_val, int line)
+static inline void __extended_op(chunk_t *chunk, op_code_t short_op, op_code_t long_op, uint32_t offset, int line)
 {
-	uint32_t const_offset = chunk_write_const(chunk, const_val);
-
-	if (const_offset <= UINT8_MAX) {
-		chunk_write_code(chunk, OP_CONSTANT, line);
-		chunk_write_code(chunk, (code_t)const_offset, line);
+	if (offset <= UINT8_MAX) {
+		chunk_write_code(chunk, short_op, line);
+		chunk_write_code(chunk, (code_t)offset, line);
 	} else {
-		assert(("Max number of consts is 256 * 24",
-			const_offset < 256 * 24));
+		assert(("Max code offset is 256 * 24",
+			offset < 256 * 24));
 
-		chunk_write_code_bulk(chunk, OP_CONSTANT_LONG, line,
-				      &const_offset, 3);
+		chunk_write_code_bulk(chunk, long_op, line,
+				      &offset, EXT_CODE_SZ);
 	}
 }
 
-static inline void OP_GLOBAL_DEFINE_WRITE(chunk_t *chunk, lox_val_t var_name,
+static inline void OP_CONST_WRITE(chunk_t *chunk, lox_val_t const_val, int line)
+{
+	uint32_t const_offset = chunk_write_const(chunk, const_val);
+	__extended_op(chunk, OP_CONSTANT, OP_CONSTANT_LONG, const_offset, line);
+}
+
+static inline void OP_GLOBAL_DEFINE_WRITE(chunk_t *chunk, uint32_t glbl_idx,
 					  int line)
 {
-	OP_CONST_WRITE(chunk, var_name, line);
-	chunk_write_code(chunk, OP_GLOBAL_DEFINE, line);
+	__extended_op(chunk, OP_GLOBAL_DEFINE, OP_GLOBAL_DEFINE_LONG, glbl_idx,
+		      line);
 }
 
-static inline void OP_GLOBAL_GET_WRITE(chunk_t *chunk, lox_val_t var_name, int line)
+static inline void OP_GLOBAL_GET_WRITE(chunk_t *chunk, uint32_t glbl_idx, int line)
 {
-	OP_CONST_WRITE(chunk, var_name, line);
-	chunk_write_code(chunk, OP_GLOBAL_GET, line);
+	__extended_op(chunk, OP_GLOBAL_GET, OP_GLOBAL_GET_LONG, glbl_idx,
+		      line);
 }
 
-static inline void OP_GLOBAL_SET_WRITE(chunk_t *chunk, lox_val_t var_name, int line)
+static inline void OP_GLOBAL_SET_WRITE(chunk_t *chunk, uint32_t glbl_idx, int line)
 {
-	OP_CONST_WRITE(chunk, var_name, line);
-	chunk_write_code(chunk, OP_GLOBAL_SET, line);
+	__extended_op(chunk, OP_GLOBAL_SET, OP_GLOBAL_SET_LONG, glbl_idx,
+		      line);
 }
 
 #define FUNC_NAME_OF(op) op##_WRITE

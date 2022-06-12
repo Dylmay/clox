@@ -4,13 +4,12 @@
 #include "chunk/chunk.h"
 #include "val/object.h"
 #include "util/list/list.h"
-#include "util/map/map.h"
 
 typedef struct {
 	uint8_t *ip;
 	chunk_t chunk;
 	list_t stack;
-	hashmap_t globals;
+	list_t globals;
 	struct object *objects;
 } vm_t;
 

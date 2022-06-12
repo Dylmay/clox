@@ -5,11 +5,6 @@
 #include "util/list/list.h"
 #include "hash.h"
 
-typedef struct __matcher {
-	bool (*is_match)(const void *a, struct __matcher *matcher);
-	hash_t hash;
-} matcher_t;
-
 struct map_entry {
 	void *key;
 	hash_t hash;
@@ -25,6 +20,27 @@ typedef struct {
 	uint8_t *entries;
 	hash_fn hash;
 } hashmap_t;
+
+typedef struct __key_matcher {
+	bool (*is_match)(const void *key, struct __key_matcher *matcher);
+	hash_t hash;
+} key_matcher_t;
+
+typedef struct __val_matcher {
+	bool (*is_match)(const void *value, struct __val_matcher *matcher);
+} val_matcher_t;
+
+typedef struct __for_each_e {
+	void (*func)(struct map_entry *entry, struct __for_each_e *data);
+} for_each_entry_t;
+
+typedef struct __for_each_k {
+	void (*func)(void *key, struct __for_each_k *data);
+} for_each_key_t;
+
+typedef struct __for_each_v {
+	void (*func)(void *value, struct __for_each_v *data);
+} for_each_val_t;
 
 #define MAP_MAX_LOAD 0.75
 
@@ -61,18 +77,15 @@ static inline size_t map_size(const hashmap_t *map)
 
 bool map_insert(hashmap_t *map, void *key, const void *value);
 bool map_remove(hashmap_t *map, const void *key);
-bool map_set(const hashmap_t *map, const void *key, const void *value);
+bool map_set(hashmap_t *map, const void *key, const void *value);
 void map_insert_all(const hashmap_t *from, hashmap_t *to);
 
 void *map_get(const hashmap_t *map, const void *key);
-void *map_find(const hashmap_t *map, matcher_t *matcher);
+void *map_find(const hashmap_t *map, key_matcher_t *matcher);
+void *map_find_key(const hashmap_t *map, val_matcher_t *matcher);
 
-void map_entry_for_each(hashmap_t *map,
-			void (*for_each)(void *key, void *value));
-
-static inline void map_keys_for_each(hashmap_t *map, void (*for_each)(void *key))
-{
-	map_entry_for_each(map, for_each);
-}
+void map_entry_for_each(hashmap_t *map, for_each_entry_t *for_each);
+void map_keys_for_each(hashmap_t *map, for_each_key_t *for_each);
+void map_values_for_each(hashmap_t *map, for_each_val_t *for_each);
 
 #endif // __CLOX_UTIL_MAP_H__

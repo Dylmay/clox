@@ -1,4 +1,5 @@
 #include "chunk.h"
+#include "val/func/object_func.h"
 #include <assert.h>
 
 static struct line_encode __chunk_get_line_encode(chunk_t *chunk, size_t idx);
@@ -115,7 +116,8 @@ void chunk_free(chunk_t *chunk, bool free_state)
 	list_free(&(chunk->lines));
 	list_free(&chunk->consts);
 	if (free_state) {
-    intern_free(&(chunk->vals.strings));
+		intern_free(&(chunk->vals.strings));
+		lookup_free(&chunk->vals.lookup);
 	}
 	chunk->prev_line = 0;
 }

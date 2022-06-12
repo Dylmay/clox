@@ -5,17 +5,13 @@
 #include "val/val.h"
 #include "val/object.h"
 #include "util/list/list.h"
-#include "interner/interner.h"
+#include "state.h"
 
 typedef uint8_t code_t;
 
 struct line_encode {
 	uint32_t offset;
 	uint32_t count;
-};
-
-struct state {
-	interner_t strings;
 };
 
 typedef struct {
@@ -26,17 +22,6 @@ typedef struct {
 	uint32_t prev_line;
 } chunk_t;
 
-static inline struct state state_new()
-{
-	return (struct state){
-    .strings = intern_new(),
-	};
-}
-
-static inline void state_free(struct state *state)
-{
-	intern_free(&state->strings);
-}
 
 chunk_t chunk_new();
 

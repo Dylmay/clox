@@ -63,6 +63,9 @@
     <ClCompile Include="src\util\map\hash_util.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\chunk\lookup\lookup.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\chunk\interner\interner.h">
@@ -138,6 +141,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\map\hash_util.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\chunk\state.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\chunk\lookup\lookup.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

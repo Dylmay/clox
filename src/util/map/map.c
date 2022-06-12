@@ -90,7 +90,7 @@ void *map_get(const hashmap_t *map, const void *key)
 	return NULL;
 }
 
-bool map_set(const hashmap_t *map, const void *key, const void *value)
+bool map_set(hashmap_t *map, const void *key, const void *value)
 {
 	if (!map || !map->cnt) {
 		return false;
@@ -113,11 +113,13 @@ bool map_set(const hashmap_t *map, const void *key, const void *value)
 	} else {
 		memset(entry->value, 0, map->data_sz);
 	}
+
+	return true;
 }
 
-void *map_find(const hashmap_t *map, matcher_t *matcher)
+void *map_find(const hashmap_t *map, key_matcher_t *matcher)
 {
-	if (!map->cnt) {
+	if (!map || !map->cnt) {
 		return NULL;
 	}
 
@@ -138,8 +140,12 @@ void *map_find(const hashmap_t *map, matcher_t *matcher)
 	}
 }
 
-void map_entry_for_each(hashmap_t *map, void (*for_each)(void *key, void* value))
+void *map_find_key(const hashmap_t *map, val_matcher_t *matcher)
 {
+	if (!map || !map->cnt) {
+		return NULL;
+	}
+
 	for (size_t i = 0; i < map->cap; i++) {
 		struct map_entry *entry = ENTRY_AT(map, i);
 
@@ -147,7 +153,62 @@ void map_entry_for_each(hashmap_t *map, void (*for_each)(void *key, void* value)
 			continue;
 		}
 
-		for_each(entry->key, entry->value);
+		if (matcher->is_match(entry->value, matcher)) {
+			return entry->key;
+		}
+	}
+
+	return NULL;
+}
+
+void map_entry_for_each(hashmap_t *map, for_each_entry_t *for_each)
+{
+	if (!map || !map->cnt) {
+		return;
+	}
+
+	for (size_t i = 0; i < map->cap; i++) {
+		struct map_entry *entry = ENTRY_AT(map, i);
+
+		if (entry->key == NULL || entry->tombstoned) {
+			continue;
+		}
+
+		for_each->func(entry, for_each);
+	}
+}
+
+void map_keys_for_each(hashmap_t *map, for_each_key_t *for_each)
+{
+	if (!map || !map->cnt) {
+		return;
+	}
+
+	for (size_t i = 0; i < map->cap; i++) {
+		struct map_entry *entry = ENTRY_AT(map, i);
+
+		if (entry->key == NULL || entry->tombstoned) {
+			continue;
+		}
+
+		for_each->func(entry->key, for_each);
+	}
+}
+
+void map_values_for_each(hashmap_t *map, for_each_val_t *for_each)
+{
+	if (!map || !map->cnt) {
+		return;
+	}
+
+	for (size_t i = 0; i < map->cap; i++) {
+		struct map_entry *entry = ENTRY_AT(map, i);
+
+		if (entry->key == NULL || entry->tombstoned) {
+			continue;
+		}
+
+		for_each->func(entry->value, for_each);
 	}
 }
 
