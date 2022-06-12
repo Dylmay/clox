@@ -3,6 +3,7 @@
 
 #include "val/object.h"
 #include "val_func.h"
+#include "util/map/hash.h"
 
 #define OBJECT_TYPE(obj) (VAL_AS_OBJ(obj)->type)
 #define OBJECT_IS_STRING(obj) (object_is_type(obj, OBJ_STRING))
@@ -22,5 +23,7 @@ struct object_str *object_str_concat(const struct object_str *a,
 bool object_equals(const struct object *a, const struct object *b);
 
 void object_print(lox_val_t val);
+
+hash_t obj_str_gen_hash(const void *key);
 
 #endif // __CLOX_OBJECT_FUNC_H__

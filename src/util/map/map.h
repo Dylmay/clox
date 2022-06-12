@@ -3,9 +3,7 @@
 
 #include <stdbool.h>
 #include "util/list/list.h"
-
-typedef uint32_t hash_t;
-typedef hash_t (*hash_fn)(const void *a);
+#include "hash.h"
 
 typedef struct __matcher {
 	bool (*is_match)(const void *a, struct __matcher *matcher);

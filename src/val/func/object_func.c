@@ -79,6 +79,13 @@ bool object_equals(const struct object *a, const struct object *b)
 	}
 }
 
+hash_t obj_str_gen_hash(const void *key)
+{
+	const struct object_str *str = (const struct object_str *)key;
+
+	return str_gen_hash(str->chars, str->len);
+}
+
 static struct object_str *__create_object_str(const char *chars, size_t str_sz)
 {
 	struct object_str *string = ALLOCATE_OBJECT_STR(str_sz);
