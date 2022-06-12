@@ -28,6 +28,7 @@ static void __parse_var_decl(parser_t *);
 static void __parse_stmnt(parser_t *);
 static void __parse_expr_stmt(parser_t *);
 static void __parse_print(parser_t *);
+static void __parse_var(parser_t *);
 
 static struct parse_rule PARSE_RULES[] = {
 	// single char tokens
@@ -52,7 +53,7 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_GREATER_EQ] = { NULL, __parse_binary, PREC_COMPARISON },
 	[TKN_LESS_EQ] = { NULL, __parse_binary, PREC_COMPARISON },
 	// Literals
-	[TKN_ID] = { NULL, NULL, PREC_NONE },
+	[TKN_ID] = { __parse_var, NULL, PREC_NONE },
 	[TKN_STR] = { __parse_string, NULL, PREC_NONE },
 	[TKN_NUM] = { __parse_number, NULL, PREC_NONE },
 	// Keywords
@@ -267,13 +268,20 @@ static  void __parse_var_decl(parser_t *prsr)
 	OP_GLOBAL_DEFINE_WRITE(prsr->stack, VAL_CREATE_OBJ(str), def_ln);
 }
 
-static void __parse_stmnt(parser_t * prsr)
+static void __parse_stmnt(parser_t *prsr)
 {
 	if (parser_match(prsr, TKN_PRINT)) {
 		__parse_print(prsr);
 	} else {
 		__parse_expr_stmt(prsr);
 	}
+}
+
+static void __parse_expr_stmt(parser_t *prsr)
+{
+	__parse_expr(prsr);
+	parser_consume(prsr, TKN_SEMICOLON, "Expected ';' after expression.");
+	OP_POP_WRITE(prsr->stack, prsr->previous.line);
 }
 
 static void __parse_print(parser_t *prsr)
@@ -283,9 +291,10 @@ static void __parse_print(parser_t *prsr)
 	OP_PRINT_WRITE(prsr->stack, prsr->previous.line);
 }
 
-static void __parse_expr_stmt(parser_t *prsr)
+static void __parse_var(parser_t *prsr)
 {
-	__parse_expr(prsr);
-	parser_consume(prsr, TKN_SEMICOLON, "Expected ';' after expression.");
-	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+	struct object_str *str = chunk_intern_string(
+		prsr->stack, prsr->previous.start, prsr->previous.len);
+
+	OP_GLOBAL_GET_WRITE(prsr->stack, VAL_CREATE_OBJ(str), prsr->previous.line);
 }

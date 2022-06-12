@@ -29,6 +29,12 @@ static inline void OP_GLOBAL_DEFINE_WRITE(chunk_t *chunk, lox_val_t var_name,
 	chunk_write_code(chunk, OP_GLOBAL_DEFINE, line);
 }
 
+static inline void OP_GLOBAL_GET_WRITE(chunk_t *chunk, lox_val_t var_name, int line)
+{
+	OP_CONST_WRITE(chunk, var_name, line);
+	chunk_write_code(chunk, OP_GLOBAL_GET, line);
+}
+
 #define FUNC_NAME_OF(op) op##_WRITE
 #define CREATE_WRITE_FUNC(instr)                                               \
 	static inline void FUNC_NAME_OF(instr)(chunk_t * chunk, int line)      \

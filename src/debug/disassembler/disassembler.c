@@ -45,6 +45,8 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 
 		CASE_SIMPLE_INSTR(OP_GLOBAL_DEFINE);
 
+		CASE_SIMPLE_INSTR(OP_GLOBAL_GET);
+
 		CASE_SIMPLE_INSTR(OP_RETURN);
 
 		CASE_SIMPLE_INSTR(OP_NIL);

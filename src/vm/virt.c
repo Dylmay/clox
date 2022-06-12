@@ -24,11 +24,12 @@ static inline void __vm_assert_inst_ptr_valid(const vm_t *vm);
 static inline char __vm_read_byte(vm_t *vm);
 static inline int __vm_instr_offset(const vm_t *vm);
 static void __vm_runtime_error(vm_t *vm, const char *fmt, ...);
-static void __vm_assign_object(vm_t *vm, struct object *obj);
+static void __vm_assign_object(vm_t *vm, lox_obj_t *obj);
 static void __vm_str_concat(vm_t *vm);
 static void __vm_free_objects(vm_t *vm);
-static void __vm_define_global(vm_t *vm, struct object_str *glbl,
+static void __vm_define_global(vm_t *vm, lox_str_t *glbl,
 			       lox_val_t *val);
+static lox_val_t *__vm_get_global(vm_t *vm, lox_str_t *glbl);
 
 #define VM_PEEK_NUM(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.number)
 #define VM_PEEK_BOOL(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.boolean)
@@ -72,12 +73,12 @@ void vm_free(vm_t *vm)
 	list_free(&vm->stack);
 	__vm_free_objects(vm);
 	map_free(&vm->globals);
-	chunk_free(&vm->chunk);
+	chunk_free(&vm->chunk, true);
 }
 
 void _var_prnt(void *key, void *value)
 {
-	struct object_str* name = (struct object_str *)key;
+	lox_str_t* name = (lox_str_t *)key;
 	lox_val_t val = *((lox_val_t *)value);
 
 	printf("%s = ", name->chars);
@@ -127,7 +128,7 @@ static enum vm_res __vm_run(vm_t *vm)
     printf("\t\t");
 		vm_print_stack(vm);
 		vm_print_globals(vm);
-		disassem_inst(vm->chunk, __vm_instr_offset(vm));
+		disassem_inst(&vm->chunk, __vm_instr_offset(vm));
 #endif // DEBUG_TRACE_EXECUTION
 
 		switch (instr = __vm_read_byte(vm)) {
@@ -216,12 +217,28 @@ static enum vm_res __vm_run(vm_t *vm)
 			break;
 
 		case OP_GLOBAL_DEFINE: {
-			struct object_str* glbl = __vm_pop_const(vm).as.obj;
+			lox_str_t* glbl = (lox_str_t*)__vm_pop_const(vm).as.obj;
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
 			__vm_define_global(vm, glbl, val);
 			__vm_pop_const(vm);
-		
+
 		}	break;
+
+		case OP_GLOBAL_GET: {
+			lox_str_t *glbl =
+				(lox_str_t *)__vm_pop_const(vm).as.obj;
+
+			lox_val_t* val = __vm_get_global(vm, glbl);
+
+			if (!val) {
+				__vm_runtime_error(vm,
+						   "Undefined variable '%s'.",
+						   glbl->chars);
+
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			__vm_push_const(vm, *(val));
+		} break;
 
 		case OP_RETURN:
 			return INTERPRET_OK;
@@ -237,9 +254,14 @@ static enum vm_res __vm_run(vm_t *vm)
 #undef COMPARISON_OP
 }
 
-static void __vm_define_global(vm_t *vm, struct object_str *glbl, lox_val_t* val)
+static void __vm_define_global(vm_t *vm, lox_str_t *glbl, lox_val_t* val)
 {
 	map_insert(&vm->globals, glbl, val);
+}
+
+static lox_val_t *__vm_get_global(vm_t *vm, lox_str_t *glbl)
+{
+	map_get(&vm->globals, glbl);
 }
 
 static void __vm_proc_const(vm_t *vm)
@@ -319,20 +341,20 @@ static inline char __vm_read_byte(vm_t *vm)
 
 static inline int __vm_instr_offset(const vm_t *vm)
 {
-	return (int)(vm->ip - vm->chunk->code.data);
+	return (int)(vm->ip - vm->chunk.code.data);
 }
 
 static void __vm_str_concat(vm_t *vm)
 {
-	const struct object_str *b_str = OBJECT_AS_STRING(__vm_pop_const(vm));
-	const struct object_str *a_str = OBJECT_AS_STRING(__vm_pop_const(vm));
-	struct object_str *concat_str = object_str_concat(a_str, b_str);
+	const lox_str_t *b_str = OBJECT_AS_STRING(__vm_pop_const(vm));
+	const lox_str_t *a_str = OBJECT_AS_STRING(__vm_pop_const(vm));
+	lox_str_t *concat_str = object_str_concat(a_str, b_str);
 
-	__vm_assign_object(vm, (struct object *)concat_str);
+	__vm_assign_object(vm, (lox_obj_t*)concat_str);
 	__vm_push_const(vm, VAL_CREATE_OBJ(concat_str));
 }
 
-static void __vm_assign_object(vm_t *vm, struct object *obj)
+static void __vm_assign_object(vm_t *vm, lox_obj_t *obj)
 {
 	obj->next = vm->objects;
 	vm->objects = obj->next;
@@ -340,10 +362,10 @@ static void __vm_assign_object(vm_t *vm, struct object *obj)
 
 static void __vm_free_objects(vm_t *vm)
 {
-	struct object *obj = vm->objects;
+	lox_obj_t *obj = vm->objects;
 
 	while (obj) {
-		struct object *next = obj->next;
+		lox_obj_t *next = obj->next;
 		object_free(obj);
 		obj = next;
 	}
