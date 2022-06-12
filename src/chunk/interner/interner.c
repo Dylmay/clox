@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "val/func/object_func.h"
-#include "util/hash_util.h"
+#include "util/map/hash_util.h"
 
 struct object_str_matcher {
 	matcher_t m;

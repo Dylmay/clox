@@ -1,6 +1,7 @@
 #include "object_func.h"
 
 #include "util/mem/mem.h"
+#include "util/map/hash_util.h"
 
 #include <stdio.h>
 #include <string.h>

@@ -60,7 +60,7 @@
     <ClCompile Include="src\vm\virt.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\util\hash_util.c">
+    <ClCompile Include="src\util\map\hash_util.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -137,7 +137,7 @@
     <ClInclude Include="src\util\map\hash.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\util\hash_util.h">
+    <ClInclude Include="src\util\map\hash_util.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

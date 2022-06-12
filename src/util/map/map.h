@@ -71,7 +71,7 @@ void map_entry_for_each(hashmap_t *map,
 
 static inline void map_keys_for_each(hashmap_t *map, void (*for_each)(void *key))
 {
-	return map_entry_for_each(map, for_each);
+	map_entry_for_each(map, for_each);
 }
 
 #endif // __CLOX_UTIL_MAP_H__

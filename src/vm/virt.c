@@ -10,7 +10,7 @@
 #include "val/func/val_func.h"
 #include "val/func/object_func.h"
 #include "compiler/compiler.h"
-#include "util/hash_util.h"
+#include "util/map/hash_util.h"
 
 static enum vm_res __vm_run(vm_t *vm);
 static void __vm_push_const(vm_t *vm, lox_val_t val);

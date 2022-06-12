@@ -163,8 +163,8 @@
     <ClCompile Include="src\lexer\keywords\keywords.c" />
     <ClCompile Include="src\lexer\lexer.c" />
     <ClCompile Include="src\parser\parser.c" />
-    <ClCompile Include="src\util\hash_util.c" />
     <ClCompile Include="src\util\list\list.c" />
+    <ClCompile Include="src\util\map\hash_util.c" />
     <ClCompile Include="src\util\map\map.c" />
     <ClCompile Include="src\util\mem\mem.c" />
     <ClCompile Include="src\val\func\object_func.c" />
@@ -190,9 +190,9 @@
     <ClInclude Include="src\util\common.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="src\util\hash_util.h" />
     <ClInclude Include="src\util\list\list.h" />
     <ClInclude Include="src\util\map\hash.h" />
+    <ClInclude Include="src\util\map\hash_util.h" />
     <ClInclude Include="src\util\map\map.h" />
     <ClInclude Include="src\util\map\set.h" />
     <ClInclude Include="src\util\mem\mem.h" />
