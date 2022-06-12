@@ -12,6 +12,7 @@ typedef struct {
 	token_t previous;
 	bool had_err;
 	bool panic_mode;
+	bool can_assign;
 } parser_t;
 
 typedef void (*parse_fn)(parser_t *);

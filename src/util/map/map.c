@@ -90,6 +90,31 @@ void *map_get(const hashmap_t *map, const void *key)
 	return NULL;
 }
 
+bool map_set(const hashmap_t *map, const void *key, const void *value)
+{
+	if (!map || !map->cnt) {
+		return false;
+	}
+
+	hash_t hash = map->hash(key);
+	struct map_entry *entry = __map_find(map, key, hash);
+
+	if (!entry || entry->key != key) {
+		return false;
+	}
+
+	if (entry->tombstoned) {
+		__entry_revive(map, entry);
+	}
+
+	entry->hash = hash;
+	if (value) {
+		memcpy(entry->value, value, map->data_sz);
+	} else {
+		memset(entry->value, 0, map->data_sz);
+	}
+}
+
 void *map_find(const hashmap_t *map, matcher_t *matcher)
 {
 	if (!map->cnt) {

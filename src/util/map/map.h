@@ -61,6 +61,7 @@ static inline size_t map_size(const hashmap_t *map)
 
 bool map_insert(hashmap_t *map, void *key, const void *value);
 bool map_remove(hashmap_t *map, const void *key);
+bool map_set(const hashmap_t *map, const void *key, const void *value);
 void map_insert_all(const hashmap_t *from, hashmap_t *to);
 
 void *map_get(const hashmap_t *map, const void *key);

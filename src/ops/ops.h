@@ -23,6 +23,7 @@ typedef enum {
 	OP_POP,
 	OP_GLOBAL_DEFINE,
 	OP_GLOBAL_GET,
+	OP_GLOBAL_SET,
 	OP_RETURN
 } op_code_t;
 

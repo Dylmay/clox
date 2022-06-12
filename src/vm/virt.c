@@ -30,6 +30,7 @@ static void __vm_free_objects(vm_t *vm);
 static void __vm_define_global(vm_t *vm, lox_str_t *glbl,
 			       lox_val_t *val);
 static lox_val_t *__vm_get_global(vm_t *vm, lox_str_t *glbl);
+static bool __vm_set_global(vm_t *vm, lox_str_t *glbl, lox_val_t *val);
 
 #define VM_PEEK_NUM(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.number)
 #define VM_PEEK_BOOL(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.boolean)
@@ -240,6 +241,18 @@ static enum vm_res __vm_run(vm_t *vm)
 			__vm_push_const(vm, *(val));
 		} break;
 
+		case OP_GLOBAL_SET: {
+			lox_str_t *glbl =
+				(lox_str_t *)__vm_pop_const(vm).as.obj;
+
+			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+			if (!__vm_set_global(vm, glbl, val)) {
+				__vm_runtime_error(vm, "Undefined variable '%s'.",
+						   glbl->chars);
+				return INTERPRET_RUNTIME_ERROR;
+			}
+		}
+
 		case OP_RETURN:
 			return INTERPRET_OK;
 
@@ -261,7 +274,12 @@ static void __vm_define_global(vm_t *vm, lox_str_t *glbl, lox_val_t* val)
 
 static lox_val_t *__vm_get_global(vm_t *vm, lox_str_t *glbl)
 {
-	map_get(&vm->globals, glbl);
+	return map_get(&vm->globals, glbl);
+}
+
+static bool __vm_set_global(vm_t *vm, lox_str_t *glbl, lox_val_t *val)
+{
+	return map_set(&vm->globals, glbl, val);
 }
 
 static void __vm_proc_const(vm_t *vm)

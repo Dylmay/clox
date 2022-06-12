@@ -35,7 +35,7 @@ static inline struct state state_new()
 
 static inline void state_free(struct state *state)
 {
-	inter_free(&state->strings);
+	intern_free(&state->strings);
 }
 
 chunk_t chunk_new();

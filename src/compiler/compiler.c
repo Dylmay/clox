@@ -197,11 +197,19 @@ static void __parse_precedence(parser_t *prsr, enum precedence prec)
 		return;
 	}
 
+	prsr->can_assign = prec <= PREC_ASSIGNMENT;
 	prefix_rule(prsr);
 
 	while (prec <= __compiler_get_rule(prsr->current.type)->prec) {
 		parser_advance(prsr);
-		__compiler_get_rule(prsr->previous.type)->infix(prsr);
+		parse_fn infix_rule =
+			__compiler_get_rule(prsr->previous.type)->infix;
+
+		infix_rule(prsr);
+	}
+
+	if (prsr->can_assign && parser_match(prsr, TKN_EQ)) {
+		parser_error_at_previous(prsr, "Invalid assignment target.");
 	}
 }
 
@@ -296,5 +304,10 @@ static void __parse_var(parser_t *prsr)
 	struct object_str *str = chunk_intern_string(
 		prsr->stack, prsr->previous.start, prsr->previous.len);
 
-	OP_GLOBAL_GET_WRITE(prsr->stack, VAL_CREATE_OBJ(str), prsr->previous.line);
+	if (prsr->can_assign && parser_match(prsr, TKN_EQ)) {
+		__parse_expr(prsr);
+    OP_GLOBAL_SET_WRITE(prsr->stack, VAL_CREATE_OBJ(str), prsr->previous.line);
+	} else {
+    OP_GLOBAL_GET_WRITE(prsr->stack, VAL_CREATE_OBJ(str), prsr->previous.line);
+	}
 }
