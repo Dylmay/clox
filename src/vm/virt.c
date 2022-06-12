@@ -10,6 +10,7 @@
 #include "val/func/val_func.h"
 #include "val/func/object_func.h"
 #include "compiler/compiler.h"
+#include "util/hash_util.h"
 
 static enum vm_res __vm_run(vm_t *vm);
 static void __vm_push_const(vm_t *vm, lox_val_t val);
@@ -26,6 +27,8 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...);
 static void __vm_assign_object(vm_t *vm, struct object *obj);
 static void __vm_str_concat(vm_t *vm);
 static void __vm_free_objects(vm_t *vm);
+static void __vm_define_global(vm_t *vm, struct object_str *glbl,
+			       lox_val_t *val);
 
 #define VM_PEEK_NUM(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.number)
 #define VM_PEEK_BOOL(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.boolean)
@@ -36,6 +39,7 @@ vm_t vm_init()
 		NULL,
 		NULL,
 		list_of_type(lox_val_t),
+		map_of_type(lox_val_t, &obj_str_gen_hash),
 		NULL,
 	};
 	list_reset(&vm.stack);
@@ -49,7 +53,6 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 	chunk_t chunk = chunk_new();
 
 	if (!compile(src, &chunk)) {
-		chunk_free(&chunk);
 		return INTERPRET_COMPILE_ERROR;
 	}
 
@@ -57,7 +60,6 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 	vm->ip = vm->chunk->code.data;
 
 	res = __vm_run(vm);
-	chunk_free(&chunk);
 	return res;
 }
 
@@ -65,6 +67,33 @@ void vm_free(vm_t *vm)
 {
 	list_free(&vm->stack);
 	__vm_free_objects(vm);
+	map_free(&vm->globals);
+	chunk_free(&vm->chunk);
+}
+
+void _var_prnt(void *key, void *value)
+{
+	struct object_str* name = (struct object_str *)key;
+	lox_val_t val = *((lox_val_t *)value);
+
+	printf("%s = ", name->chars);
+	val_print(val);
+	puts("");
+}
+
+void vm_print_globals(vm_t *vm)
+{
+	map_entry_for_each(&vm->globals, &_var_prnt);
+}
+
+void vm_print_stack(vm_t *vm)
+{
+	printf("[");
+  for (size_t idx = 0; idx < vm->stack.cnt; idx++) {
+    val_print(*((lox_val_t *)list_get(&vm->stack, idx)));
+    printf(", ");
+  }
+  puts("]");
 }
 
 static enum vm_res __vm_run(vm_t *vm)
@@ -91,12 +120,9 @@ static enum vm_res __vm_run(vm_t *vm)
 	while (true) {
 		uint8_t instr;
 #ifdef DEBUG_TRACE_EXECUTION
-		printf("\t\t[");
-		for (size_t idx = 0; idx < vm->stack.cnt; idx++) {
-			val_print(*((lox_val_t *)list_get(&vm->stack, idx)));
-			printf(", ");
-		}
-		puts("]");
+    printf("\t\t");
+		vm_print_stack(vm);
+		vm_print_globals(vm);
 		disassem_inst(vm->chunk, __vm_instr_offset(vm));
 #endif // DEBUG_TRACE_EXECUTION
 
@@ -185,6 +211,14 @@ static enum vm_res __vm_run(vm_t *vm)
 						    __vm_pop_const(vm))));
 			break;
 
+		case OP_GLOBAL_DEFINE: {
+			struct object_str* glbl = __vm_pop_const(vm).as.obj;
+			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+			__vm_define_global(vm, glbl, val);
+			__vm_pop_const(vm);
+		
+		}	break;
+
 		case OP_RETURN:
 			return INTERPRET_OK;
 
@@ -197,6 +231,11 @@ static enum vm_res __vm_run(vm_t *vm)
 #undef BINARY_OP
 #undef NUMERICAL_OP
 #undef COMPARISON_OP
+}
+
+static void __vm_define_global(vm_t *vm, struct object_str *glbl, lox_val_t* val)
+{
+	map_insert(&vm->globals, glbl, val);
 }
 
 static void __vm_proc_const(vm_t *vm)
@@ -256,7 +295,7 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 	va_end(args);
 	fputs("\n", stderr);
 
-	size_t offset = __vm_instr_offset(vm) - 1;
+	size_t offset = ((size_t)__vm_instr_offset(vm)) - 1;
 	int line = chunk_get_line(vm->chunk, offset);
 	fprintf(stderr, "Lox Runtime Error at line %d\n", line);
 	list_reset(&vm->stack);

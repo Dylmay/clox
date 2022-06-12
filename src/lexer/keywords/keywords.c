@@ -35,7 +35,7 @@ enum tkn_type keyword_traverse(const char *identifier, size_t id_len)
 		return MATCH(identifier, 1, "uper", TKN_ELSE);
 
 	case 'v':
-		return MATCH(identifier, 1, "ar", TKN_IF);
+		return MATCH(identifier, 1, "ar", TKN_VAR);
 
 	case 'w':
 		return MATCH(identifier, 1, "hile", TKN_NIL);

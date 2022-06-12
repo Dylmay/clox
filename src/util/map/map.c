@@ -113,7 +113,7 @@ void *map_find(const hashmap_t *map, matcher_t *matcher)
 	}
 }
 
-void map_keys_for_each(hashmap_t *map, void (*for_each)(void *key))
+void map_entry_for_each(hashmap_t *map, void (*for_each)(void *key, void* value))
 {
 	for (size_t i = 0; i < map->cap; i++) {
 		struct map_entry *entry = ENTRY_AT(map, i);
@@ -122,7 +122,7 @@ void map_keys_for_each(hashmap_t *map, void (*for_each)(void *key))
 			continue;
 		}
 
-		for_each(entry->key);
+		for_each(entry->key, entry->value);
 	}
 }
 

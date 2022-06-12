@@ -8,8 +8,8 @@
 
 static inline void OP_CONST_WRITE(chunk_t *chunk, lox_val_t const_val, int line)
 {
-	size_t const_offset = chunk_write_const(chunk, const_val);
-	
+	uint32_t const_offset = chunk_write_const(chunk, const_val);
+
 	if (const_offset <= UINT8_MAX) {
 		chunk_write_code(chunk, OP_CONSTANT, line);
 		chunk_write_code(chunk, (code_t)const_offset, line);
@@ -20,6 +20,13 @@ static inline void OP_CONST_WRITE(chunk_t *chunk, lox_val_t const_val, int line)
 		chunk_write_code_bulk(chunk, OP_CONSTANT_LONG, line,
 				      &const_offset, 3);
 	}
+}
+
+static inline void OP_GLOBAL_DEFINE_WRITE(chunk_t *chunk, lox_val_t var_name,
+					  int line)
+{
+	OP_CONST_WRITE(chunk, var_name, line);
+	chunk_write_code(chunk, OP_GLOBAL_DEFINE, line);
 }
 
 #define FUNC_NAME_OF(op) op##_WRITE

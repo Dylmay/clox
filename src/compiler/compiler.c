@@ -24,7 +24,9 @@ static void __parse_number(parser_t *);
 static void __parse_lit(parser_t *);
 static void __parse_string(parser_t *);
 static void __parse_decl(parser_t *);
+static void __parse_var_decl(parser_t *);
 static void __parse_stmnt(parser_t *);
+static void __parse_expr_stmt(parser_t *);
 static void __parse_print(parser_t *);
 
 static struct parse_rule PARSE_RULES[] = {
@@ -234,7 +236,35 @@ static void __parse_string(parser_t *prsr)
 
 static void __parse_decl(parser_t * prsr)
 {
-	__parse_stmnt(prsr);
+	if (parser_match(prsr, TKN_VAR)) {
+		__parse_var_decl(prsr);
+	} else {
+    __parse_stmnt(prsr);
+	}
+
+	if (prsr->panic_mode) {
+		parser_sync(prsr);
+	}
+}
+
+static  void __parse_var_decl(parser_t *prsr)
+{
+	parser_consume(prsr, TKN_ID, "Expected variable name");
+
+	int def_ln = prsr->previous.line;
+	struct object_str *str = chunk_intern_string(
+		prsr->stack, prsr->previous.start, prsr->previous.len);
+
+	if (parser_match(prsr, TKN_EQ)) {
+		__parse_expr(prsr);
+	} else {
+		OP_NIL_WRITE(prsr->stack, prsr->previous.line);
+	}
+
+	parser_consume(prsr, TKN_SEMICOLON,
+		       "Expected ';' after variable declaration.");
+
+	OP_GLOBAL_DEFINE_WRITE(prsr->stack, VAL_CREATE_OBJ(str), def_ln);
 }
 
 static void __parse_stmnt(parser_t * prsr)

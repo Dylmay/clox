@@ -43,6 +43,8 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 	case OP_CONSTANT_LONG:
 		return __const_long_instr("OP_CONSTANT_LONG", chunk, offset);
 
+		CASE_SIMPLE_INSTR(OP_GLOBAL_DEFINE);
+
 		CASE_SIMPLE_INSTR(OP_RETURN);
 
 		CASE_SIMPLE_INSTR(OP_NIL);

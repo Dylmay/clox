@@ -66,6 +66,12 @@ void map_insert_all(const hashmap_t *from, hashmap_t *to);
 void *map_get(const hashmap_t *map, const void *key);
 void *map_find(const hashmap_t *map, matcher_t *matcher);
 
-void map_keys_for_each(hashmap_t *map, void (*for_each)(void *key));
+void map_entry_for_each(hashmap_t *map,
+			void (*for_each)(void *key, void *value));
+
+static inline void map_keys_for_each(hashmap_t *map, void (*for_each)(void *key))
+{
+	return map_entry_for_each(map, for_each);
+}
 
 #endif // __CLOX_UTIL_MAP_H__
