@@ -3,15 +3,31 @@
 
 static struct line_encode __chunk_get_line_encode(chunk_t *chunk, size_t idx);
 
+chunk_t chunk_using_state(struct state state)
+{
+	return (chunk_t){
+		.code = list_of_type(code_t),
+		.consts = list_of_type(lox_val_t),
+		.vals = state,
+		.lines = list_of_type(struct line_encode),
+		.prev_line = 0,
+	};
+}
+
 chunk_t chunk_new()
 {
 	return (chunk_t){
-		list_of_type(code_t),
-		list_of_type(struct line_encode),
-		list_of_type(lox_val_t),
-		intern_new(),
-		0,
+		.code = list_of_type(code_t),
+		.consts = list_of_type(lox_val_t),
+		.vals = state_new(),
+		.lines = list_of_type(struct line_encode),
+		.prev_line = 0,
 	};
+}
+
+bool chunk_has_state(chunk_t *chunk)
+{
+	return chunk->vals.strings.cnt != 0;
 }
 
 struct line_encode line_encode_diff(int begin_pos, int end_pos)
@@ -93,12 +109,14 @@ lox_val_t chunk_get_const(chunk_t *chunk, size_t offset)
 	return *((lox_val_t *)list_get(&chunk->consts, offset));
 }
 
-void chunk_free(chunk_t *chunk)
+void chunk_free(chunk_t *chunk, bool free_state)
 {
 	list_free(&(chunk->code));
-	list_free(&(chunk->consts));
 	list_free(&(chunk->lines));
-	intern_free(&(chunk->strings));
+	list_free(&chunk->consts);
+	if (free_state) {
+    intern_free(&(chunk->vals.strings));
+	}
 	chunk->prev_line = 0;
 }
 
@@ -109,5 +127,5 @@ static struct line_encode __chunk_get_line_encode(chunk_t *chunk, size_t idx)
 struct object_str *chunk_intern_string(chunk_t *chunk, const char *chars,
 				       size_t len)
 {
-	return intern_string(&chunk->strings, chars, len);
+	return intern_string(&chunk->vals.strings, chars, len);
 }

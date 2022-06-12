@@ -7,8 +7,8 @@
 #include "util/map/map.h"
 
 typedef struct {
-	chunk_t *chunk;
 	uint8_t *ip;
+	chunk_t chunk;
 	list_t stack;
 	hashmap_t globals;
 	struct object *objects;

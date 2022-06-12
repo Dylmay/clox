@@ -37,7 +37,7 @@ vm_t vm_init()
 {
 	vm_t vm = (vm_t){
 		NULL,
-		NULL,
+		chunk_new(),
 		list_of_type(lox_val_t),
 		map_of_type(lox_val_t, &obj_str_gen_hash),
 		NULL,
@@ -50,14 +50,18 @@ vm_t vm_init()
 enum vm_res vm_interpret(vm_t *vm, const char *src)
 {
 	enum vm_res res;
-	chunk_t chunk = chunk_new();
 
-	if (!compile(src, &chunk)) {
+	if (chunk_has_state(&vm->chunk)) {
+		chunk_t prev_chunk = vm->chunk;
+		vm->chunk = chunk_using_state(vm->chunk.vals);
+		chunk_free(&prev_chunk, false);
+	}
+
+	if (!compile(src, &vm->chunk)) {
 		return INTERPRET_COMPILE_ERROR;
 	}
 
-	vm->chunk = &chunk;
-	vm->ip = vm->chunk->code.data;
+	vm->ip = vm->chunk.code.data;
 
 	res = __vm_run(vm);
 	return res;
@@ -241,13 +245,13 @@ static void __vm_define_global(vm_t *vm, struct object_str *glbl, lox_val_t* val
 static void __vm_proc_const(vm_t *vm)
 {
 	__vm_assert_inst_ptr_valid(vm);
-	__vm_push_const(vm, chunk_get_const(vm->chunk, __vm_read_byte(vm)));
+	__vm_push_const(vm, chunk_get_const(&vm->chunk, __vm_read_byte(vm)));
 }
 
 static void __vm_proc_const_long(vm_t *vm)
 {
 #define GET_CONST_LONG()                                                       \
-	chunk_get_const(vm->chunk, *((uint32_t *)vm->ip) & CONST_LONG_MASK)
+	chunk_get_const(&vm->chunk, *((uint32_t *)vm->ip) & CONST_LONG_MASK)
 
 	__vm_assert_inst_ptr_valid(vm);
 	__vm_push_const(vm, GET_CONST_LONG());
@@ -296,7 +300,7 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 	fputs("\n", stderr);
 
 	size_t offset = ((size_t)__vm_instr_offset(vm)) - 1;
-	int line = chunk_get_line(vm->chunk, offset);
+	int line = chunk_get_line(&vm->chunk, offset);
 	fprintf(stderr, "Lox Runtime Error at line %d\n", line);
 	list_reset(&vm->stack);
 }
@@ -304,8 +308,8 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 static inline void __vm_assert_inst_ptr_valid(const vm_t *vm)
 {
 	assert(("Instruction pointer has passed code end",
-		vm->ip < vm->chunk->code.data + (vm->chunk->code.cnt *
-						 vm->chunk->code.type_sz)));
+		vm->ip < vm->chunk.code.data + (vm->chunk.code.cnt *
+						 vm->chunk.code.type_sz)));
 }
 
 static inline char __vm_read_byte(vm_t *vm)

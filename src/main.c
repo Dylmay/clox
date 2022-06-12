@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include "util/common.h"
-#include "chunk/chunk.h"
 #include "vm/virt.h"
 
 static void __run_repl(vm_t *vm);
@@ -13,7 +12,6 @@ static void __proc_cmd(const char *cmd, const size_t cmd_sz);
 
 int main(int argc, const char *argv[])
 {
-	chunk_t chunk = chunk_new();
 	vm_t virt = vm_init();
 
 	if (argc == 1) {
@@ -25,7 +23,6 @@ int main(int argc, const char *argv[])
 		exit(64);
 	}
 
-	chunk_free(&chunk);
 	vm_free(&virt);
 	return 0;
 }
