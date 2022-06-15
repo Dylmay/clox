@@ -23,7 +23,7 @@ interner_t intern_new()
 void intern_free(interner_t *interner)
 {
 	for_each_key_t for_each = (for_each_key_t){
-		.func = (void (*)(void *, struct __for_each_k *)) &object_free,
+		.func = (void (*)(void *, struct __for_each_k *)) & object_free,
 	};
 
 	set_for_each(interner, &for_each);
@@ -34,7 +34,8 @@ struct object_str *intern_string(interner_t *interner, const char *chars,
 				 size_t len)
 {
 	struct object_str_matcher matcher = __create_matcher(chars, len);
-	struct object_str *interned = set_find(interner, (key_matcher_t *)&matcher);
+	struct object_str *interned =
+		set_find(interner, (key_matcher_t *)&matcher);
 
 	if (!interned) {
 		interned = object_str_new(chars, len);
@@ -42,6 +43,20 @@ struct object_str *intern_string(interner_t *interner, const char *chars,
 	}
 
 	return interned;
+}
+
+struct object_str *intern_get_str(const interner_t *interner,
+				  const struct object_str *str)
+{
+	struct object_str_matcher matcher =
+		__create_matcher(str->chars, str->len);
+
+	return set_find(interner, (key_matcher_t *)&matcher);
+}
+
+bool intern_insert(interner_t *interner, struct object_str *str)
+{
+	return set_insert(interner, str);
 }
 
 bool match(const void *a, key_matcher_t *m)
