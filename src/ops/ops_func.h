@@ -6,17 +6,17 @@
 #include "ops.h"
 #include "chunk/chunk.h"
 
-static inline void __extended_op(chunk_t *chunk, op_code_t short_op, op_code_t long_op, uint32_t offset, int line)
+static inline void __extended_op(chunk_t *chunk, op_code_t short_op,
+				 op_code_t long_op, uint32_t offset, int line)
 {
 	if (offset <= UINT8_MAX) {
 		chunk_write_code(chunk, short_op, line);
 		chunk_write_code(chunk, (code_t)offset, line);
 	} else {
-		assert(("Max code offset is 256 * 24",
-			offset < 256 * 24));
+		assert(("Max code offset is 256 * 24", offset < EXT_CODE_MAX));
 
-		chunk_write_code_bulk(chunk, long_op, line,
-				      &offset, EXT_CODE_SZ);
+		chunk_write_code_bulk(chunk, long_op, line, &offset,
+				      EXT_CODE_SZ);
 	}
 }
 
@@ -33,16 +33,16 @@ static inline void OP_GLOBAL_DEFINE_WRITE(chunk_t *chunk, uint32_t glbl_idx,
 		      line);
 }
 
-static inline void OP_GLOBAL_GET_WRITE(chunk_t *chunk, uint32_t glbl_idx, int line)
+static inline void OP_GLOBAL_GET_WRITE(chunk_t *chunk, uint32_t glbl_idx,
+				       int line)
 {
-	__extended_op(chunk, OP_GLOBAL_GET, OP_GLOBAL_GET_LONG, glbl_idx,
-		      line);
+	__extended_op(chunk, OP_GLOBAL_GET, OP_GLOBAL_GET_LONG, glbl_idx, line);
 }
 
-static inline void OP_GLOBAL_SET_WRITE(chunk_t *chunk, uint32_t glbl_idx, int line)
+static inline void OP_GLOBAL_SET_WRITE(chunk_t *chunk, uint32_t glbl_idx,
+				       int line)
 {
-	__extended_op(chunk, OP_GLOBAL_SET, OP_GLOBAL_SET_LONG, glbl_idx,
-		      line);
+	__extended_op(chunk, OP_GLOBAL_SET, OP_GLOBAL_SET_LONG, glbl_idx, line);
 }
 
 #define FUNC_NAME_OF(op) op##_WRITE

@@ -37,13 +37,12 @@ static uint32_t __vm_proc_idx_ext(vm_t *vm);
 
 struct var_printer {
 	for_each_entry_t for_each;
-	list_t* vm_globals;
+	list_t *vm_globals;
 };
 
 vm_t vm_init()
 {
-	vm_t vm = (vm_t)
-	{
+	vm_t vm = (vm_t){
 		.chunk = chunk_new(),
 		.globals = list_of_type(lox_val_t),
 		.stack = list_of_type(lox_val_t),
@@ -92,10 +91,10 @@ void vm_free(vm_t *vm)
 void _var_prnt(struct map_entry *entry, for_each_entry_t *d)
 {
 	struct var_printer *data = (struct var_printer *)d;
-	lox_str_t* name = (lox_str_t *)entry->key;
-	uint32_t idx  = *((uint32_t *)entry->value);
+	lox_str_t *name = (lox_str_t *)entry->key;
+	uint32_t idx = *((uint32_t *)entry->value);
 
-	printf("\t(%u) %s: ", idx , name->chars);
+	printf("\t(%u) %s: ", idx, name->chars);
 	val_print(*((lox_val_t *)list_get(data->vm_globals, idx)));
 	puts("");
 }
@@ -110,18 +109,19 @@ void vm_print_globals(vm_t *vm)
 	};
 
 	puts("Globals: {");
-	map_entry_for_each(&vm->chunk.vals.lookup, (for_each_entry_t *) &glbl_prnt);
+	map_entry_for_each(&vm->chunk.vals.lookup,
+			   (for_each_entry_t *)&glbl_prnt);
 	puts("}");
 }
 
 void vm_print_stack(vm_t *vm)
 {
 	printf("[");
-  for (size_t idx = 0; idx < vm->stack.cnt; idx++) {
-    val_print(*((lox_val_t *)list_get(&vm->stack, idx)));
-    printf(", ");
-  }
-  puts("]");
+	for (size_t idx = 0; idx < vm->stack.cnt; idx++) {
+		val_print(*((lox_val_t *)list_get(&vm->stack, idx)));
+		printf(", ");
+	}
+	puts("]");
 }
 
 static enum vm_res __vm_run(vm_t *vm)
@@ -148,7 +148,7 @@ static enum vm_res __vm_run(vm_t *vm)
 	while (true) {
 		uint8_t instr;
 #ifdef DEBUG_TRACE_EXECUTION
-    printf("\t\t");
+		printf("\t\t");
 		vm_print_stack(vm);
 		disassem_inst(&vm->chunk, __vm_instr_offset(vm));
 #endif // DEBUG_TRACE_EXECUTION
@@ -256,34 +256,36 @@ static enum vm_res __vm_run(vm_t *vm)
 
 		case OP_GLOBAL_GET: {
 			uint32_t idx = __vm_proc_idx(vm);
-			lox_val_t* val = __vm_get_global(vm, idx);
+			lox_val_t *val = __vm_get_global(vm, idx);
 
 			if (!val) {
-				lox_str_t *expected = lookup_by_index(
+				lox_str_t *expected = lookup_find(
 					&vm->chunk.vals.lookup, idx);
 
-        __vm_runtime_error(vm,"Undefined variable '%s'.",
-              expected->chars);
+				__vm_runtime_error(vm,
+						   "Undefined variable '%s'.",
+						   expected->chars);
 				lookup_remove(&vm->chunk.vals.lookup, expected);
 
-        return INTERPRET_RUNTIME_ERROR;
+				return INTERPRET_RUNTIME_ERROR;
 			}
-			__vm_push_const(vm, *(val));
+			__vm_push_const(vm, *val);
 		} break;
 
-    case OP_GLOBAL_GET_LONG: {
+		case OP_GLOBAL_GET_LONG: {
 			uint32_t idx = __vm_proc_idx_ext(vm);
-			lox_val_t* val = __vm_get_global(vm, idx);
+			lox_val_t *val = __vm_get_global(vm, idx);
 
 			if (!val) {
-				lox_str_t *expected = lookup_by_index(
+				lox_str_t *expected = lookup_find(
 					&vm->chunk.vals.lookup, idx);
 
-        __vm_runtime_error(vm,"Undefined variable '%s'.",
-              expected->chars);
+				__vm_runtime_error(vm,
+						   "Undefined variable '%s'.",
+						   expected->chars);
 				lookup_remove(&vm->chunk.vals.lookup, expected);
 
-        return INTERPRET_RUNTIME_ERROR;
+				return INTERPRET_RUNTIME_ERROR;
 			}
 			__vm_push_const(vm, *(val));
 		} break;
@@ -293,9 +295,12 @@ static enum vm_res __vm_run(vm_t *vm)
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
 
 			if (!__vm_set_global(vm, idx, val)) {
-				__vm_runtime_error(vm, "Undefined variable '%s'.",
-							lookup_by_index(&vm->chunk.vals.lookup, idx)->chars);
-				lookup_remove(&vm->chunk.vals.lookup, val->as.obj);
+				__vm_runtime_error(
+					vm, "Undefined variable '%s'.",
+					lookup_find(&vm->chunk.vals.lookup, idx)
+						->chars);
+				lookup_remove(&vm->chunk.vals.lookup,
+					      val->as.obj);
 				return INTERPRET_RUNTIME_ERROR;
 			}
 		} break;
@@ -305,9 +310,12 @@ static enum vm_res __vm_run(vm_t *vm)
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
 
 			if (!__vm_set_global(vm, idx, val)) {
-				__vm_runtime_error(vm, "Undefined variable '%s'.",
-							lookup_by_index(&vm->chunk.vals.lookup, idx)->chars);
-				lookup_remove(&vm->chunk.vals.lookup, val->as.obj);
+				__vm_runtime_error(
+					vm, "Undefined variable '%s'.",
+					lookup_find(&vm->chunk.vals.lookup, idx)
+						->chars);
+				lookup_remove(&vm->chunk.vals.lookup,
+					      val->as.obj);
 				return INTERPRET_RUNTIME_ERROR;
 			}
 		} break;
@@ -326,7 +334,7 @@ static enum vm_res __vm_run(vm_t *vm)
 #undef COMPARISON_OP
 }
 
-static void __vm_define_global(vm_t *vm, lox_val_t* val)
+static void __vm_define_global(vm_t *vm, lox_val_t *val)
 {
 	list_push(&vm->globals, val);
 }
@@ -337,7 +345,7 @@ static lox_val_t *__vm_get_global(vm_t *vm, uint32_t glbl)
 		return NULL;
 	}
 
-	return (lox_val_t *) list_get(&vm->globals, glbl);
+	return (lox_val_t *)list_get(&vm->globals, glbl);
 }
 
 static bool __vm_set_global(vm_t *vm, uint32_t glbl, lox_val_t *val)
@@ -346,11 +354,10 @@ static bool __vm_set_global(vm_t *vm, uint32_t glbl, lox_val_t *val)
 		return false;
 	}
 
-	lox_val_t *val_ptr = (lox_val_t *) list_get(&vm->globals, glbl);
+	lox_val_t *val_ptr = (lox_val_t *)list_get(&vm->globals, glbl);
 	memcpy(val_ptr, val, sizeof(lox_val_t));
 	return true;
 }
-
 
 static uint32_t __vm_proc_idx(vm_t *vm)
 {
@@ -421,7 +428,7 @@ static inline void __vm_assert_inst_ptr_valid(const vm_t *vm)
 {
 	assert(("Instruction pointer has passed code end",
 		vm->ip < vm->chunk.code.data + (vm->chunk.code.cnt *
-						 vm->chunk.code.type_sz)));
+						vm->chunk.code.type_sz)));
 }
 
 static inline char __vm_read_byte(vm_t *vm)

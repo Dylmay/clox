@@ -3,6 +3,7 @@
 
 #define EXT_CODE_SZ (sizeof(char) * 3)
 #define EXT_CODE_MASK (0x00ffffff)
+#define EXT_CODE_MAX (UINT8_MAX * 24)
 
 typedef enum {
 	OP_CONSTANT,

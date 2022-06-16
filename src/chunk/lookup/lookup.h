@@ -15,8 +15,12 @@ typedef hashmap_t lookup_t;
 
 lookup_t lookup_new();
 
-uint32_t lookup_by_name(lookup_t *lookup, lox_str_t *name);
-lox_str_t *lookup_by_index(lookup_t *lookup, uint32_t idx);
-bool lookup_has_name(lookup_t *lookup, lox_str_t *name);
+uint32_t lookup_by_name(lookup_t *lookup, const lox_str_t *name);
+lox_str_t *lookup_find(const lookup_t *lookup, uint32_t idx);
+bool lookup_has_name(const lookup_t *lookup, const lox_str_t *name);
+
+lookup_t *lookup_root(lookup_t *lookup);
+lookup_t *lookup_new_scope(lookup_t *lookup);
+lookup_t *lookup_end_scope(lookup_t *lookup);
 
 #endif // __CLOX_CHUNK_LOOKUP_H__

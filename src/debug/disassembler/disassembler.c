@@ -50,7 +50,8 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 		return __global_instr("OP_GLOBAL_DEFINE", chunk, offset);
 
 	case OP_GLOBAL_DEFINE_LONG:
-		return __global_long_instr("OP_GLOBAL_DEFINE_LONG", chunk, offset);
+		return __global_long_instr("OP_GLOBAL_DEFINE_LONG", chunk,
+					   offset);
 
 	case OP_GLOBAL_SET:
 		return __global_instr("OP_GLOBAL_SET", chunk, offset);
@@ -141,14 +142,14 @@ static size_t __global_instr(const char *name, chunk_t *chunk, uint32_t offset)
 	code_t idx = chunk_get_code(chunk, offset + 1);
 
 	printf(" %-20s | %5d | ", name, idx);
-	val_print(VAL_CREATE_OBJ(lookup_by_index(&chunk->vals.lookup, idx)));
+	val_print(VAL_CREATE_OBJ(lookup_find(&chunk->vals.lookup, idx)));
 	puts("");
 
 	return offset + 2;
 }
 
 static size_t __global_long_instr(const char *name, chunk_t *chunk,
-				 uint32_t offset)
+				  uint32_t offset)
 {
 #define GET_CONST_POS()                                                        \
 	(*((uint32_t *)list_get(&chunk->code, offset + 1)) & EXT_CODE_MASK)
@@ -156,7 +157,7 @@ static size_t __global_long_instr(const char *name, chunk_t *chunk,
 	uint32_t idx = GET_CONST_POS();
 
 	printf(" %-20s | %5d | ", name, idx);
-	val_print(VAL_CREATE_OBJ(lookup_by_index(&chunk->vals.lookup, idx)));
+	val_print(VAL_CREATE_OBJ(lookup_find(&chunk->vals.lookup, idx)));
 	puts("");
 
 	return offset + 1 + EXT_CODE_SZ;
