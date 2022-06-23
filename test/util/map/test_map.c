@@ -274,7 +274,8 @@ void map_test_find()
 			.match_val = i,
 		};
 
-		const struct value *val = map_find(&map, (key_matcher_t *)&matcher);
+		const struct value *val =
+			map_find(&map, (key_matcher_t *)&matcher);
 
 		assert(("Unable to find value", val != NULL));
 		assert(("Retrieved value does not match",
@@ -335,7 +336,8 @@ void map_test_find()
 			.match_val = rand_val,
 		};
 
-		const struct value *val = map_find(&map, (key_matcher_t *)&matcher);
+		const struct value *val =
+			map_find(&map, (key_matcher_t *)&matcher);
 
 		assert(("Unable to find value", val != NULL));
 		assert(("Retrieved value does not match",
@@ -343,6 +345,8 @@ void map_test_find()
 	}
 
 	list_free(&chosen_rands);
+	map_free(&map);
+	free(vals);
 }
 
 struct timespec __map_bench_insert()
@@ -615,6 +619,7 @@ struct timespec __map_test_find()
 	timer = timer_end(timer);
 
 	map_free(&map);
+	free(values);
 
 	return timer;
 }

@@ -4,6 +4,7 @@
 #include "util/map/test_map.h"
 #include "util/list/test_list.h"
 #include "util/map/test_map.h"
+#include "util/tree/test_tree.h"
 
 void print_num(void *val)
 {
@@ -15,4 +16,5 @@ int main(int argc, const char *argv[])
 	list_test_all();
 	map_test_all();
 	map_bench_all();
+	tree_test_all();
 }
