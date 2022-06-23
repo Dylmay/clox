@@ -22,11 +22,10 @@ typedef struct {
 	uint32_t prev_line;
 } chunk_t;
 
-
 chunk_t chunk_new();
 
 chunk_t chunk_using_state(struct state state);
-bool chunk_has_state(chunk_t *chunk);
+bool chunk_has_state(const chunk_t *chunk);
 
 size_t chunk_write_code(chunk_t *chunk, code_t code, int line);
 size_t chunk_write_code_bulk(chunk_t *chunk, code_t code, int line,

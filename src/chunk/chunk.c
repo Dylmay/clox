@@ -26,7 +26,7 @@ chunk_t chunk_new()
 	};
 }
 
-bool chunk_has_state(chunk_t *chunk)
+bool chunk_has_state(const chunk_t *chunk)
 {
 	return chunk->vals.strings.cnt != 0;
 }

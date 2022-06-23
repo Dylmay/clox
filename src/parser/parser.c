@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-bool parser_check(parser_t *prsr, enum tkn_type type)
+bool parser_check(const parser_t *prsr, enum tkn_type type)
 {
 	return prsr->current.type == type;
 }
@@ -44,7 +44,7 @@ void parser_consume(parser_t *prsr, enum tkn_type tkn, const char *err_msg)
 parser_t parser_new(const char *source, chunk_t *chunk)
 {
 	lexer_t lexer = lexer_init(source);
-	parser_t prsr = (parser_t) { lexer, chunk };
+	parser_t prsr = (parser_t){ lexer, chunk };
 
 	parser_advance(&prsr);
 
@@ -71,7 +71,7 @@ void parser_error(parser_t *prsr, const token_t *tkn, const char *msg)
 	prsr->panic_mode = true;
 }
 
-void parser_sync(parser_t* prsr)
+void parser_sync(parser_t *prsr)
 {
 	prsr->panic_mode = false;
 
@@ -81,18 +81,18 @@ void parser_sync(parser_t* prsr)
 		}
 
 		switch (prsr->current.type) {
-			case TKN_CLS:
-      case TKN_FN:
-      case TKN_VAR:
-      case TKN_FOR:
-      case TKN_IF:
-      case TKN_WHILE:
-      case TKN_PRINT:
-      case TKN_RET:
-        return;
+		case TKN_CLS:
+		case TKN_FN:
+		case TKN_VAR:
+		case TKN_FOR:
+		case TKN_IF:
+		case TKN_WHILE:
+		case TKN_PRINT:
+		case TKN_RET:
+			return;
 
-			default:
-        break;
+		default:
+			break;
 		}
 
 		parser_advance(prsr);

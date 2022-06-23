@@ -61,9 +61,9 @@ bool intern_insert(interner_t *interner, struct object_str *str)
 
 bool match(const void *a, key_matcher_t *m)
 {
-	const struct object_str *str = (struct object_str *)a;
+	const struct object_str *str = (const struct object_str *)a;
 	const struct object_str_matcher *matcher =
-		(struct object_str_matcher *)m;
+		(const struct object_str_matcher *)m;
 
 	return str->len == matcher->len &&
 	       memcmp(str->chars, matcher->chars, matcher->len) == 0;

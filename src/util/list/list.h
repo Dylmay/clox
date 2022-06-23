@@ -12,6 +12,8 @@ typedef struct list {
 	uint8_t *head;
 } list_t;
 
+typedef void (*for_each_fn)(void *);
+
 #define list_of_type(elem_type) (list_new(sizeof(elem_type)))
 
 size_t list_write_to(list_t *lst, const void *restrict value);
@@ -50,6 +52,6 @@ static inline size_t list_cap(const list_t *lst)
 	return lst->cap;
 }
 
-void list_for_each (list_t *lst, const void (*func)(void *));
+void list_for_each (list_t *lst, for_each_fn fn);
 
 #endif // __CLOX_UTIL_LIST_H__

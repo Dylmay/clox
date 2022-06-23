@@ -38,7 +38,7 @@ struct parse_rule {
 };
 
 parser_t parser_new(const char *source, chunk_t *chunk);
-bool parser_check(parser_t *prsr, enum tkn_type type);
+bool parser_check(const parser_t *prsr, enum tkn_type type);
 bool parser_match(parser_t *prsr, enum tkn_type type);
 void parser_advance(parser_t *prsr);
 void parser_consume(parser_t *prsr, enum tkn_type tkn, const char *err_msg);
