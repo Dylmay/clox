@@ -4,13 +4,14 @@
 #include "chunk/chunk.h"
 #include "val/object.h"
 #include "util/list/list.h"
+#include "util/list/linked_list.h"
 
 typedef struct {
 	uint8_t *ip;
 	chunk_t chunk;
 	list_t stack;
 	list_t globals;
-	struct object *objects;
+	linked_list_t objects;
 } vm_t;
 
 enum vm_res { INTERPRET_OK, INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR };

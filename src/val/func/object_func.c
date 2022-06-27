@@ -85,7 +85,7 @@ hash_t obj_str_gen_hash(const void *key)
 {
 	const struct object_str *str = (const struct object_str *)key;
 
-	return str_gen_hash(str->chars, str->len);
+	return c_str_gen_hash(str->chars, str->len);
 }
 
 static struct object_str *__create_object_str(const char *chars, size_t str_sz)
@@ -104,7 +104,6 @@ static struct object *__allocate_object(size_t obj_sz,
 {
 	struct object *obj = (struct object *)reallocate(NULL, 0, obj_sz);
 	obj->type = obj_type;
-	obj->next = NULL;
 
 	return obj;
 }

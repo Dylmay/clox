@@ -11,6 +11,7 @@
 #include "val/func/object_func.h"
 #include "compiler/compiler.h"
 #include "util/map/hash_util.h"
+#include "util/list/list_iterator.h"
 
 static enum vm_res __vm_run(vm_t *vm);
 static void __vm_push_const(vm_t *vm, lox_val_t val);
@@ -47,7 +48,7 @@ vm_t vm_init()
 		.globals = list_of_type(lox_val_t),
 		.stack = list_of_type(lox_val_t),
 		.ip = NULL,
-		.objects = NULL,
+		.objects = linked_list_of_type(lox_obj_t *),
 	};
 	list_reset(&vm.stack);
 
@@ -464,18 +465,17 @@ static void __vm_str_concat(vm_t *vm)
 
 static void __vm_assign_object(vm_t *vm, lox_obj_t *obj)
 {
-	obj->next = vm->objects;
-	vm->objects = obj->next;
+	linked_list_insert_back(&vm->objects, obj);
 }
 
 static void __vm_free_objects(vm_t *vm)
 {
-	lox_obj_t *obj = vm->objects;
+	list_iterator_t iter = list_iter(vm->objects, true);
 
-	while (obj) {
-		lox_obj_t *next = obj->next;
-		object_free(obj);
-		obj = next;
+	while (list_iter_has_next(&iter)) {
+		lox_obj_t *next = list_iter_next(&iter);
+		object_free(next);
 	}
-	vm->objects = NULL;
+	linked_list_free(vm->objects);
+}
 }

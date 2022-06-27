@@ -9,7 +9,6 @@ enum object_type {
 
 struct object {
 	enum object_type type;
-	struct object *next;
 };
 
 struct object_str {
