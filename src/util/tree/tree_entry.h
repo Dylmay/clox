@@ -24,7 +24,8 @@ static inline void tree_entry_set_parent(tree_entry_t *restrict entry,
 	entry->parent = parent;
 }
 
-static inline tree_entry_t *tree_entry_get_parent(tree_entry_t *restrict entry)
+static inline tree_entry_t *
+tree_entry_get_parent(const tree_entry_t *restrict entry)
 {
 	return entry->parent;
 }

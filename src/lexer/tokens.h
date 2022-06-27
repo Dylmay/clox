@@ -28,6 +28,7 @@ enum tkn_type {
 	TKN_STR,
 	TKN_NUM,
 	// Keywords
+	TKN_MUT,
 	TKN_AND,
 	TKN_CLS,
 	TKN_ELSE,
@@ -43,7 +44,7 @@ enum tkn_type {
 	TKN_THIS,
 	TKN_TRUE,
 	TKN_WHILE,
-	TKN_VAR,
+	TKN_LET,
 	TKN_ERR,
 	TKN_EOF
 };

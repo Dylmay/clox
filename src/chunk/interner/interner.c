@@ -22,8 +22,8 @@ interner_t intern_new()
 
 void intern_free(interner_t *interner)
 {
-	for_each_key_t for_each = (for_each_key_t){
-		.func = (void (*)(void *, struct __for_each_k *)) & object_free,
+	set_for_each_t for_each = (set_for_each_t){
+		.func = (void (*)(void *, set_for_each_t *)) & object_free,
 	};
 
 	set_for_each(interner, &for_each);
@@ -72,7 +72,7 @@ bool match(const void *a, key_matcher_t *m)
 static struct object_str_matcher __create_matcher(const char *chars, size_t len)
 {
 	return (struct object_str_matcher){
-		.m = { .is_match = &match, .hash = str_gen_hash(chars, len) },
+		.m = { .is_match = &match, .hash = c_str_gen_hash(chars, len) },
 		.len = len,
 		.chars = chars,
 	};

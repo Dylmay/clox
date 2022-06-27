@@ -15,6 +15,7 @@
 
 static const struct parse_rule *__compiler_get_rule(enum tkn_type);
 
+static void __parse_block(parser_t *prsr);
 static void __parse_expr(parser_t *);
 static void __parse_precedence(parser_t *, enum precedence);
 static void __parse_unary(parser_t *);
@@ -71,7 +72,7 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_THIS] = { NULL, NULL, PREC_NONE },
 	[TKN_TRUE] = { __parse_lit, NULL, PREC_NONE },
 	[TKN_FALSE] = { __parse_lit, NULL, PREC_NONE },
-	[TKN_VAR] = { NULL, NULL, PREC_NONE },
+	[TKN_LET] = { NULL, NULL, PREC_NONE },
 	[TKN_WHILE] = { NULL, NULL, PREC_NONE },
 	[TKN_ERR] = { NULL, NULL, PREC_NONE },
 	[TKN_EOF] = { NULL, NULL, PREC_NONE },
@@ -114,8 +115,7 @@ static void __parse_number(parser_t *prsr)
 static void __parse_grouping(parser_t *prsr)
 {
 	__parse_expr(prsr);
-	parser_consume(prsr, TKN_RIGHT_PAREN,
-				 "Expect ')' after expression.");
+	parser_consume(prsr, TKN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
 static void __parse_unary(parser_t *prsr)
@@ -243,12 +243,12 @@ static void __parse_string(parser_t *prsr)
 		       prsr->previous.line);
 }
 
-static void __parse_decl(parser_t * prsr)
+static void __parse_decl(parser_t *prsr)
 {
-	if (parser_match(prsr, TKN_VAR)) {
+	if (parser_match(prsr, TKN_LET)) {
 		__parse_var_decl(prsr);
 	} else {
-    __parse_stmnt(prsr);
+		__parse_stmnt(prsr);
 	}
 
 	if (prsr->panic_mode) {
@@ -256,13 +256,19 @@ static void __parse_decl(parser_t * prsr)
 	}
 }
 
-static  void __parse_var_decl(parser_t *prsr)
+static void __parse_var_decl(parser_t *prsr)
 {
+	bool is_mutable = parser_match(prsr, TKN_MUT);
 	parser_consume(prsr, TKN_ID, "Expected variable name");
 
 	int def_ln = prsr->previous.line;
-	struct object_str *str = chunk_intern_string(
-		prsr->stack, prsr->previous.start, prsr->previous.len);
+	const char *name = prsr->previous.start;
+	size_t len = prsr->previous.len;
+
+	if (lookup_scope_has_name(&prsr->stack->vals.lookup, name, len)) {
+		parser_error_at_previous(prsr,
+					 "Variables cannot be redefined.");
+	}
 
 	if (parser_match(prsr, TKN_EQ)) {
 		__parse_expr(prsr);
@@ -273,17 +279,42 @@ static  void __parse_var_decl(parser_t *prsr)
 	parser_consume(prsr, TKN_SEMICOLON,
 		       "Expected ';' after variable declaration.");
 
-	uint32_t glbl_idx = lookup_by_name(&prsr->stack->vals.lookup, str);
-	OP_GLOBAL_DEFINE_WRITE(prsr->stack, glbl_idx, def_ln);
+	if (!prsr->had_err) {
+		lookup_var_t glbl_idx = lookup_scope_define(
+			&prsr->stack->vals.lookup, name, len,
+			is_mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_NO_FLAGS);
+
+		OP_VAR_DEFINE_WRITE(prsr->stack, glbl_idx.idx, def_ln);
+	} else {
+		OP_VAR_DEFINE_WRITE(prsr->stack, 0, def_ln);
+	}
 }
 
 static void __parse_stmnt(parser_t *prsr)
 {
 	if (parser_match(prsr, TKN_PRINT)) {
 		__parse_print(prsr);
+	} else if (parser_match(prsr, TKN_LEFT_BRACE)) {
+		chunk_start_scope(prsr->stack);
+		__parse_block(prsr);
+		OP_POP_COUNT_WRITE(
+			prsr->stack,
+			map_size(lookup_cur_scope(&prsr->stack->vals.lookup)),
+			prsr->previous.line);
+		chunk_end_scope(prsr->stack);
 	} else {
 		__parse_expr_stmt(prsr);
 	}
+}
+
+static void __parse_block(parser_t *prsr)
+{
+	while (!parser_check(prsr, TKN_RIGHT_BRACE) &&
+	       !parser_check(prsr, TKN_EOF)) {
+		__parse_decl(prsr);
+	}
+
+	parser_consume(prsr, TKN_RIGHT_BRACE, "Expected '}' after block.");
 }
 
 static void __parse_expr_stmt(parser_t *prsr)
@@ -302,15 +333,24 @@ static void __parse_print(parser_t *prsr)
 
 static void __parse_var(parser_t *prsr)
 {
-	struct object_str *str = chunk_intern_string(
-		prsr->stack, prsr->previous.start, prsr->previous.len);
+	token_t name_tkn = prsr->previous;
+
+	lookup_var_t var = lookup_find_name(&prsr->stack->vals.lookup,
+					    name_tkn.start, name_tkn.len);
+
+	if (lookup_var_is_invalid(var)) {
+		parser_error_at_previous(prsr, "Unknown identifier");
+	}
 
 	if (prsr->can_assign && parser_match(prsr, TKN_EQ)) {
 		__parse_expr(prsr);
-		uint32_t glbl_idx = lookup_by_name(&prsr->stack->vals.lookup, str);
-		OP_GLOBAL_SET_WRITE(prsr->stack, glbl_idx, prsr->previous.line);
+
+		if (!lookup_var_is_mutable(var)) {
+			parser_error(prsr, &name_tkn, "Variable isn't mutable");
+		}
+
+		OP_VAR_SET_WRITE(prsr->stack, var.idx, prsr->previous.line);
 	} else {
-		uint32_t glbl_idx = lookup_by_name(&prsr->stack->vals.lookup, str);
-		OP_GLOBAL_GET_WRITE(prsr->stack, glbl_idx, prsr->previous.line);
+		OP_VAR_GET_WRITE(prsr->stack, var.idx, prsr->previous.line);
 	}
 }

@@ -26,23 +26,26 @@ static inline void OP_CONST_WRITE(chunk_t *chunk, lox_val_t const_val, int line)
 	__extended_op(chunk, OP_CONSTANT, OP_CONSTANT_LONG, const_offset, line);
 }
 
-static inline void OP_GLOBAL_DEFINE_WRITE(chunk_t *chunk, uint32_t glbl_idx,
-					  int line)
-{
-	__extended_op(chunk, OP_GLOBAL_DEFINE, OP_GLOBAL_DEFINE_LONG, glbl_idx,
-		      line);
-}
-
-static inline void OP_GLOBAL_GET_WRITE(chunk_t *chunk, uint32_t glbl_idx,
+static inline void OP_VAR_DEFINE_WRITE(chunk_t *chunk, uint32_t glbl_idx,
 				       int line)
 {
-	__extended_op(chunk, OP_GLOBAL_GET, OP_GLOBAL_GET_LONG, glbl_idx, line);
+	__extended_op(chunk, OP_VAR_DEFINE, OP_VAR_DEFINE_LONG, glbl_idx, line);
 }
 
-static inline void OP_GLOBAL_SET_WRITE(chunk_t *chunk, uint32_t glbl_idx,
-				       int line)
+static inline void OP_VAR_GET_WRITE(chunk_t *chunk, uint32_t glbl_idx, int line)
 {
-	__extended_op(chunk, OP_GLOBAL_SET, OP_GLOBAL_SET_LONG, glbl_idx, line);
+	__extended_op(chunk, OP_VAR_GET, OP_VAR_GET_LONG, glbl_idx, line);
+}
+
+static inline void OP_VAR_SET_WRITE(chunk_t *chunk, uint32_t glbl_idx, int line)
+{
+	__extended_op(chunk, OP_VAR_SET, OP_VAR_SET_LONG, glbl_idx, line);
+}
+
+static inline void OP_POP_COUNT_WRITE(chunk_t *chunk, uint32_t cnt, int line)
+{
+	chunk_write_code(chunk, OP_POP_COUNT, line);
+	chunk_write_code(chunk, (code_t)cnt, line);
 }
 
 #define FUNC_NAME_OF(op) op##_WRITE

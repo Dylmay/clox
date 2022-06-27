@@ -9,11 +9,6 @@
 
 typedef uint8_t code_t;
 
-struct line_encode {
-	uint32_t offset;
-	uint32_t count;
-};
-
 typedef struct {
 	list_t code;
 	list_t lines;
@@ -25,7 +20,6 @@ typedef struct {
 chunk_t chunk_new();
 
 chunk_t chunk_using_state(struct state state);
-bool chunk_has_state(const chunk_t *chunk);
 
 size_t chunk_write_code(chunk_t *chunk, code_t code, int line);
 size_t chunk_write_code_bulk(chunk_t *chunk, code_t code, int line,
@@ -41,5 +35,8 @@ struct object_str *chunk_intern_string(chunk_t *chunk, const char *chars,
 code_t chunk_get_code(chunk_t *chunk, size_t offset);
 int chunk_get_line(chunk_t *chunk, size_t offset);
 lox_val_t chunk_get_const(chunk_t *chunk, size_t offset);
+
+void chunk_start_scope(chunk_t *chunk);
+void chunk_end_scope(chunk_t *chunk);
 
 #endif // __CLOX_CHUNK_H__

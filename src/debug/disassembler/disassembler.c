@@ -7,9 +7,10 @@
 static size_t __simple_instr(const char *, size_t);
 static size_t __const_instr(const char *, chunk_t *, uint32_t);
 static size_t __const_long_instr(const char *, chunk_t *, uint32_t);
-static size_t __global_instr(const char *name, chunk_t *chunk, uint32_t offset);
-static size_t __global_long_instr(const char *name, chunk_t *chunk,
-				  uint32_t offset);
+static size_t __var_instr(const char *, chunk_t *, uint32_t);
+static size_t __var_long_instr(const char *, chunk_t *, uint32_t);
+static size_t __pop_count_instr(const char *, chunk_t *, uint32_t);
+static uint32_t __get_ext_pos(chunk_t *, uint32_t);
 
 void disassem_chunk(chunk_t *chnk, const char *name)
 {
@@ -46,24 +47,26 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 	case OP_CONSTANT_LONG:
 		return __const_long_instr("OP_CONSTANT_LONG", chunk, offset);
 
-	case OP_GLOBAL_DEFINE:
-		return __global_instr("OP_GLOBAL_DEFINE", chunk, offset);
+	case OP_VAR_DEFINE:
+		return __var_instr("OP_VAR_DEFINE", chunk, offset);
 
-	case OP_GLOBAL_DEFINE_LONG:
-		return __global_long_instr("OP_GLOBAL_DEFINE_LONG", chunk,
-					   offset);
+	case OP_VAR_DEFINE_LONG:
+		return __var_long_instr("OP_VAR_DEFINE", chunk, offset);
 
-	case OP_GLOBAL_SET:
-		return __global_instr("OP_GLOBAL_SET", chunk, offset);
+	case OP_VAR_SET:
+		return __var_instr("OP_VAR_SET", chunk, offset);
 
-	case OP_GLOBAL_SET_LONG:
-		return __global_long_instr("OP_GLOBAL_SET_LONG", chunk, offset);
+	case OP_VAR_SET_LONG:
+		return __var_long_instr("OP_VAR_SET_LONG", chunk, offset);
 
-	case OP_GLOBAL_GET:
-		return __global_instr("OP_GLOBAL_GET", chunk, offset);
+	case OP_VAR_GET:
+		return __var_instr("OP_VAR_GET", chunk, offset);
 
-	case OP_GLOBAL_GET_LONG:
-		return __global_long_instr("OP_GLOBAL_GET_LONG", chunk, offset);
+	case OP_VAR_GET_LONG:
+		return __var_long_instr("OP_VAR_GET_LONG", chunk, offset);
+
+	case OP_POP_COUNT:
+		return __pop_count_instr("OP_POP_COUNT", chunk, offset);
 
 		CASE_SIMPLE_INSTR(OP_RETURN);
 
@@ -105,7 +108,7 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 
 static size_t __simple_instr(const char *name, size_t offset)
 {
-	printf("%s\n", name);
+	printf(" %s\n", name);
 
 	return offset + 1;
 }
@@ -126,7 +129,7 @@ static size_t __const_long_instr(const char *name, chunk_t *chunk,
 #define GET_CONST_POS()                                                        \
 	(*((uint32_t *)list_get(&chunk->code, offset + 1)) & EXT_CODE_MASK)
 
-	uint32_t const_offset = GET_CONST_POS();
+	uint32_t const_offset = __get_ext_pos(chunk, offset);
 
 	printf(" %-20s | %5d | ", name, const_offset);
 	val_print(chunk_get_const(chunk, const_offset));
@@ -134,32 +137,39 @@ static size_t __const_long_instr(const char *name, chunk_t *chunk,
 	puts("");
 
 	return offset + 4;
-#undef GET_CONST_POS
 }
 
-static size_t __global_instr(const char *name, chunk_t *chunk, uint32_t offset)
+static size_t __var_instr(const char *name, chunk_t *chunk, uint32_t offset)
 {
-	code_t idx = chunk_get_code(chunk, offset + 1);
-
-	printf(" %-20s | %5d | ", name, idx);
-	val_print(VAL_CREATE_OBJ(lookup_find(&chunk->vals.lookup, idx)));
+	code_t var_pos = chunk_get_code(chunk, offset + 1);
+	printf(" %-20s | %5d | ", name, var_pos);
 	puts("");
 
 	return offset + 2;
 }
 
-static size_t __global_long_instr(const char *name, chunk_t *chunk,
-				  uint32_t offset)
+static size_t __var_long_instr(const char *name, chunk_t *chunk,
+			       uint32_t offset)
 {
-#define GET_CONST_POS()                                                        \
-	(*((uint32_t *)list_get(&chunk->code, offset + 1)) & EXT_CODE_MASK)
-
-	uint32_t idx = GET_CONST_POS();
-
-	printf(" %-20s | %5d | ", name, idx);
-	val_print(VAL_CREATE_OBJ(lookup_find(&chunk->vals.lookup, idx)));
+	uint32_t var_pos = __get_ext_pos(chunk, offset);
+	printf(" %-20s | %5d | ", name, var_pos);
 	puts("");
 
-	return offset + 1 + EXT_CODE_SZ;
-#undef GET_CONST_POS
+	return offset + 2;
+}
+
+static size_t __pop_count_instr(const char *name, chunk_t *chunk,
+				uint32_t offset)
+{
+	code_t pop_cnt = chunk_get_code(chunk, offset + 1);
+	printf(" %-20s | %5d | ", name, pop_cnt);
+	puts("");
+
+	return offset + 2;
+}
+
+static uint32_t __get_ext_pos(chunk_t *chunk, uint32_t offset)
+{
+	return *((uint32_t *)list_get(&chunk->code, offset + 1)) &
+	       EXT_CODE_MASK;
 }

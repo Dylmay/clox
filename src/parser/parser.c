@@ -83,7 +83,7 @@ void parser_sync(parser_t *prsr)
 		switch (prsr->current.type) {
 		case TKN_CLS:
 		case TKN_FN:
-		case TKN_VAR:
+		case TKN_LET:
 		case TKN_FOR:
 		case TKN_IF:
 		case TKN_WHILE:

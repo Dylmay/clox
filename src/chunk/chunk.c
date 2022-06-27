@@ -2,6 +2,11 @@
 #include "val/func/object_func.h"
 #include <assert.h>
 
+struct line_encode {
+	uint32_t offset;
+	uint32_t count;
+};
+
 static struct line_encode __chunk_get_line_encode(chunk_t *chunk, size_t idx);
 
 chunk_t chunk_using_state(struct state state)
@@ -24,11 +29,6 @@ chunk_t chunk_new()
 		.lines = list_of_type(struct line_encode),
 		.prev_line = 0,
 	};
-}
-
-bool chunk_has_state(const chunk_t *chunk)
-{
-	return chunk->vals.strings.cnt != 0;
 }
 
 struct line_encode line_encode_diff(int begin_pos, int end_pos)
@@ -112,14 +112,23 @@ lox_val_t chunk_get_const(chunk_t *chunk, size_t offset)
 
 void chunk_free(chunk_t *chunk, bool free_state)
 {
-	list_free(&(chunk->code));
-	list_free(&(chunk->lines));
+	list_free(&chunk->code);
+	list_free(&chunk->lines);
 	list_free(&chunk->consts);
 	if (free_state) {
-		intern_free(&(chunk->vals.strings));
-		lookup_free(&chunk->vals.lookup);
+		state_free(&chunk->vals);
 	}
 	chunk->prev_line = 0;
+}
+
+void chunk_start_scope(chunk_t *chunk)
+{
+	lookup_begin_scope(&chunk->vals.lookup);
+}
+
+void chunk_end_scope(chunk_t *chunk)
+{
+	lookup_end_scope(&chunk->vals.lookup);
 }
 
 static struct line_encode __chunk_get_line_encode(chunk_t *chunk, size_t idx)
