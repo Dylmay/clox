@@ -5,7 +5,7 @@
 #include "util/list/list.h"
 #include "hash.h"
 
-struct map_entry {
+struct __map_entry {
 	void *key;
 	hash_t hash;
 	bool tombstoned;
@@ -21,6 +21,11 @@ typedef struct {
 	hash_fn hash;
 } hashmap_t;
 
+typedef struct {
+	void *key;
+	void *value;
+} map_entry_t;
+
 typedef struct __key_matcher {
 	bool (*is_match)(const void *key, struct __key_matcher *matcher);
 	hash_t hash;
@@ -31,16 +36,8 @@ typedef struct __val_matcher {
 } val_matcher_t;
 
 typedef struct __for_each_e {
-	void (*func)(struct map_entry *entry, struct __for_each_e *data);
+	void (*func)(map_entry_t entry, struct __for_each_e *data);
 } for_each_entry_t;
-
-typedef struct __for_each_k {
-	void (*func)(void *key, struct __for_each_k *data);
-} for_each_key_t;
-
-typedef struct __for_each_v {
-	void (*func)(void *value, struct __for_each_v *data);
-} for_each_val_t;
 
 #define MAP_MAX_LOAD 0.75
 
@@ -63,7 +60,7 @@ void map_adjust_capacity(hashmap_t *map, size_t cap);
 static inline void map_free(hashmap_t *map)
 {
 	reallocate(map->entries,
-		   (sizeof(struct map_entry) + map->data_sz) * map->cap, 0);
+		   (sizeof(struct __map_entry) + map->data_sz) * map->cap, 0);
 	map->cap = 0;
 	map->cnt = 0;
 	map->tomb_cnt = 0;
@@ -81,11 +78,9 @@ bool map_set(hashmap_t *map, const void *key, const void *value);
 void map_insert_all(const hashmap_t *from, hashmap_t *to);
 
 void *map_get(const hashmap_t *map, const void *key);
-void *map_find(const hashmap_t *map, key_matcher_t *matcher);
-void *map_find_key(const hashmap_t *map, val_matcher_t *matcher);
+map_entry_t map_find_by_key(const hashmap_t *map, key_matcher_t *matcher);
+map_entry_t map_find_by_value(const hashmap_t *map, val_matcher_t *matcher);
 
-void map_entry_for_each(hashmap_t *map, for_each_entry_t *for_each);
-void map_keys_for_each(hashmap_t *map, for_each_key_t *for_each);
-void map_values_for_each(hashmap_t *map, for_each_val_t *for_each);
+void map_entries_for_each(hashmap_t *map, for_each_entry_t *for_each);
 
 #endif // __CLOX_UTIL_MAP_H__

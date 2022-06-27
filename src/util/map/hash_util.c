@@ -1,6 +1,6 @@
 #include "hash_util.h"
 
-hash_t str_gen_hash(const char *chars, size_t str_sz)
+hash_t c_str_gen_hash(const char *chars, size_t str_sz)
 {
 	uint32_t hash = 216613626UL;
 

@@ -14,7 +14,12 @@ typedef hashmap_t hashset_t;
 #define set_insert_all(from, to) (map_insert_all(from, to))
 #define set_get(set, key) (map_get(set, key))
 #define set_get_by_hash(set, hash) (map_get_by_hash(set, hash))
-#define set_find(set, matcher) (map_find(set, matcher))
-#define set_for_each(set, func) (map_keys_for_each(set, func))
+
+typedef struct __set_for_each {
+	void (*func)(void *key, struct __set_for_each *data);
+} set_for_each_t;
+
+void set_for_each(hashset_t *set, set_for_each_t *data);
+void *set_find(const hashset_t *set, key_matcher_t *matcher);
 
 #endif // __CLOX_UTIL_SET_H__
