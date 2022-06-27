@@ -36,14 +36,14 @@ void list_push(list_t *lst, const void *restrict value)
 	list_write_to(lst, value);
 }
 
-uint8_t *list_pop(list_t *lst)
+void *list_pop(list_t *lst)
 {
 	__list_adj_head(lst, -1);
 
 	return lst->head;
 }
 
-uint8_t *list_peek_offset(list_t *lst, size_t offset)
+void *list_peek_offset(list_t *lst, size_t offset)
 {
 	assert(("list is empty", lst->head != NULL));
 	assert(("Offset will fall out of array", offset + 1 <= lst->cnt));
@@ -63,7 +63,7 @@ void list_free(list_t *lst)
 	__list_init(lst);
 }
 
-uint8_t *list_get(list_t *lst, size_t idx)
+void *list_get(list_t *lst, size_t idx)
 {
 	assert(("Index cannot be greater than list size", idx < lst->cnt));
 

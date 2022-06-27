@@ -20,14 +20,14 @@ size_t list_write_to(list_t *lst, const void *restrict value);
 
 size_t list_write_bulk(list_t *lst, const void *restrict value, size_t cnt);
 
-uint8_t *list_get(list_t *lst, size_t idx);
+void *list_get(list_t *lst, size_t idx);
 void list_set_cap(list_t *lst, size_t cap);
 void list_set_cnt(list_t *lst, size_t cnt);
 void list_free(list_t *lst);
 
 void list_push(list_t *lst, const void *restrict value);
-uint8_t *list_pop(list_t *lst);
-uint8_t *list_peek_offset(list_t *lst, size_t offset);
+void *list_pop(list_t *lst);
+void *list_peek_offset(list_t *lst, size_t offset);
 void list_reset(list_t *lst);
 
 static inline list_t list_new(size_t data_sz)
@@ -37,7 +37,7 @@ static inline list_t list_new(size_t data_sz)
 	};
 }
 
-static inline uint8_t *list_peek(list_t *lst)
+static inline void *list_peek(list_t *lst)
 {
 	return list_peek_offset(lst, 0);
 }

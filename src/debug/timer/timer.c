@@ -75,7 +75,7 @@ static void __print_fmtd_time(time_t time)
 	} while (time);
 
 	while (time_list.cnt) {
-		printf("%d", *(list_pop(&time_list)));
+		printf("%d", *((uint8_t *)list_pop(&time_list)));
 		if (time_list.cnt && time_list.cnt % 3 == 0) {
 			printf(",");
 		}
