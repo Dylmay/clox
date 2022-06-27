@@ -1,14 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "util/common.h"
 #include "vm/virt.h"
+#include "util/string/string_util.h"
 
 static void __run_repl(vm_t *vm);
 static void __run_file(vm_t *vm, const char *path);
 static char *__read_file(const char *path);
-static void __proc_cmd(const char *cmd, const size_t cmd_sz);
+static void __proc_cmd(const char *cmd, const size_t cmd_sz, vm_t *vm);
 
 int main(int argc, const char *argv[])
 {
@@ -30,6 +32,8 @@ int main(int argc, const char *argv[])
 static void __run_repl(vm_t *vm)
 {
 	char line_buf[1024];
+	struct string *source = NULL;
+	list_t scope_stack = list_of_type(char);
 
 	while (true) {
 		printf("> ");
@@ -40,19 +44,62 @@ static void __run_repl(vm_t *vm)
 		}
 
 		if (line_buf[0] == '.') {
-			__proc_cmd(line_buf + 1, sizeof(line_buf));
+			__proc_cmd(line_buf + 1, sizeof(line_buf), vm);
 			continue;
 		}
 
-		vm_interpret(vm, line_buf);
+		for (size_t i = 0; i < sizeof(line_buf); i++) {
+			if (line_buf[i] == '\0') {
+				break;
+			}
+
+			switch (line_buf[i]) {
+			case '{':
+				list_push(&scope_stack, &line_buf[i]);
+				break;
+			case '}':
+				list_pop(&scope_stack);
+				break;
+			default:
+				break;
+			}
+		}
+
+		if (list_size(&scope_stack) != 0) {
+			struct string *old_src = source;
+			source = string_c_append(old_src, line_buf,
+						 sizeof(line_buf));
+			string_free(old_src);
+			printf("...");
+		} else if (source) {
+			struct string *old_src = source;
+			source = string_c_append(old_src, line_buf,
+						 sizeof(line_buf));
+			string_free(old_src);
+			vm_interpret(vm, string_get_cstring(source));
+			string_free(source);
+			source = NULL;
+		} else {
+			vm_interpret(vm, line_buf);
+		}
 	}
+
+	if (source) {
+		string_free(source);
+	}
+
+	list_free(&scope_stack);
 }
 
-static void __proc_cmd(const char *cmd, const size_t cmd_sz)
+static void __proc_cmd(const char *cmd, const size_t cmd_sz, vm_t *vm)
 {
+	assert(("No VM passed", vm));
+
 	if (strncmp(cmd, "exit\n", cmd_sz) == 0) {
 		puts("Exiting");
 		exit(0);
+	} else if (strncmp(cmd, "vars\n", cmd_sz) == 0) {
+		vm_print_vars(vm);
 	} else {
 		fprintf(stdout, "Unknown command: .%s\n", cmd);
 		return;
