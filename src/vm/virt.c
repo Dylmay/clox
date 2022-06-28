@@ -487,5 +487,5 @@ static void __vm_free_objects(vm_t *vm)
 
 static void __vm_discard(vm_t *vm, uint32_t discard_cnt)
 {
-	list_set_cnt(&vm->vars, list_size(&vm->vars) - discard_cnt);
+	list_adjust_cnt(&vm->vars, list_size(&vm->vars) - discard_cnt);
 }

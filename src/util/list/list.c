@@ -78,9 +78,17 @@ void list_set_cap(list_t *lst, size_t cap)
 	lst->head = lst->data + (lst->type_sz * lst->cnt);
 }
 
-void list_set_cnt(list_t *lst, size_t cnt)
+void list_adjust_cnt(list_t *lst, int adjust)
 {
-	lst->cnt = cnt;
+	if (adjust < 0) {
+		assert(("adjustment will cause overflow error",
+			(-adjust) <= lst->cnt));
+	} else if (lst->cap < lst->cnt + adjust) {
+		list_set_cap(lst, GROW_CAPACITY_AT_LEAST(lst->cnt + adjust,
+							 lst->cnt));
+	}
+
+	__list_adj_head(lst, adjust);
 }
 
 void list_for_each (list_t *lst, for_each_fn func)
