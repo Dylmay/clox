@@ -21,6 +21,10 @@ chunk_t chunk_new();
 
 chunk_t chunk_using_state(struct state state);
 
+size_t chunk_cur_ip(const chunk_t *chunk);
+void chunk_reserve_code(chunk_t *chunk, uint32_t count);
+void chunk_patch_code(chunk_t *chunk, size_t offset, const void *data,
+		      uint32_t count);
 size_t chunk_write_code(chunk_t *chunk, code_t code, int line);
 size_t chunk_write_code_bulk(chunk_t *chunk, code_t code, int line,
 			     const void *restrict data, size_t data_cnt);

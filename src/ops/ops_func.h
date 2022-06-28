@@ -48,6 +48,37 @@ static inline void OP_POP_COUNT_WRITE(chunk_t *chunk, uint32_t cnt, int line)
 	chunk_write_code(chunk, (code_t)cnt, line);
 }
 
+static inline int __jump_instr_write(chunk_t *chunk, code_t jump_code, int line)
+{
+	chunk_write_code(chunk, jump_code, line);
+	chunk_reserve_code(chunk, 2);
+
+	return (int)chunk_cur_ip(chunk) - 2;
+}
+
+static inline int OP_JUMP_IF_FALSE_WRITE(chunk_t *chunk, int line)
+{
+	return __jump_instr_write(chunk, OP_JUMP_IF_FALSE, line);
+}
+
+static inline int OP_JUMP_WRITE(chunk_t *chunk, int line)
+{
+	return __jump_instr_write(chunk, OP_JUMP, line);
+}
+
+static inline bool OP_JUMP_PATCH(chunk_t *chunk, size_t offset)
+{
+	int jump = chunk_cur_ip(chunk) - offset - 2;
+
+	if (jump > UINT16_MAX) {
+		return false;
+	}
+
+	chunk_patch_code(chunk, offset, &jump, 2);
+
+	return true;
+}
+
 #define FUNC_NAME_OF(op) op##_WRITE
 #define CREATE_WRITE_FUNC(instr)                                               \
 	static inline void FUNC_NAME_OF(instr)(chunk_t * chunk, int line)      \
@@ -67,9 +98,7 @@ CREATE_WRITE_FUNC(OP_NEGATE)
 CREATE_WRITE_FUNC(OP_RETURN)
 CREATE_WRITE_FUNC(OP_EQUAL)
 CREATE_WRITE_FUNC(OP_GREATER)
-CREATE_WRITE_FUNC(OP_LESS)
-CREATE_WRITE_FUNC(OP_PRINT)
-CREATE_WRITE_FUNC(OP_POP)
+CREATE_WRITE_FUNC(OP_LESS) CREATE_WRITE_FUNC(OP_PRINT) CREATE_WRITE_FUNC(OP_POP)
 
 #undef CREATE_WRITE_FUNC
 #undef FUNC_NAME_OF

@@ -1,6 +1,8 @@
 #include "chunk.h"
 #include "val/func/object_func.h"
+
 #include <assert.h>
+#include <string.h>
 
 struct line_encode {
 	uint32_t offset;
@@ -36,6 +38,27 @@ struct line_encode line_encode_diff(int begin_pos, int end_pos)
 	assert(("end_pos must be greater than begin_pos", end_pos > begin_pos));
 
 	return (struct line_encode){ end_pos - begin_pos, 1 };
+}
+
+size_t chunk_cur_ip(const chunk_t *chunk)
+{
+	return list_size(&chunk->code);
+}
+
+void chunk_reserve_code(chunk_t *chunk, uint32_t count)
+{
+	list_adjust_cnt(&chunk->code, count);
+
+	((struct line_encode *)list_get(&chunk->lines,
+					chunk->lines.cnt - 1))
+		->count += count;
+}
+
+void chunk_patch_code(chunk_t *chunk, size_t offset, const void *data,
+		      uint32_t count)
+{
+	void *dest = list_get(&chunk->code, offset);
+	memcpy(dest, data, count);
 }
 
 size_t chunk_write_code(chunk_t *chunk, code_t code, int line)

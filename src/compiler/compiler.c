@@ -30,6 +30,7 @@ static void __parse_stmnt(parser_t *);
 static void __parse_expr_stmt(parser_t *);
 static void __parse_print(parser_t *);
 static void __parse_var(parser_t *);
+static void __parse_if_stmt(parser_t *);
 
 static struct parse_rule PARSE_RULES[] = {
 	// single char tokens
@@ -294,6 +295,8 @@ static void __parse_stmnt(parser_t *prsr)
 {
 	if (parser_match(prsr, TKN_PRINT)) {
 		__parse_print(prsr);
+	} else if (parser_match(prsr, TKN_IF)) {
+		__parse_if_stmt(prsr);
 	} else if (parser_match(prsr, TKN_LEFT_BRACE)) {
 		chunk_start_scope(prsr->stack);
 		__parse_block(prsr);
@@ -352,5 +355,34 @@ static void __parse_var(parser_t *prsr)
 		OP_VAR_SET_WRITE(prsr->stack, var.idx, prsr->previous.line);
 	} else {
 		OP_VAR_GET_WRITE(prsr->stack, var.idx, prsr->previous.line);
+	}
+}
+
+static void __parse_if_stmt(parser_t *prsr)
+{
+	__parse_expr(prsr);
+
+	if(!parser_check(prsr, TKN_LEFT_BRACE)) {
+		parser_error_at_current(prsr, "Expected '{' after condition.");
+	}
+
+	int if_jump = OP_JUMP_IF_FALSE_WRITE(prsr->stack, prsr->previous.line);
+	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+
+	__parse_stmnt(prsr);
+
+	int else_jump = OP_JUMP_WRITE(prsr->stack, prsr->previous.line);
+
+	if (!OP_JUMP_PATCH(prsr->stack, if_jump)) {
+		parser_error_at_current(prsr, "Too much code to jump over");
+	}
+	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+
+	if (parser_match(prsr, TKN_ELSE)) {
+		__parse_stmnt(prsr);
+	}
+
+	if (!OP_JUMP_PATCH(prsr->stack, else_jump)) {
+		parser_error_at_current(prsr, "Too much code to jump over");
 	}
 }

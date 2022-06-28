@@ -29,6 +29,8 @@ typedef enum {
 	OP_VAR_GET_LONG,
 	OP_VAR_SET,
 	OP_VAR_SET_LONG,
+	OP_JUMP,
+	OP_JUMP_IF_FALSE,
 	OP_RETURN
 } op_code_t;
 
