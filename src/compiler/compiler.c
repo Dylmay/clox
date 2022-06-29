@@ -31,6 +31,9 @@ static void __parse_expr_stmt(parser_t *);
 static void __parse_print(parser_t *);
 static void __parse_var(parser_t *);
 static void __parse_if_stmt(parser_t *);
+static void __parse_while_stmt(parser_t *);
+static void __parse_and(parser_t *);
+static void __parse_or(parser_t *);
 
 static struct parse_rule PARSE_RULES[] = {
 	// single char tokens
@@ -58,15 +61,15 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_ID] = { __parse_var, NULL, PREC_NONE },
 	[TKN_STR] = { __parse_string, NULL, PREC_NONE },
 	[TKN_NUM] = { __parse_number, NULL, PREC_NONE },
-	// Keywords
-	[TKN_AND] = { NULL, NULL, PREC_NONE },
+	// Keywords - 1
+	[TKN_AND] = { NULL, __parse_and, PREC_AND },
 	[TKN_CLS] = { NULL, NULL, PREC_NONE },
 	[TKN_ELSE] = { NULL, NULL, PREC_NONE },
 	[TKN_FOR] = { NULL, NULL, PREC_NONE },
 	[TKN_FN] = { NULL, NULL, PREC_NONE },
 	[TKN_IF] = { NULL, NULL, PREC_NONE },
 	[TKN_NIL] = { __parse_lit, NULL, PREC_NONE },
-	[TKN_OR] = { NULL, NULL, PREC_NONE },
+	[TKN_OR] = { NULL, __parse_or, PREC_OR },
 	[TKN_PRINT] = { __parse_print, NULL, PREC_NONE },
 	[TKN_RET] = { NULL, NULL, PREC_NONE },
 	[TKN_SUPER] = { NULL, NULL, PREC_NONE },
@@ -297,6 +300,8 @@ static void __parse_stmnt(parser_t *prsr)
 		__parse_print(prsr);
 	} else if (parser_match(prsr, TKN_IF)) {
 		__parse_if_stmt(prsr);
+	} else if (parser_match(prsr, TKN_WHILE)) {
+		__parse_while_stmt(prsr);
 	} else if (parser_match(prsr, TKN_LEFT_BRACE)) {
 		chunk_start_scope(prsr->stack);
 		__parse_block(prsr);
@@ -362,7 +367,7 @@ static void __parse_if_stmt(parser_t *prsr)
 {
 	__parse_expr(prsr);
 
-	if(!parser_check(prsr, TKN_LEFT_BRACE)) {
+	if (!parser_check(prsr, TKN_LEFT_BRACE)) {
 		parser_error_at_current(prsr, "Expected '{' after condition.");
 	}
 
@@ -373,7 +378,7 @@ static void __parse_if_stmt(parser_t *prsr)
 
 	int else_jump = OP_JUMP_WRITE(prsr->stack, prsr->previous.line);
 
-	if (!OP_JUMP_PATCH(prsr->stack, if_jump)) {
+	if (!op_patch_jump(prsr->stack, if_jump)) {
 		parser_error_at_current(prsr, "Too much code to jump over");
 	}
 	OP_POP_WRITE(prsr->stack, prsr->previous.line);
@@ -382,7 +387,56 @@ static void __parse_if_stmt(parser_t *prsr)
 		__parse_stmnt(prsr);
 	}
 
-	if (!OP_JUMP_PATCH(prsr->stack, else_jump)) {
+	if (!op_patch_jump(prsr->stack, else_jump)) {
 		parser_error_at_current(prsr, "Too much code to jump over");
+	}
+}
+
+static void __parse_and(parser_t *prsr)
+{
+	int end_jump = OP_JUMP_IF_FALSE_WRITE(prsr->stack, prsr->previous.line);
+	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+
+	__parse_precedence(prsr, PREC_AND);
+	op_patch_jump(prsr->stack, end_jump);
+}
+
+static void __parse_or(parser_t *prsr)
+{
+	int else_jump =
+		OP_JUMP_IF_FALSE_WRITE(prsr->stack, prsr->previous.line);
+	int end_jump = OP_JUMP_WRITE(prsr->stack, prsr->previous.line);
+
+	op_patch_jump(prsr->stack, else_jump);
+	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+
+	__parse_precedence(prsr, PREC_OR);
+	op_patch_jump(prsr->stack, end_jump);
+}
+
+static void __parse_while_stmt(parser_t *prsr)
+{
+	size_t loop_begin = chunk_cur_ip(prsr->stack);
+	__parse_expr(prsr);
+
+	if (!parser_check(prsr, TKN_LEFT_BRACE)) {
+		parser_error_at_current(prsr, "Expected '{' after condition.");
+	}
+
+	int exit_jump =
+		OP_JUMP_IF_FALSE_WRITE(prsr->stack, prsr->previous.line);
+	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+
+	__parse_stmnt(prsr);
+
+	OP_LOOP_WRITE(prsr->stack, loop_begin, prsr->previous.line);
+
+	if (!op_patch_jump(prsr->stack, exit_jump)) {
+		parser_error_at_current(prsr, "Too much code to jump over");
+	}
+	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+
+	if (parser_match(prsr, TKN_ELSE)) {
+		__parse_stmnt(prsr);
 	}
 }
