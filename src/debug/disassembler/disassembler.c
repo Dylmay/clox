@@ -10,7 +10,7 @@ static size_t __const_long_instr(const char *, chunk_t *, uint32_t);
 static size_t __var_instr(const char *, chunk_t *, uint32_t);
 static size_t __var_long_instr(const char *, chunk_t *, uint32_t);
 static size_t __pop_count_instr(const char *, chunk_t *, uint32_t);
-static uint32_t __jump_instr(const char *, chunk_t *, int, uint32_t);
+static uint32_t __jump_instr(const char *, chunk_t *, uint32_t);
 static uint32_t __get_ext_pos(chunk_t *, uint32_t);
 
 void disassem_chunk(chunk_t *chnk, const char *name)
@@ -70,10 +70,10 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 		return __pop_count_instr("OP_POP_COUNT", chunk, offset);
 
 	case OP_JUMP:
-		return __jump_instr("OP_JUMP", chunk, 1, offset);
+		return __jump_instr("OP_JUMP", chunk, offset);
 
 	case OP_JUMP_IF_FALSE:
-		return __jump_instr("OP_JUMP_IF_FALSE", chunk, 1, offset);
+		return __jump_instr("OP_JUMP_IF_FALSE", chunk, offset);
 
 		CASE_SIMPLE_INSTR(OP_RETURN);
 
@@ -176,11 +176,11 @@ static size_t __pop_count_instr(const char *name, chunk_t *chunk,
 	return offset + 2;
 }
 
-static uint32_t __jump_instr(const char *name, chunk_t *chunk, int sign, uint32_t offset)
+static uint32_t __jump_instr(const char *name, chunk_t *chunk, uint32_t offset)
 {
-	uint16_t jump_pos = *((uint16_t *)list_get(&chunk->code, offset + 1));
+	int16_t jump_pos = *((int16_t *)list_get(&chunk->code, offset + 1));
 
-	printf(" %-20s | *%04d -> *%04d ", name, offset, offset + 3 + sign * jump_pos);
+	printf(" %-20s | *%04d -> *%04d ", name, offset, offset + 3 + jump_pos);
 	puts("");
 
 	return offset + 3;

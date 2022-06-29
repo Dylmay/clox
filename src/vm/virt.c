@@ -33,7 +33,7 @@ static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val);
 static void __vm_proc_const(vm_t *vm, uint32_t idx);
 static uint32_t __vm_proc_idx(vm_t *vm);
 static uint32_t __vm_proc_idx_ext(vm_t *vm);
-static uint32_t __vm_proc_jump_offset(vm_t *vm);
+static int16_t __vm_proc_jump_offset(vm_t *vm);
 static void __vm_discard(vm_t *vm, uint32_t discard_cnt);
 
 #define VM_PEEK_NUM(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.number)
@@ -329,12 +329,12 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_JUMP: {
-			uint16_t offset = __vm_proc_jump_offset(vm);
+			int16_t offset = __vm_proc_jump_offset(vm);
 			vm->ip += offset;
 		} break;
 
 		case OP_JUMP_IF_FALSE: {
-			uint16_t offset = __vm_proc_jump_offset(vm);
+			int16_t offset = __vm_proc_jump_offset(vm);
 
 			if (val_is_falsey(__vm_peek_const(vm, 0))) {
 				vm->ip += offset;
@@ -394,9 +394,9 @@ static uint32_t __vm_proc_idx_ext(vm_t *vm)
 	return idx;
 }
 
-static uint32_t __vm_proc_jump_offset(vm_t *vm)
+static int16_t __vm_proc_jump_offset(vm_t *vm)
 {
-	uint16_t idx = *((uint16_t *)vm->ip);
+	int16_t idx = *((int16_t *)vm->ip);
 
 	vm->ip += 2;
 
