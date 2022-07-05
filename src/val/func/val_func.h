@@ -19,10 +19,7 @@
 #define VAL_IS_NUMBER(value) ((value).type == VAL_NUMBER)
 #define VAL_IS_OBJ(value) ((value).type == VAL_OBJ)
 
-static inline bool val_is_falsey(lox_val_t val)
-{
-	return VAL_IS_NIL(val) || (VAL_IS_BOOL(val) && !VAL_AS_BOOL(val));
-}
+bool val_is_falsey(lox_val_t val);
 
 void val_print(lox_val_t val);
 

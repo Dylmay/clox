@@ -28,6 +28,21 @@ void val_print(lox_val_t val)
 	}
 }
 
+bool val_is_falsey(lox_val_t val)
+{
+	switch (val.type) {
+	case VAL_NUMBER:
+		return !VAL_AS_NUMBER(val);
+	case VAL_NIL:
+		return true;
+	case VAL_BOOL:
+		return !VAL_AS_BOOL(val);
+		break;
+	default:
+		assert(("Unknown value type (val_is_falsey)", 0));
+	}
+}
+
 bool val_equals(lox_val_t a, lox_val_t b)
 {
 	if (a.type != b.type) {
