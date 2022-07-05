@@ -29,6 +29,7 @@ enum tkn_type {
 	TKN_STR,
 	TKN_NUM,
 	// Keywords
+	TKN_MOD,
 	TKN_MUT,
 	TKN_AND,
 	TKN_CLS,

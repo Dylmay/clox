@@ -48,6 +48,7 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_DOT] = { NULL, NULL, PREC_NONE },
 	[TKN_MINUS] = { __parse_unary, __parse_binary, PREC_TERM },
 	[TKN_PLUS] = { NULL, __parse_binary, PREC_TERM },
+	[TKN_MOD] = { NULL, __parse_binary, PREC_TERM },
 	[TKN_SEMICOLON] = { NULL, NULL, PREC_NONE },
 	[TKN_SLASH] = { NULL, __parse_binary, PREC_FACTOR },
 	[TKN_STAR] = { NULL, __parse_binary, PREC_FACTOR },
@@ -184,6 +185,9 @@ static void __parse_binary(parser_t *prsr)
 		break;
 	case TKN_SLASH:
 		OP_DIVIDE_WRITE(prsr->stack, prsr->previous.line);
+		break;
+	case TKN_MOD:
+		OP_MOD_WRITE(prsr->stack, prsr->previous.line);
 		break;
 	default:
 		assert(("Unexpected binary type", 0));

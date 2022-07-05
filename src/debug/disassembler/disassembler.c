@@ -105,6 +105,8 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 
 		CASE_SIMPLE_INSTR(OP_POP);
 
+		CASE_SIMPLE_INSTR(OP_MOD);
+
 	default:
 		printf("Unknown opcode %u\n", instruction);
 		return offset + 1;

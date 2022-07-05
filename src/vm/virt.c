@@ -2,6 +2,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <math.h>
 
 #include "util/common.h"
 #include "virt.h"
@@ -156,10 +157,6 @@ static enum vm_res __vm_run(vm_t *vm)
 {
 #define BINARY_OP(vm, val_type, op)                                            \
 	do {                                                                   \
-		if (!VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 1)))) {           \
-			puts("top Not number");                                \
-			printf("type %d", __vm_peek_const_ptr(vm, 1)->type);   \
-		}                                                              \
 		if (!VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 0))) ||           \
 		    !VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 1)))) {           \
 			__vm_runtime_error(vm, "Operands must be numbers.");   \
@@ -216,6 +213,19 @@ static enum vm_res __vm_run(vm_t *vm)
 				return INTERPRET_RUNTIME_ERROR;
 			}
 			break;
+
+		case OP_MOD: {
+			if (!VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 0))) ||
+			    !VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 1)))) {
+				__vm_runtime_error(vm,
+						   "Operands must be numbers.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			lox_num_t b = __vm_pop_const(vm).as.number;
+			lox_num_t a = __vm_pop_const(vm).as.number;
+			__vm_push_const(vm, VAL_CREATE_NUMBER(fmod(a, b)));
+		} break;
 
 		case OP_SUBTRACT:
 			NUMERICAL_OP(vm, -);

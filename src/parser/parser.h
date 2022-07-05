@@ -24,7 +24,7 @@ enum precedence {
 	PREC_AND, // and
 	PREC_EQUALITY, // == !=
 	PREC_COMPARISON, // < > <= >=
-	PREC_TERM, // + -
+	PREC_TERM, // + - mod
 	PREC_FACTOR, // * /
 	PREC_UNARY, // ! -
 	PREC_CALL, // . ()
