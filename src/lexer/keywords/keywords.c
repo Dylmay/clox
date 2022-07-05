@@ -23,7 +23,20 @@ enum tkn_type keyword_traverse(const char *identifier, size_t id_len)
 		return MATCH(identifier, 1, "lse", TKN_ELSE);
 
 	case 'i':
-		return MATCH(identifier, 1, "f", TKN_IF);
+		if (id_len == 2) {
+			switch (*(identifier + 1)) {
+			case 'f':
+				return TKN_IF;
+
+			case 'n':
+				return TKN_IN;
+
+			default:
+				return TKN_ID;
+			}
+		}
+
+		return TKN_ID;
 
 	case 'l':
 		return MATCH(identifier, 1, "et", TKN_LET);

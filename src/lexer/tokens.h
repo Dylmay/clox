@@ -24,6 +24,7 @@ enum tkn_type {
 	TKN_LESS_EQ,
 	TKN_GREATER_EQ,
 	// Literals
+	TKN_IN,
 	TKN_ID,
 	TKN_STR,
 	TKN_NUM,

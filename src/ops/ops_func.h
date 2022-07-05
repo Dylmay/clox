@@ -109,6 +109,24 @@ CREATE_EXTENDED_WRITE_FUNC(OP_VAR_DEFINE, OP_VAR_DEFINE_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_VAR_GET, OP_VAR_GET_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_VAR_SET, OP_VAR_SET_LONG)
 
+static inline void OP_BANG_EQ_WRITE(chunk_t *chunk, int line)
+{
+	OP_EQUAL_WRITE(chunk, line);
+	OP_NOT_WRITE(chunk, line);
+}
+
+static inline void OP_GREATER_EQ_WRITE(chunk_t *chunk, int line)
+{
+	OP_LESS_WRITE(chunk, line);
+	OP_NOT_WRITE(chunk, line);
+}
+
+static inline void OP_LESS_EQ_WRITE(chunk_t *chunk, int line)
+{
+	OP_GREATER_WRITE(chunk, line);
+	OP_NOT_WRITE(chunk, line);
+}
+
 #undef CREATE_JUMP_FUNC
 #undef CREATE_EXTENDED_WRITE_FUNC
 #undef CREATE_WRITE_FUNC

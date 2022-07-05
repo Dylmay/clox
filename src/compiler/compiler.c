@@ -14,6 +14,8 @@
 #endif
 
 static const struct parse_rule *__compiler_get_rule(enum tkn_type);
+static void __compiler_begin_scope(parser_t *prsr);
+static void __compiler_end_scope(parser_t *prsr);
 
 static void __parse_block(parser_t *prsr);
 static void __parse_expr(parser_t *);
@@ -34,6 +36,7 @@ static void __parse_if_stmt(parser_t *);
 static void __parse_while_stmt(parser_t *);
 static void __parse_and(parser_t *);
 static void __parse_or(parser_t *);
+static void __parse_for_stmt(parser_t *);
 
 static struct parse_rule PARSE_RULES[] = {
 	// single char tokens
@@ -153,8 +156,7 @@ static void __parse_binary(parser_t *prsr)
 
 	switch (tkn_type) {
 	case TKN_BANG_EQ:
-		OP_EQUAL_WRITE(prsr->stack, prsr->previous.line);
-		OP_NOT_WRITE(prsr->stack, prsr->previous.line);
+		OP_BANG_EQ_WRITE(prsr->stack, prsr->previous.line);
 		break;
 	case TKN_EQ_EQ:
 		OP_EQUAL_WRITE(prsr->stack, prsr->previous.line);
@@ -163,15 +165,13 @@ static void __parse_binary(parser_t *prsr)
 		OP_GREATER_WRITE(prsr->stack, prsr->previous.line);
 		break;
 	case TKN_GREATER_EQ:
-		OP_LESS_WRITE(prsr->stack, prsr->previous.line);
-		OP_NOT_WRITE(prsr->stack, prsr->previous.line);
+		OP_GREATER_EQ_WRITE(prsr->stack, prsr->previous.line);
 		break;
 	case TKN_LESS:
 		OP_LESS_WRITE(prsr->stack, prsr->previous.line);
 		break;
 	case TKN_LESS_EQ:
-		OP_GREATER_WRITE(prsr->stack, prsr->previous.line);
-		OP_NOT_WRITE(prsr->stack, prsr->previous.line);
+		OP_LESS_EQ_WRITE(prsr->stack, prsr->previous.line);
 		break;
 	case TKN_PLUS:
 		OP_ADD_WRITE(prsr->stack, prsr->previous.line);
@@ -302,14 +302,13 @@ static void __parse_stmnt(parser_t *prsr)
 		__parse_if_stmt(prsr);
 	} else if (parser_match(prsr, TKN_WHILE)) {
 		__parse_while_stmt(prsr);
+	} else if (parser_match(prsr, TKN_FOR)) {
+		__parse_for_stmt(prsr);
 	} else if (parser_match(prsr, TKN_LEFT_BRACE)) {
+		__compiler_begin_scope(prsr);
 		chunk_start_scope(prsr->stack);
 		__parse_block(prsr);
-		OP_POP_COUNT_WRITE(
-			prsr->stack,
-			map_size(lookup_cur_scope(&prsr->stack->vals.lookup)),
-			prsr->previous.line);
-		chunk_end_scope(prsr->stack);
+		__compiler_end_scope(prsr);
 	} else {
 		__parse_expr_stmt(prsr);
 	}
@@ -439,4 +438,77 @@ static void __parse_while_stmt(parser_t *prsr)
 	if (parser_match(prsr, TKN_ELSE)) {
 		__parse_stmnt(prsr);
 	}
+}
+
+static void __parse_for_stmt(parser_t *prsr)
+{
+	__compiler_begin_scope(prsr);
+	// int loop_start = chunk_cur_ip(prsr->stack);
+	parser_consume(prsr, TKN_ID, "Expected variable name");
+
+	int def_ln = prsr->previous.line;
+	const char *name = prsr->previous.start;
+	size_t len = prsr->previous.len;
+
+	if (lookup_scope_has_name(&prsr->stack->vals.lookup, name, len)) {
+		parser_error_at_previous(prsr,
+					 "Variable has already been defined.");
+	}
+
+	parser_consume(prsr, TKN_IN, "Expected 'in'.");
+	parser_consume(prsr, TKN_NUM, "Expected range start");
+	// write start of range
+	double range_start = strtod(prsr->previous.start, NULL);
+	OP_CONST_WRITE(prsr->stack, VAL_CREATE_NUMBER(range_start),
+		       prsr->previous.line);
+	lookup_var_t glbl_idx = lookup_scope_define(
+		&prsr->stack->vals.lookup, name, len, LOOKUP_VAR_MUTABLE);
+	OP_VAR_DEFINE_WRITE(prsr->stack, glbl_idx.idx, def_ln);
+
+	parser_consume(prsr, TKN_DOT, "Expected range '..'");
+	parser_consume(prsr, TKN_DOT, "Expected range '..'");
+	parser_consume(prsr, TKN_NUM, "Expected range end");
+
+	//condition
+	double range_end = strtod(prsr->previous.start, NULL);
+
+	int inc_start = chunk_cur_ip(prsr->stack);
+	OP_VAR_GET_WRITE(prsr->stack, glbl_idx.idx, def_ln);
+	OP_CONST_WRITE(prsr->stack, VAL_CREATE_NUMBER(range_end),
+		       prsr->previous.line);
+	//LESS_EQ
+	OP_LESS_WRITE(prsr->stack, prsr->previous.line);
+	int exit_jump = OP_JUMP_IF_FALSE_WRITE(prsr->stack, def_ln);
+	OP_POP_WRITE(prsr->stack, def_ln);
+
+	parser_consume(prsr, TKN_LEFT_BRACE, "Expected scope begin");
+
+	__parse_stmnt(prsr);
+
+	parser_consume(prsr, TKN_RIGHT_BRACE, "Expected scope end");
+
+	OP_VAR_GET_WRITE(prsr->stack, glbl_idx.idx, prsr->previous.line);
+	OP_CONST_WRITE(prsr->stack, VAL_CREATE_NUMBER(1), prsr->previous.line);
+	OP_ADD_WRITE(prsr->stack, prsr->previous.line);
+	OP_VAR_SET_WRITE(prsr->stack, glbl_idx.idx, prsr->previous.line);
+	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+	OP_LOOP_WRITE(prsr->stack, inc_start, prsr->previous.line);
+
+	op_patch_jump(prsr->stack, exit_jump);
+	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+	__compiler_end_scope(prsr);
+}
+
+static void __compiler_begin_scope(parser_t *prsr)
+{
+	chunk_start_scope(prsr->stack);
+}
+
+static void __compiler_end_scope(parser_t *prsr)
+{
+	OP_POP_COUNT_WRITE(
+		prsr->stack,
+		map_size(lookup_cur_scope(&prsr->stack->vals.lookup)),
+		prsr->previous.line);
+	chunk_end_scope(prsr->stack);
 }

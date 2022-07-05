@@ -235,6 +235,7 @@ static enum vm_res __vm_run(vm_t *vm)
 
 		case OP_LESS:
 			COMPARISON_OP(vm, <);
+			break;
 
 		case OP_EQUAL: {
 			lox_val_t b = __vm_pop_const(vm);
