@@ -26,5 +26,5 @@ void set_for_each(hashset_t *set, set_for_each_t *data)
 
 void *set_find(const hashset_t *set, key_matcher_t *matcher)
 {
-	return map_find_by_key(set, matcher).value;
+	return map_find_by_key(set, matcher).key;
 }
