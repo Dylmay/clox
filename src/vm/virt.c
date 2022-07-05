@@ -259,11 +259,11 @@ static enum vm_res __vm_run(vm_t *vm)
 			puts("");
 			break;
 
-		case OP_POP:
+		case OP_POP_STACK:
 			__vm_pop_const(vm);
 			break;
 
-		case OP_POP_COUNT:
+		case OP_DISCARD_VARS:
 			__vm_discard(vm, __vm_proc_idx(vm));
 			break;
 
@@ -519,7 +519,8 @@ static void __vm_free_objects(vm_t *vm)
 	linked_list_free(vm->objects);
 }
 
+//FIXME: remove vars list and incorporate it into the stack
 static void __vm_discard(vm_t *vm, uint32_t discard_cnt)
 {
-	list_adjust_cnt(&vm->vars, list_size(&vm->vars) - discard_cnt);
+	list_adjust_cnt(&vm->vars, -discard_cnt);
 }
