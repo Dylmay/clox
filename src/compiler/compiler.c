@@ -310,7 +310,6 @@ static void __parse_stmnt(parser_t *prsr)
 		__parse_for_stmt(prsr);
 	} else if (parser_match(prsr, TKN_LEFT_BRACE)) {
 		__compiler_begin_scope(prsr);
-		chunk_start_scope(prsr->stack);
 		__parse_block(prsr);
 		__compiler_end_scope(prsr);
 	} else {
@@ -371,13 +370,14 @@ static void __parse_if_stmt(parser_t *prsr)
 	__parse_expr(prsr);
 
 	if (!parser_check(prsr, TKN_LEFT_BRACE)) {
-		parser_error_at_current(prsr, "Expected '{' after condition.");
+		parser_error_at_current(prsr,
+					"Expected '{' or 'if' after else.");
 	}
 
 	int if_jump = OP_JUMP_IF_FALSE_WRITE(prsr->stack, prsr->previous.line);
 	OP_POP_WRITE(prsr->stack, prsr->previous.line);
 
-	__parse_stmnt(prsr);
+	__parse_decl(prsr);
 
 	int else_jump = OP_JUMP_WRITE(prsr->stack, prsr->previous.line);
 
@@ -387,7 +387,13 @@ static void __parse_if_stmt(parser_t *prsr)
 	OP_POP_WRITE(prsr->stack, prsr->previous.line);
 
 	if (parser_match(prsr, TKN_ELSE)) {
-		__parse_stmnt(prsr);
+		if (!parser_check(prsr, TKN_LEFT_BRACE) &&
+		    !(parser_check(prsr, TKN_IF))) {
+			parser_error_at_current(
+				prsr, "Expected '{' after condition.");
+		}
+
+		__parse_decl(prsr);
 	}
 
 	if (!op_patch_jump(prsr->stack, else_jump)) {
@@ -486,10 +492,8 @@ static void __parse_for_stmt(parser_t *prsr)
 	OP_POP_WRITE(prsr->stack, def_ln);
 
 	parser_consume(prsr, TKN_LEFT_BRACE, "Expected scope begin");
-
-	__parse_stmnt(prsr);
-
-	parser_consume(prsr, TKN_RIGHT_BRACE, "Expected scope end");
+	// TODO: have unreleased scopes
+	__parse_block(prsr);
 
 	OP_VAR_GET_WRITE(prsr->stack, glbl_idx.idx, prsr->previous.line);
 	OP_CONST_WRITE(prsr->stack, VAL_CREATE_NUMBER(1), prsr->previous.line);
