@@ -10,7 +10,6 @@ typedef struct {
 	uint8_t *ip;
 	chunk_t chunk;
 	list_t stack;
-	list_t vars;
 	linked_list_t objects;
 } vm_t;
 

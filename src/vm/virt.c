@@ -50,7 +50,6 @@ vm_t vm_init()
 {
 	vm_t vm = (vm_t){
 		.chunk = chunk_new(),
-		.vars = list_of_type(lox_val_t),
 		.stack = list_of_type(lox_val_t),
 		.ip = NULL,
 		.objects = linked_list_of_type(lox_obj_t *),
@@ -87,7 +86,6 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 void vm_free(vm_t *vm)
 {
 	list_free(&vm->stack);
-	list_free(&vm->vars);
 	__vm_free_objects(vm);
 	chunk_free(&vm->chunk, true);
 }
@@ -118,7 +116,7 @@ void vm_print_vars(vm_t *vm)
 		.for_each = {
 			.func = &_var_prnt,
 	},
-		.vm_vars = &vm->vars,
+		.vm_vars = &vm->stack,
 		.depth = 1,
 	};
 
@@ -259,11 +257,11 @@ static enum vm_res __vm_run(vm_t *vm)
 			puts("");
 			break;
 
-		case OP_POP_STACK:
+		case OP_POP:
 			__vm_pop_const(vm);
 			break;
 
-		case OP_DISCARD_VARS:
+		case OP_POP_COUNT:
 			__vm_discard(vm, __vm_proc_idx(vm));
 			break;
 
@@ -368,25 +366,25 @@ static enum vm_res __vm_run(vm_t *vm)
 
 static void __vm_define_var(vm_t *vm, lox_val_t *val)
 {
-	list_push(&vm->vars, val);
+	list_push(&vm->stack, val);
 }
 
 static lox_val_t *__vm_get_var(vm_t *vm, uint32_t glbl)
 {
-	if (glbl >= vm->vars.cnt) {
+	if (glbl >= vm->stack.cnt) {
 		return NULL;
 	}
 
-	return (lox_val_t *)list_get(&vm->vars, glbl);
+	return (lox_val_t *)list_get(&vm->stack, glbl);
 }
 
 static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val)
 {
-	if (glbl >= vm->vars.cnt) {
+	if (glbl >= vm->stack.cnt) {
 		return false;
 	}
 
-	lox_val_t *val_ptr = (lox_val_t *)list_get(&vm->vars, glbl);
+	lox_val_t *val_ptr = (lox_val_t *)list_get(&vm->stack, glbl);
 	memcpy(val_ptr, val, sizeof(lox_val_t));
 	return true;
 }
@@ -522,5 +520,5 @@ static void __vm_free_objects(vm_t *vm)
 //FIXME: remove vars list and incorporate it into the stack
 static void __vm_discard(vm_t *vm, uint32_t discard_cnt)
 {
-	list_adjust_cnt(&vm->vars, -discard_cnt);
+	list_adjust_cnt(&vm->stack, -discard_cnt);
 }
