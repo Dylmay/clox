@@ -503,7 +503,7 @@ static void __vm_str_concat(vm_t *vm)
 
 static void __vm_assign_object(vm_t *vm, lox_obj_t *obj)
 {
-	linked_list_insert_back(&vm->objects, obj);
+	linked_list_insert_back(&vm->objects, &obj);
 }
 
 static void __vm_free_objects(vm_t *vm)
@@ -511,8 +511,8 @@ static void __vm_free_objects(vm_t *vm)
 	list_iterator_t iter = list_iter(vm->objects, true);
 
 	while (list_iter_has_next(&iter)) {
-		lox_obj_t *next = list_iter_next(&iter);
-		object_free(next);
+		lox_obj_t **next = list_iter_next(&iter);
+		object_free(*next);
 	}
 	linked_list_free(vm->objects);
 }

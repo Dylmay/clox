@@ -22,8 +22,12 @@ void lookup_entry_free(map_entry_t entry, for_each_entry_t *data)
 
 void scope_free(const void *m)
 {
+	for_each_entry_t lookup_free = (for_each_entry_t){
+		.func = &lookup_entry_free,
+	};
+
 	hashmap_t *map = (hashmap_t *)m;
-	map_entries_for_each(map, (for_each_entry_t *)&lookup_entry_free);
+	map_entries_for_each(map, (for_each_entry_t *)&lookup_free);
 	map_free(map);
 }
 
