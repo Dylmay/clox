@@ -397,6 +397,7 @@ static uint32_t __vm_proc_idx(vm_t *vm)
 
 static uint32_t __vm_proc_idx_ext(vm_t *vm)
 {
+	__vm_assert_inst_ptr_valid(vm);
 	uint32_t idx = *((uint32_t *)vm->ip) & EXT_CODE_MASK;
 	vm->ip += EXT_CODE_SZ;
 
@@ -405,6 +406,7 @@ static uint32_t __vm_proc_idx_ext(vm_t *vm)
 
 static int16_t __vm_proc_jump_offset(vm_t *vm)
 {
+	__vm_assert_inst_ptr_valid(vm);
 	int16_t idx = *((int16_t *)vm->ip);
 
 	vm->ip += 2;
@@ -497,7 +499,7 @@ static void __vm_str_concat(vm_t *vm)
 		interned_str = concat_str;
 	}
 
-	__vm_assign_object(vm, (lox_obj_t *)interned_str);
+	// __vm_assign_object(vm, (lox_obj_t *)interned_str);
 	__vm_push_const(vm, VAL_CREATE_OBJ(interned_str));
 }
 
