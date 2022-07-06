@@ -309,9 +309,7 @@ static void __parse_stmnt(parser_t *prsr)
 	} else if (parser_match(prsr, TKN_FOR)) {
 		__parse_for_stmt(prsr);
 	} else if (parser_match(prsr, TKN_LEFT_BRACE)) {
-		__compiler_begin_scope(prsr);
 		__parse_block(prsr);
-		__compiler_end_scope(prsr);
 	} else {
 		__parse_expr_stmt(prsr);
 	}
@@ -319,12 +317,14 @@ static void __parse_stmnt(parser_t *prsr)
 
 static void __parse_block(parser_t *prsr)
 {
+	__compiler_begin_scope(prsr);
 	while (!parser_check(prsr, TKN_RIGHT_BRACE) &&
 	       !parser_check(prsr, TKN_EOF)) {
 		__parse_decl(prsr);
 	}
 
 	parser_consume(prsr, TKN_RIGHT_BRACE, "Expected '}' after block.");
+	__compiler_end_scope(prsr);
 }
 
 static void __parse_expr_stmt(parser_t *prsr)
