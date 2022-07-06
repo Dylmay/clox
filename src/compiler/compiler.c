@@ -436,7 +436,7 @@ static void __parse_while_stmt(parser_t *prsr)
 		OP_JUMP_IF_FALSE_WRITE(prsr->stack, prsr->previous.line);
 	OP_POP_WRITE(prsr->stack, prsr->previous.line);
 
-	__parse_stmnt(prsr);
+	__parse_decl(prsr);
 
 	OP_LOOP_WRITE(prsr->stack, loop_begin, prsr->previous.line);
 
@@ -491,9 +491,11 @@ static void __parse_for_stmt(parser_t *prsr)
 	int exit_jump = OP_JUMP_IF_FALSE_WRITE(prsr->stack, def_ln);
 	OP_POP_WRITE(prsr->stack, def_ln);
 
-	parser_consume(prsr, TKN_LEFT_BRACE, "Expected scope begin");
+	if (!parser_check(prsr, TKN_LEFT_BRACE)) {
+		parser_error_at_current(prsr, "Expected left brace");
+	}
 	// TODO: have unreleased scopes
-	__parse_block(prsr);
+	__parse_decl(prsr);
 
 	OP_VAR_GET_WRITE(prsr->stack, glbl_idx.idx, prsr->previous.line);
 	OP_CONST_WRITE(prsr->stack, VAL_CREATE_NUMBER(1), prsr->previous.line);
