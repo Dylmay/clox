@@ -38,9 +38,6 @@ static lox_val_t __vm_pop_const(vm_t *vm);
 static void __vm_proc_negate_in_place(vm_t *vm);
 static lox_val_t __vm_peek_const(vm_t *vm, size_t dist);
 static lox_val_t *__vm_peek_const_ptr(vm_t *vm, size_t dist);
-static inline void __vm_assert_inst_ptr_valid(const vm_t *vm);
-static inline char __vm_read_byte(vm_t *vm);
-static inline int __vm_instr_offset(const vm_t *vm);
 static void __vm_runtime_error(vm_t *vm, const char *fmt, ...);
 static void __vm_assign_object(vm_t *vm, lox_obj_t *obj);
 static void __vm_str_concat(vm_t *vm);
@@ -48,10 +45,15 @@ static void __vm_free_objects(vm_t *vm);
 static void __vm_define_var(vm_t *vm, lox_val_t *val);
 static lox_val_t *__vm_get_var(vm_t *vm, uint32_t glbl);
 static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val);
-static void __vm_proc_const(vm_t *vm, uint32_t idx);
-static uint32_t __vm_proc_idx(vm_t *vm);
-static uint32_t __vm_proc_idx_ext(vm_t *vm);
-static int16_t __vm_proc_jump_offset(vm_t *vm);
+
+static void __vm_proc_const(vm_t *vm, struct vm_call_frame *frame,
+			    uint32_t idx);
+static inline void __frame_assert_inst_ptr_valid(const struct vm_call_frame *);
+static inline char __frame_read_byte(struct vm_call_frame *);
+static inline int __frame_instr_offset(const struct vm_call_frame *);
+static uint32_t __frame_proc_idx(struct vm_call_frame *);
+static uint32_t __frame_proc_idx_ext(struct vm_call_frame *);
+static int16_t __frame_proc_jump_offset(struct vm_call_frame *);
 static void __vm_discard(vm_t *vm, uint32_t discard_cnt);
 
 #define VM_PEEK_NUM(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.number)
@@ -66,11 +68,10 @@ struct var_printer {
 vm_t vm_init()
 {
 	vm_t vm = (vm_t){
-		.fn = NULL,
 		.stack = list_of_type(lox_val_t),
-		.state = state_new(),
-		.ip = NULL,
+		.frames = list_of_type(struct vm_call_frame),
 		.objects = linked_list_of_type(lox_obj_t *),
+		.state = state_new(),
 #ifdef DEBUG_BENCH
 		.timings_map =
 			map_of_type(struct timespec, (hash_fn)&asciiz_gen_hash),
@@ -85,13 +86,19 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 {
 	enum vm_res res;
 
-	vm->fn = compile(src, &vm->state);
+	lox_fn_t *fn = compile(src, &vm->state);
 
-	if (!vm->fn) {
+	if (!fn) {
 		return INTERPRET_COMPILE_ERROR;
 	}
 
-	vm->ip = vm->fn->chunk.code.data;
+	__vm_push_const(vm, VAL_CREATE_OBJ(fn));
+	struct vm_call_frame frame = {
+		.fn = fn,
+		.ip = fn->chunk.code.data,
+		.slots = &vm->stack,
+	};
+	list_push(&vm->frames, &frame);
 
 #ifdef DEBUG_BENCH
 	struct timespec timer;
@@ -114,7 +121,7 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 	puts("}");
 #endif
 
-	object_free((struct object *)vm->fn);
+	// object_free((struct object *)vm->fn);
 
 #ifdef DEBUG_TRACE_EXECUTION
 	if (res == INTERPRET_OK) {
@@ -213,25 +220,30 @@ static enum vm_res __vm_run(vm_t *vm)
 #define NUMERICAL_OP(vm, op) BINARY_OP(vm, VAL_CREATE_NUMBER, op)
 #define COMPARISON_OP(vm, op) BINARY_OP(vm, VAL_CREATE_BOOL, op)
 
+	struct vm_call_frame *cur_frame = list_peek(&vm->frames);
+
 	while (true) {
 		uint8_t instr;
 #ifdef DEBUG_TRACE_EXECUTION
 		printf("\t\t");
 		vm_print_stack(vm);
-		disassem_inst(&vm->fn->chunk, __vm_instr_offset(vm));
+		disassem_inst(&cur_frame->fn->chunk,
+			      __frame_instr_offset(cur_frame));
 #endif // DEBUG_TRACE_EXECUTION
 #ifdef DEBUG_BENCH
 		struct timespec timer;
 		timer_start(&timer);
 #endif
 
-		switch (instr = __vm_read_byte(vm)) {
+		switch (instr = __frame_read_byte(cur_frame)) {
 		case OP_CONSTANT:
-			__vm_proc_const(vm, __vm_proc_idx(vm));
+			__vm_proc_const(vm, cur_frame,
+					__frame_proc_idx(cur_frame));
 			break;
 
 		case OP_CONSTANT_LONG:
-			__vm_proc_const(vm, __vm_proc_idx_ext(vm));
+			__vm_proc_const(vm, cur_frame,
+					__frame_proc_idx_ext(cur_frame));
 			break;
 
 		case OP_NIL:
@@ -311,7 +323,7 @@ static enum vm_res __vm_run(vm_t *vm)
 			break;
 
 		case OP_POP_COUNT:
-			__vm_discard(vm, __vm_proc_idx(vm));
+			__vm_discard(vm, __frame_proc_idx(cur_frame));
 			break;
 
 		case OP_NEGATE:
@@ -329,7 +341,7 @@ static enum vm_res __vm_run(vm_t *vm)
 			break;
 
 		case OP_VAR_DEFINE: {
-			__vm_proc_idx(vm);
+			__frame_proc_idx(cur_frame);
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
 
 			__vm_define_var(vm, val);
@@ -337,7 +349,7 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_VAR_DEFINE_LONG: {
-			__vm_proc_idx_ext(vm);
+			__frame_proc_idx_ext(cur_frame);
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
 
 			__vm_define_var(vm, val);
@@ -345,7 +357,7 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_VAR_GET: {
-			uint32_t idx = __vm_proc_idx(vm);
+			uint32_t idx = __frame_proc_idx(cur_frame);
 			lox_val_t *val = __vm_get_var(vm, idx);
 
 			if (!val) {
@@ -356,7 +368,7 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_VAR_GET_LONG: {
-			uint32_t idx = __vm_proc_idx_ext(vm);
+			uint32_t idx = __frame_proc_idx_ext(cur_frame);
 			lox_val_t *val = __vm_get_var(vm, idx);
 
 			if (!val) {
@@ -367,7 +379,7 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_VAR_SET: {
-			uint32_t idx = __vm_proc_idx(vm);
+			uint32_t idx = __frame_proc_idx(cur_frame);
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
 
 			if (!__vm_set_var(vm, idx, val)) {
@@ -377,7 +389,7 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_VAR_SET_LONG: {
-			uint32_t idx = __vm_proc_idx_ext(vm);
+			uint32_t idx = __frame_proc_idx_ext(cur_frame);
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
 
 			if (!__vm_set_var(vm, idx, val)) {
@@ -387,15 +399,15 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_JUMP: {
-			int16_t offset = __vm_proc_jump_offset(vm);
-			vm->ip += offset;
+			int16_t offset = __frame_proc_jump_offset(cur_frame);
+			cur_frame->ip += offset;
 		} break;
 
 		case OP_JUMP_IF_FALSE: {
-			int16_t offset = __vm_proc_jump_offset(vm);
+			int16_t offset = __frame_proc_jump_offset(cur_frame);
 
 			if (val_is_falsey(__vm_peek_const(vm, 0))) {
-				vm->ip += offset;
+				cur_frame->ip += offset;
 			}
 		} break;
 
@@ -448,35 +460,35 @@ static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val)
 	return true;
 }
 
-static uint32_t __vm_proc_idx(vm_t *vm)
+static uint32_t __frame_proc_idx(struct vm_call_frame *frame)
 {
-	__vm_assert_inst_ptr_valid(vm);
-	return __vm_read_byte(vm);
+	__frame_assert_inst_ptr_valid(frame);
+	return __frame_read_byte(frame);
 }
 
-static uint32_t __vm_proc_idx_ext(vm_t *vm)
+static uint32_t __frame_proc_idx_ext(struct vm_call_frame *frame)
 {
-	__vm_assert_inst_ptr_valid(vm);
-	uint32_t idx = *((uint32_t *)vm->ip) & EXT_CODE_MASK;
-	vm->ip += EXT_CODE_SZ;
+	__frame_assert_inst_ptr_valid(frame);
+	uint32_t idx = *((uint32_t *)frame->ip) & EXT_CODE_MASK;
+	frame->ip += EXT_CODE_SZ;
 
 	return idx;
 }
 
-static int16_t __vm_proc_jump_offset(vm_t *vm)
+static int16_t __frame_proc_jump_offset(struct vm_call_frame *frame)
 {
-	__vm_assert_inst_ptr_valid(vm);
-	int16_t idx = *((int16_t *)vm->ip);
+	__frame_assert_inst_ptr_valid(frame);
+	int16_t idx = *((int16_t *)frame->ip);
 
-	vm->ip += 2;
+	frame->ip += 2;
 
 	return idx;
 }
 
-static void __vm_proc_const(vm_t *vm, uint32_t idx)
+static void __vm_proc_const(vm_t *vm, struct vm_call_frame *frame, uint32_t idx)
 {
-	__vm_assert_inst_ptr_valid(vm);
-	__vm_push_const(vm, chunk_get_const(&vm->fn->chunk, idx));
+	__frame_assert_inst_ptr_valid(frame);
+	__vm_push_const(vm, chunk_get_const(&frame->fn->chunk, idx));
 }
 
 static void __vm_proc_negate_in_place(vm_t *vm)
@@ -518,28 +530,31 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 	va_end(args);
 	fputs("\n", stderr);
 
-	size_t offset = ((size_t)__vm_instr_offset(vm)) - 1;
-	int line = chunk_get_line(&vm->fn->chunk, offset);
+	struct vm_call_frame *cur_frame = list_peek(&vm->frames);
+
+	size_t offset = ((size_t)__frame_instr_offset(cur_frame)) - 1;
+	int line = chunk_get_line(&cur_frame->fn->chunk, offset);
 	fprintf(stderr, "Lox Runtime Error at line %d\n", line);
 	list_reset(&vm->stack);
 }
 
-static inline void __vm_assert_inst_ptr_valid(const vm_t *vm)
+static inline void
+__frame_assert_inst_ptr_valid(const struct vm_call_frame *frame)
 {
 	assert(("Instruction pointer has passed code end",
-		vm->ip < vm->fn->chunk.code.data +
-				 (vm->fn->chunk.code.cnt *
-				  vm->fn->chunk.code.type_sz)));
+		frame->ip < frame->fn->chunk.code.data +
+				    (frame->fn->chunk.code.cnt *
+				     frame->fn->chunk.code.type_sz)));
 }
 
-static inline char __vm_read_byte(vm_t *vm)
+static inline char __frame_read_byte(struct vm_call_frame *frame)
 {
-	return *vm->ip++;
+	return *frame->ip++;
 }
 
-static inline int __vm_instr_offset(const vm_t *vm)
+static inline int __frame_instr_offset(const struct vm_call_frame *frame)
 {
-	return (int)(vm->ip - vm->fn->chunk.code.data);
+	return (int)(frame->ip - frame->fn->chunk.code.data);
 }
 
 static void __vm_str_concat(vm_t *vm)
@@ -579,7 +594,6 @@ static void __vm_free_objects(vm_t *vm)
 	linked_list_free(vm->objects);
 }
 
-//FIXME: remove vars list and incorporate it into the stack
 static void __vm_discard(vm_t *vm, uint32_t discard_cnt)
 {
 	list_adjust_cnt(&vm->stack, -discard_cnt);

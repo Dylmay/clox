@@ -7,9 +7,17 @@
 #include "util/list/list.h"
 #include "util/list/linked_list.h"
 
-typedef struct {
-	uint8_t *ip;
+#define FRAMES_MAX 256
+#define FRAMES_MIN 32
+
+struct vm_call_frame {
 	lox_fn_t *fn;
+	uint8_t *ip;
+	list_t *slots;
+};
+
+typedef struct {
+	list_t frames;
 	struct state state;
 	list_t stack;
 	linked_list_t objects;

@@ -78,8 +78,15 @@ void object_print(lox_val_t val)
 		printf("%s", OBJECT_AS_CSTRING(val));
 		break;
 
-	case OBJ_FN:
-		printf("<fn %s>", OBJECT_AS_FN(val)->name->chars);
+	case OBJ_FN: {
+		struct object_fn *fn = OBJECT_AS_FN(val);
+
+		if (fn->name == NULL) {
+			printf("<script>");
+		} else {
+			printf("<fn %s>", OBJECT_AS_FN(val)->name->chars);
+		}
+	} break;
 		break;
 
 	default:

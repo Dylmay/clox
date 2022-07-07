@@ -115,7 +115,9 @@ lox_fn_t *compile(const char *src, struct state *state)
 		return NULL;
 	} else {
 #ifdef DEBUG_PRINT_CODE
-		disassem_chunk(&main->chunk, "code");
+		disassem_chunk(&main->chunk, main->name != NULL ?
+						     main->name->chars :
+						     "<script>");
 #endif
 #ifdef DEBUG_BENCH
 		printf("Time taken to compile: ");

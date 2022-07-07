@@ -47,8 +47,8 @@ lookup_t lookup_new()
 	list_set_cap(&scopes, 1);
 
 	lookup_t lookup = (lookup_t){
-		list_of_type(hashmap_t),
-		0,
+		.scopes = list_of_type(hashmap_t),
+		.cur_idx = LOOKUP_RESERVED_CNT,
 	};
 	lookup_begin_scope(&lookup);
 
