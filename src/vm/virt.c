@@ -6,7 +6,6 @@
 
 #include "util/common.h"
 #include "virt.h"
-#include "debug/debug.h"
 #include "ops/ops.h"
 #include "chunk/func/chunk_func.h"
 #include "val/func/val_func.h"
@@ -15,6 +14,23 @@
 #include "util/map/hash_util.h"
 #include "util/string/string_util.h"
 #include "util/list/list_iterator.h"
+
+#if defined(DEBUG_PRINT_CODE) | defined(DEBUG_BENCH)
+#include "debug/debug.h"
+#endif
+
+#ifdef DEBUG_BENCH
+#include "ops/ops_name.h"
+void _vm_print_time(map_entry_t entry, for_each_entry_t *_)
+{
+	const char *name = entry.key;
+	const struct timespec *avg_time = entry.value;
+
+	printf("  %s: ", name);
+	timespec_print(*avg_time, true);
+	puts("");
+}
+#endif
 
 static enum vm_res __vm_run(vm_t *vm);
 static void __vm_push_const(vm_t *vm, lox_val_t val);
@@ -55,6 +71,10 @@ vm_t vm_init()
 		.state = state_new(),
 		.ip = NULL,
 		.objects = linked_list_of_type(lox_obj_t *),
+#ifdef DEBUG_BENCH
+		.timings_map =
+			map_of_type(struct timespec, (hash_fn)&asciiz_gen_hash),
+#endif
 	};
 	list_reset(&vm.stack);
 
@@ -73,7 +93,26 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 
 	vm->ip = vm->chunk->code.data;
 
+#ifdef DEBUG_BENCH
+	struct timespec timer;
+	timer_start(&timer);
+#endif
+
 	res = __vm_run(vm);
+
+#ifdef DEBUG_BENCH
+	printf("Time taken to execute: ");
+	timespec_print(timer_end(timer), true);
+	puts("");
+
+	puts("Time taken per op: {");
+	for_each_entry_t for_each = {
+		.func = &_vm_print_time,
+	};
+	map_entries_for_each(&vm->timings_map, &for_each);
+	map_free(&vm->timings_map);
+	puts("}");
+#endif
 
 	chunk_free(vm->chunk);
 	reallocate(vm->chunk, sizeof(struct chunk), 0);
@@ -93,6 +132,9 @@ void vm_free(vm_t *vm)
 	list_free(&vm->stack);
 	__vm_free_objects(vm);
 	state_free(&vm->state);
+#ifdef DEBUG_BENCH
+	map_free(&vm->timings_map);
+#endif
 }
 void _var_prnt(map_entry_t entry, for_each_entry_t *d)
 {
@@ -180,6 +222,10 @@ static enum vm_res __vm_run(vm_t *vm)
 		vm_print_stack(vm);
 		disassem_inst(vm->chunk, __vm_instr_offset(vm));
 #endif // DEBUG_TRACE_EXECUTION
+#ifdef DEBUG_BENCH
+		struct timespec timer;
+		timer_start(&timer);
+#endif
 
 		switch (instr = __vm_read_byte(vm)) {
 		case OP_CONSTANT:
@@ -362,6 +408,16 @@ static enum vm_res __vm_run(vm_t *vm)
 			printf("UNKNOWN OPCODE: %d\n", instr);
 			return INTERPRET_RUNTIME_ERROR;
 		}
+#ifdef DEBUG_BENCH
+		struct timespec time_end = timer_end(timer);
+		struct timespec *prev_time =
+			map_get(&vm->timings_map, op_name(instr));
+		if (prev_time) {
+			time_end = timespec_avg(*prev_time, time_end);
+		}
+		map_insert(&vm->timings_map, op_name(instr), &time_end);
+
+#endif
 	}
 
 #undef BINARY_OP

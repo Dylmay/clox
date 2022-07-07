@@ -1,6 +1,7 @@
 CC = clang
 BUILD_ROOT = build/
-DBG_DEFINES = "-DDEBUG_TRACE_EXECUTION -DDEBUG_PRINT_CODE"
+DBG_DEFINES = "-DDEBUG_TRACE_EXECUTION -DDEBUG_PRINT_CODE -DDEBUG_BENCH"
+BENCH_DEFINES = "-DNDEBUG -DDEBUG_BENCH"
 REL_DEFINES = "-DNDEBUG"
 VALGRIND ?= valgrind "--leak-check=yes"
 
@@ -22,6 +23,9 @@ test: $(BUILD_DIR)/$(TARGET_EXEC)
 
 dbg:
 	make -C src/ CC=$(CC) DEFINES=$(DBG_DEFINES)
+
+bench:
+	make -C src/ CFLAGS="-Wall -Wno-unused-value -O3" CC=$(CC) DEFINES=$(BENCH_DEFINES)
 
 rel:
 	make -C src/ clean

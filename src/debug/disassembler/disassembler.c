@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "disassembler.h"
-#include "ops/ops.h"
+#include "ops/ops_name.h"
 #include "val/func/val_func.h"
 #include "chunk/func/chunk_func.h"
 
@@ -41,40 +41,40 @@ size_t disassem_inst(struct chunk *chunk, size_t offset)
 	switch (instruction) {
 #define CASE_SIMPLE_INSTR(instr)                                               \
 	case instr:                                                            \
-		return __simple_instr(#instr, offset)
+		return __simple_instr(op_name(instr), offset)
 
 	case OP_CONSTANT:
-		return __const_instr("OP_CONSTANT", chunk, offset);
+		return __const_instr(op_name(instruction), chunk, offset);
 
 	case OP_CONSTANT_LONG:
-		return __const_long_instr("OP_CONSTANT_LONG", chunk, offset);
+		return __const_long_instr(op_name(instruction), chunk, offset);
 
 	case OP_VAR_DEFINE:
-		return __var_instr("OP_VAR_DEFINE", chunk, offset);
+		return __var_instr(op_name(instruction), chunk, offset);
 
 	case OP_VAR_DEFINE_LONG:
-		return __var_long_instr("OP_VAR_DEFINE", chunk, offset);
+		return __var_long_instr(op_name(instruction), chunk, offset);
 
 	case OP_VAR_SET:
-		return __var_instr("OP_VAR_SET", chunk, offset);
+		return __var_instr(op_name(instruction), chunk, offset);
 
 	case OP_VAR_SET_LONG:
-		return __var_long_instr("OP_VAR_SET_LONG", chunk, offset);
+		return __var_long_instr(op_name(instruction), chunk, offset);
 
 	case OP_VAR_GET:
-		return __var_instr("OP_VAR_GET", chunk, offset);
+		return __var_instr(op_name(instruction), chunk, offset);
 
 	case OP_VAR_GET_LONG:
-		return __var_long_instr("OP_VAR_GET_LONG", chunk, offset);
+		return __var_long_instr(op_name(instruction), chunk, offset);
 
 	case OP_POP_COUNT:
-		return __pop_count_instr("OP_POP_COUNT", chunk, offset);
+		return __pop_count_instr(op_name(instruction), chunk, offset);
 
 	case OP_JUMP:
-		return __jump_instr("OP_JUMP", chunk, offset);
+		return __jump_instr(op_name(instruction), chunk, offset);
 
 	case OP_JUMP_IF_FALSE:
-		return __jump_instr("OP_JUMP_IF_FALSE", chunk, offset);
+		return __jump_instr(op_name(instruction), chunk, offset);
 
 		CASE_SIMPLE_INSTR(OP_RETURN);
 

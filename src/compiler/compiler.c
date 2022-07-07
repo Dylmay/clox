@@ -10,7 +10,7 @@
 #include "val/func/object_func.h"
 #include "compiler/lexer/lexer.h"
 
-#ifdef DEBUG_PRINT_CODE
+#if defined(DEBUG_PRINT_CODE) | defined(DEBUG_BENCH)
 #include "debug/debug.h"
 #endif
 
@@ -99,6 +99,11 @@ struct chunk *compile(const char *src, struct state *state)
 
 	parser_t prsr = parser_new(src, chunk, state);
 
+#ifdef DEBUG_BENCH
+	struct timespec timer;
+	timer_start(&timer);
+#endif
+
 	while (!parser_match(&prsr, TKN_EOF)) {
 		__parse_decl(&prsr);
 	}
@@ -112,6 +117,11 @@ struct chunk *compile(const char *src, struct state *state)
 	} else {
 #ifdef DEBUG_PRINT_CODE
 		disassem_chunk(chunk, "code");
+#endif
+#ifdef DEBUG_BENCH
+		printf("Time taken to compile: ");
+		timespec_print(timer_end(timer), true);
+		puts("");
 #endif
 		return chunk;
 	}

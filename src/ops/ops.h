@@ -5,34 +5,10 @@
 #define EXT_CODE_MASK (0x00ffffff)
 #define EXT_CODE_MAX (UINT8_MAX * 24)
 
+#define X(a, b) a,
 typedef enum {
-	OP_CONSTANT,
-	OP_CONSTANT_LONG,
-	OP_EQUAL,
-	OP_GREATER,
-	OP_LESS,
-	OP_NIL,
-	OP_TRUE,
-	OP_FALSE,
-	OP_NOT,
-	OP_ADD,
-	OP_MOD,
-	OP_SUBTRACT,
-	OP_MULTIPLY,
-	OP_DIVIDE,
-	OP_NEGATE,
-	OP_PRINT,
-	OP_POP,
-	OP_POP_COUNT,
-	OP_VAR_DEFINE,
-	OP_VAR_DEFINE_LONG,
-	OP_VAR_GET,
-	OP_VAR_GET_LONG,
-	OP_VAR_SET,
-	OP_VAR_SET_LONG,
-	OP_JUMP,
-	OP_JUMP_IF_FALSE,
-	OP_RETURN
+#include "ops_table.h"
 } op_code_t;
+#undef X
 
 #endif // __CLOX_OPS_H__

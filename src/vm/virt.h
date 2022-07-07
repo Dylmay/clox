@@ -13,6 +13,9 @@ typedef struct {
 	struct state state;
 	list_t stack;
 	linked_list_t objects;
+#ifdef DEBUG_BENCH
+	hashmap_t timings_map;
+#endif
 } vm_t;
 
 enum vm_res { INTERPRET_OK, INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR };
