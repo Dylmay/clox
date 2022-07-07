@@ -11,6 +11,7 @@ typedef double lox_num_t;
 typedef bool lox_bool_t;
 typedef struct object lox_obj_t;
 typedef struct object_str lox_str_t;
+typedef struct object_fn lox_fn_t;
 
 typedef struct {
 	enum value_type type;

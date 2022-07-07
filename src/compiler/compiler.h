@@ -4,6 +4,6 @@
 #include "chunk/chunk.h"
 #include "state/state.h"
 
-struct chunk *compile(const char *src, struct state *state);
+lox_fn_t *compile(const char *src, struct state *state);
 
 #endif // __CLOX_COMPILER_H__

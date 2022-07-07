@@ -21,7 +21,8 @@ static inline void __extended_op(struct chunk *chunk, op_code_t short_op,
 	}
 }
 
-static inline int __jump_instr_write(struct chunk *chunk, code_t jump_code, int line)
+static inline int __jump_instr_write(struct chunk *chunk, code_t jump_code,
+				     int line)
 {
 	chunk_write_code(chunk, jump_code, line);
 	chunk_reserve_code(chunk, 2);
@@ -29,62 +30,64 @@ static inline int __jump_instr_write(struct chunk *chunk, code_t jump_code, int 
 	return (int)chunk_cur_ip(chunk) - 2;
 }
 
-static inline bool op_patch_jump(struct chunk *chunk, long offset)
+static inline bool op_patch_jump(lox_fn_t *fn, long offset)
 {
-	long jump = chunk_cur_ip(chunk) - offset - 2;
+	long jump = chunk_cur_ip(&fn->chunk) - offset - 2;
 
 	if (jump > INT16_MAX || jump < INT16_MIN) {
 		return false;
 	}
 
-	chunk_patch_code(chunk, offset, &jump, 2);
+	chunk_patch_code(&fn->chunk, offset, &jump, 2);
 
 	return true;
 }
 
-static inline void OP_CONST_WRITE(struct chunk *chunk, lox_val_t const_val, int line)
+static inline void OP_CONST_WRITE(lox_fn_t *fn, lox_val_t const_val, int line)
 {
-	uint32_t const_offset = chunk_write_const(chunk, const_val);
-	__extended_op(chunk, OP_CONSTANT, OP_CONSTANT_LONG, const_offset, line);
+	uint32_t const_offset = chunk_write_const(&fn->chunk, const_val);
+	__extended_op(&fn->chunk, OP_CONSTANT, OP_CONSTANT_LONG, const_offset,
+		      line);
 }
 
-static inline void OP_POP_COUNT_WRITE(struct chunk *chunk, uint32_t cnt, int line)
+static inline void OP_POP_COUNT_WRITE(lox_fn_t *fn, uint32_t cnt, int line)
 {
-	chunk_write_code(chunk, OP_POP_COUNT, line);
-	chunk_write_code(chunk, (code_t)cnt, line);
+	chunk_write_code(&fn->chunk, OP_POP_COUNT, line);
+	chunk_write_code(&fn->chunk, (code_t)cnt, line);
 }
 
-static inline bool OP_LOOP_WRITE(struct chunk *chunk, long loop_begin, int line)
+static inline bool OP_LOOP_WRITE(lox_fn_t *fn, long loop_begin, int line)
 {
-	long jump = loop_begin - chunk_cur_ip(chunk) - 3;
+	long jump = loop_begin - chunk_cur_ip(&fn->chunk) - 3;
 
 	if (jump > INT16_MAX || jump < INT16_MIN) {
 		return false;
 	}
 
-	chunk_write_code_bulk(chunk, OP_JUMP, line, &jump, sizeof(int16_t));
+	chunk_write_code_bulk(&fn->chunk, OP_JUMP, line, &jump,
+			      sizeof(int16_t));
 
 	return true;
 }
 
 #define FUNC_NAME_OF(op) op##_WRITE
 #define CREATE_WRITE_FUNC(instr)                                               \
-	static inline void FUNC_NAME_OF(instr)(struct chunk *chunk, int line)      \
+	static inline void FUNC_NAME_OF(instr)(lox_fn_t * fn, int line)        \
 	{                                                                      \
-		chunk_write_code(chunk, instr, line);                          \
+		chunk_write_code(&fn->chunk, instr, line);                     \
 	}
 
 #define CREATE_JUMP_FUNC(instr)                                                \
-	static inline int instr##_WRITE(struct chunk *chunk, int line)              \
+	static inline int instr##_WRITE(lox_fn_t *fn, int line)                \
 	{                                                                      \
-		return __jump_instr_write(chunk, instr, line);                 \
+		return __jump_instr_write(&fn->chunk, instr, line);            \
 	}
 
 #define CREATE_EXTENDED_WRITE_FUNC(short_op, long_op)                          \
-	static inline void short_op##_WRITE(struct chunk *chunk, uint32_t glbl_idx, \
+	static inline void short_op##_WRITE(lox_fn_t *fn, uint32_t glbl_idx,   \
 					    int line)                          \
 	{                                                                      \
-		__extended_op(chunk, short_op, long_op, glbl_idx, line);       \
+		__extended_op(&fn->chunk, short_op, long_op, glbl_idx, line);  \
 	}
 
 CREATE_JUMP_FUNC(OP_JUMP)
@@ -111,22 +114,22 @@ CREATE_EXTENDED_WRITE_FUNC(OP_VAR_DEFINE, OP_VAR_DEFINE_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_VAR_GET, OP_VAR_GET_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_VAR_SET, OP_VAR_SET_LONG)
 
-static inline void OP_BANG_EQ_WRITE(struct chunk *chunk, int line)
+static inline void OP_BANG_EQ_WRITE(lox_fn_t *fn, int line)
 {
-	OP_EQUAL_WRITE(chunk, line);
-	OP_NOT_WRITE(chunk, line);
+	OP_EQUAL_WRITE(fn, line);
+	OP_NOT_WRITE(fn, line);
 }
 
-static inline void OP_GREATER_EQ_WRITE(struct chunk *chunk, int line)
+static inline void OP_GREATER_EQ_WRITE(lox_fn_t *fn, int line)
 {
-	OP_LESS_WRITE(chunk, line);
-	OP_NOT_WRITE(chunk, line);
+	OP_LESS_WRITE(fn, line);
+	OP_NOT_WRITE(fn, line);
 }
 
-static inline void OP_LESS_EQ_WRITE(struct chunk *chunk, int line)
+static inline void OP_LESS_EQ_WRITE(lox_fn_t *fn, int line)
 {
-	OP_GREATER_WRITE(chunk, line);
-	OP_NOT_WRITE(chunk, line);
+	OP_GREATER_WRITE(fn, line);
+	OP_NOT_WRITE(fn, line);
 }
 
 #undef CREATE_JUMP_FUNC

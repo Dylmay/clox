@@ -7,7 +7,9 @@
 
 #define OBJECT_TYPE(obj) (VAL_AS_OBJ(obj)->type)
 #define OBJECT_IS_STRING(obj) (object_is_type(obj, OBJ_STRING))
+#define OBJECT_IS_FN(obj) (object_is_type(obj, OBJ_FN))
 #define OBJECT_AS_STRING(obj) (((struct object_str *)VAL_AS_OBJ(obj)))
+#define OBJECT_AS_FN(obj) (((struct object_fn *)VAL_AS_OBJ(obj)))
 #define OBJECT_AS_CSTRING(obj) (((struct object_str *)VAL_AS_OBJ(obj))->chars)
 
 static inline bool object_is_type(lox_val_t value, enum object_type type)
@@ -16,6 +18,7 @@ static inline bool object_is_type(lox_val_t value, enum object_type type)
 }
 
 void object_free(struct object *obj);
+struct object_fn *object_fn_new();
 struct object_str *object_str_new(const char *chars, size_t len);
 struct object_str *object_str_concat(const struct object_str *a,
 				     const struct object_str *b);

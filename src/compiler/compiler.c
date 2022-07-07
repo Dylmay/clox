@@ -92,12 +92,11 @@ static const struct parse_rule *__compiler_get_rule(enum tkn_type tkn)
 	return &PARSE_RULES[tkn];
 }
 
-struct chunk *compile(const char *src, struct state *state)
+lox_fn_t *compile(const char *src, struct state *state)
 {
-	struct chunk *chunk = reallocate(NULL, 0, sizeof(struct chunk));
-	*chunk = chunk_new();
+	lox_fn_t *main = object_fn_new();
 
-	parser_t prsr = parser_new(src, chunk, state);
+	parser_t prsr = parser_new(src, main, state);
 
 #ifdef DEBUG_BENCH
 	struct timespec timer;
@@ -108,22 +107,22 @@ struct chunk *compile(const char *src, struct state *state)
 		__parse_decl(&prsr);
 	}
 
-	OP_RETURN_WRITE(chunk, prsr.current.line);
+	OP_RETURN_WRITE(prsr.cur_fn, prsr.current.line);
 
 	if (prsr.had_err) {
-		reallocate(chunk, sizeof(struct chunk), 0);
+		reallocate(prsr.cur_fn, sizeof(struct chunk), 0);
 
 		return NULL;
 	} else {
 #ifdef DEBUG_PRINT_CODE
-		disassem_chunk(chunk, "code");
+		disassem_chunk(&main->chunk, "code");
 #endif
 #ifdef DEBUG_BENCH
 		printf("Time taken to compile: ");
 		timespec_print(timer_end(timer), true);
 		puts("");
 #endif
-		return chunk;
+		return main;
 	}
 }
 
@@ -135,7 +134,7 @@ static void __parse_expr(parser_t *prsr)
 static void __parse_number(parser_t *prsr)
 {
 	double val = strtod(prsr->previous.start, NULL);
-	OP_CONST_WRITE(prsr->stack, VAL_CREATE_NUMBER(val),
+	OP_CONST_WRITE(prsr->cur_fn, VAL_CREATE_NUMBER(val),
 		       prsr->previous.line);
 }
 
@@ -155,11 +154,11 @@ static void __parse_unary(parser_t *prsr)
 
 	switch (tkn_type) {
 	case TKN_MINUS:
-		OP_NEGATE_WRITE(prsr->stack, line_num);
+		OP_NEGATE_WRITE(prsr->cur_fn, line_num);
 		break;
 
 	case TKN_BANG:
-		OP_NOT_WRITE(prsr->stack, line_num);
+		OP_NOT_WRITE(prsr->cur_fn, line_num);
 		break;
 
 	default:
@@ -176,37 +175,37 @@ static void __parse_binary(parser_t *prsr)
 
 	switch (tkn_type) {
 	case TKN_BANG_EQ:
-		OP_BANG_EQ_WRITE(prsr->stack, prsr->previous.line);
+		OP_BANG_EQ_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 	case TKN_EQ_EQ:
-		OP_EQUAL_WRITE(prsr->stack, prsr->previous.line);
+		OP_EQUAL_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 	case TKN_GREATER:
-		OP_GREATER_WRITE(prsr->stack, prsr->previous.line);
+		OP_GREATER_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 	case TKN_GREATER_EQ:
-		OP_GREATER_EQ_WRITE(prsr->stack, prsr->previous.line);
+		OP_GREATER_EQ_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 	case TKN_LESS:
-		OP_LESS_WRITE(prsr->stack, prsr->previous.line);
+		OP_LESS_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 	case TKN_LESS_EQ:
-		OP_LESS_EQ_WRITE(prsr->stack, prsr->previous.line);
+		OP_LESS_EQ_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 	case TKN_PLUS:
-		OP_ADD_WRITE(prsr->stack, prsr->previous.line);
+		OP_ADD_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 	case TKN_MINUS:
-		OP_SUBTRACT_WRITE(prsr->stack, prsr->previous.line);
+		OP_SUBTRACT_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 	case TKN_STAR:
-		OP_MULTIPLY_WRITE(prsr->stack, prsr->previous.line);
+		OP_MULTIPLY_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 	case TKN_SLASH:
-		OP_DIVIDE_WRITE(prsr->stack, prsr->previous.line);
+		OP_DIVIDE_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 	case TKN_MOD:
-		OP_MOD_WRITE(prsr->stack, prsr->previous.line);
+		OP_MOD_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 	default:
 		assert(("Unexpected binary type", 0));
@@ -244,15 +243,15 @@ static void __parse_lit(parser_t *prsr)
 {
 	switch (prsr->previous.type) {
 	case TKN_FALSE:
-		OP_FALSE_WRITE(prsr->stack, prsr->previous.line);
+		OP_FALSE_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 
 	case TKN_TRUE:
-		OP_TRUE_WRITE(prsr->stack, prsr->previous.line);
+		OP_TRUE_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 
 	case TKN_NIL:
-		OP_NIL_WRITE(prsr->stack, prsr->previous.line);
+		OP_NIL_WRITE(prsr->cur_fn, prsr->previous.line);
 		break;
 
 	default:
@@ -267,7 +266,7 @@ static void __parse_string(parser_t *prsr)
 		intern_string(&prsr->state->strings, prsr->previous.start + 1,
 			      prsr->previous.len - 2);
 
-	OP_CONST_WRITE(prsr->stack, VAL_CREATE_OBJ(string),
+	OP_CONST_WRITE(prsr->cur_fn, VAL_CREATE_OBJ(string),
 		       prsr->previous.line);
 }
 
@@ -301,7 +300,7 @@ static void __parse_var_decl(parser_t *prsr)
 	if (parser_match(prsr, TKN_EQ)) {
 		__parse_expr(prsr);
 	} else {
-		OP_NIL_WRITE(prsr->stack, prsr->previous.line);
+		OP_NIL_WRITE(prsr->cur_fn, prsr->previous.line);
 	}
 
 	parser_consume(prsr, TKN_SEMICOLON,
@@ -312,9 +311,9 @@ static void __parse_var_decl(parser_t *prsr)
 			&prsr->state->lookup, name, len,
 			is_mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_NO_FLAGS);
 
-		OP_VAR_DEFINE_WRITE(prsr->stack, glbl_idx.idx, def_ln);
+		OP_VAR_DEFINE_WRITE(prsr->cur_fn, glbl_idx.idx, def_ln);
 	} else {
-		OP_VAR_DEFINE_WRITE(prsr->stack, 0, def_ln);
+		OP_VAR_DEFINE_WRITE(prsr->cur_fn, 0, def_ln);
 	}
 }
 
@@ -351,14 +350,14 @@ static void __parse_expr_stmt(parser_t *prsr)
 {
 	__parse_expr(prsr);
 	parser_consume(prsr, TKN_SEMICOLON, "Expected ';' after expression.");
-	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+	OP_POP_WRITE(prsr->cur_fn, prsr->previous.line);
 }
 
 static void __parse_print(parser_t *prsr)
 {
 	__parse_expr(prsr);
 	parser_consume(prsr, TKN_SEMICOLON, "Expected ';' after value.");
-	OP_PRINT_WRITE(prsr->stack, prsr->previous.line);
+	OP_PRINT_WRITE(prsr->cur_fn, prsr->previous.line);
 }
 
 static void __parse_var(parser_t *prsr)
@@ -379,9 +378,9 @@ static void __parse_var(parser_t *prsr)
 			parser_error(prsr, &name_tkn, "Variable isn't mutable");
 		}
 
-		OP_VAR_SET_WRITE(prsr->stack, var.idx, prsr->previous.line);
+		OP_VAR_SET_WRITE(prsr->cur_fn, var.idx, prsr->previous.line);
 	} else {
-		OP_VAR_GET_WRITE(prsr->stack, var.idx, prsr->previous.line);
+		OP_VAR_GET_WRITE(prsr->cur_fn, var.idx, prsr->previous.line);
 	}
 }
 
@@ -394,17 +393,17 @@ static void __parse_if_stmt(parser_t *prsr)
 					"Expected '{' or 'if' after else.");
 	}
 
-	int if_jump = OP_JUMP_IF_FALSE_WRITE(prsr->stack, prsr->previous.line);
-	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+	int if_jump = OP_JUMP_IF_FALSE_WRITE(prsr->cur_fn, prsr->previous.line);
+	OP_POP_WRITE(prsr->cur_fn, prsr->previous.line);
 
 	__parse_decl(prsr);
 
-	int else_jump = OP_JUMP_WRITE(prsr->stack, prsr->previous.line);
+	int else_jump = OP_JUMP_WRITE(prsr->cur_fn, prsr->previous.line);
 
-	if (!op_patch_jump(prsr->stack, if_jump)) {
+	if (!op_patch_jump(prsr->cur_fn, if_jump)) {
 		parser_error_at_current(prsr, "Too much code to jump over");
 	}
-	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+	OP_POP_WRITE(prsr->cur_fn, prsr->previous.line);
 
 	if (parser_match(prsr, TKN_ELSE)) {
 		if (!parser_check(prsr, TKN_LEFT_BRACE) &&
@@ -416,36 +415,37 @@ static void __parse_if_stmt(parser_t *prsr)
 		__parse_decl(prsr);
 	}
 
-	if (!op_patch_jump(prsr->stack, else_jump)) {
+	if (!op_patch_jump(prsr->cur_fn, else_jump)) {
 		parser_error_at_current(prsr, "Too much code to jump over");
 	}
 }
 
 static void __parse_and(parser_t *prsr)
 {
-	int end_jump = OP_JUMP_IF_FALSE_WRITE(prsr->stack, prsr->previous.line);
-	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+	int end_jump =
+		OP_JUMP_IF_FALSE_WRITE(prsr->cur_fn, prsr->previous.line);
+	OP_POP_WRITE(prsr->cur_fn, prsr->previous.line);
 
 	__parse_precedence(prsr, PREC_AND);
-	op_patch_jump(prsr->stack, end_jump);
+	op_patch_jump(prsr->cur_fn, end_jump);
 }
 
 static void __parse_or(parser_t *prsr)
 {
 	int else_jump =
-		OP_JUMP_IF_FALSE_WRITE(prsr->stack, prsr->previous.line);
-	int end_jump = OP_JUMP_WRITE(prsr->stack, prsr->previous.line);
+		OP_JUMP_IF_FALSE_WRITE(prsr->cur_fn, prsr->previous.line);
+	int end_jump = OP_JUMP_WRITE(prsr->cur_fn, prsr->previous.line);
 
-	op_patch_jump(prsr->stack, else_jump);
-	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+	op_patch_jump(prsr->cur_fn, else_jump);
+	OP_POP_WRITE(prsr->cur_fn, prsr->previous.line);
 
 	__parse_precedence(prsr, PREC_OR);
-	op_patch_jump(prsr->stack, end_jump);
+	op_patch_jump(prsr->cur_fn, end_jump);
 }
 
 static void __parse_while_stmt(parser_t *prsr)
 {
-	size_t loop_begin = chunk_cur_ip(prsr->stack);
+	size_t loop_begin = chunk_cur_ip(&prsr->cur_fn->chunk);
 	__parse_expr(prsr);
 
 	if (!parser_check(prsr, TKN_LEFT_BRACE)) {
@@ -453,17 +453,17 @@ static void __parse_while_stmt(parser_t *prsr)
 	}
 
 	int exit_jump =
-		OP_JUMP_IF_FALSE_WRITE(prsr->stack, prsr->previous.line);
-	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+		OP_JUMP_IF_FALSE_WRITE(prsr->cur_fn, prsr->previous.line);
+	OP_POP_WRITE(prsr->cur_fn, prsr->previous.line);
 
 	__parse_decl(prsr);
 
-	OP_LOOP_WRITE(prsr->stack, loop_begin, prsr->previous.line);
+	OP_LOOP_WRITE(prsr->cur_fn, loop_begin, prsr->previous.line);
 
-	if (!op_patch_jump(prsr->stack, exit_jump)) {
+	if (!op_patch_jump(prsr->cur_fn, exit_jump)) {
 		parser_error_at_current(prsr, "Too much code to jump over");
 	}
-	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+	OP_POP_WRITE(prsr->cur_fn, prsr->previous.line);
 
 	if (parser_match(prsr, TKN_ELSE)) {
 		__parse_stmnt(prsr);
@@ -489,11 +489,11 @@ static void __parse_for_stmt(parser_t *prsr)
 	parser_consume(prsr, TKN_NUM, "Expected range start");
 	// write start of range
 	double range_start = strtod(prsr->previous.start, NULL);
-	OP_CONST_WRITE(prsr->stack, VAL_CREATE_NUMBER(range_start),
+	OP_CONST_WRITE(prsr->cur_fn, VAL_CREATE_NUMBER(range_start),
 		       prsr->previous.line);
 	lookup_var_t glbl_idx = lookup_scope_define(&prsr->state->lookup, name,
 						    len, LOOKUP_VAR_MUTABLE);
-	OP_VAR_DEFINE_WRITE(prsr->stack, glbl_idx.idx, def_ln);
+	OP_VAR_DEFINE_WRITE(prsr->cur_fn, glbl_idx.idx, def_ln);
 
 	parser_consume(prsr, TKN_DOT, "Expected range '..'");
 	parser_consume(prsr, TKN_DOT, "Expected range '..'");
@@ -502,14 +502,14 @@ static void __parse_for_stmt(parser_t *prsr)
 	//condition
 	double range_end = strtod(prsr->previous.start, NULL);
 
-	int inc_start = chunk_cur_ip(prsr->stack);
-	OP_VAR_GET_WRITE(prsr->stack, glbl_idx.idx, def_ln);
-	OP_CONST_WRITE(prsr->stack, VAL_CREATE_NUMBER(range_end),
+	int inc_start = chunk_cur_ip(&prsr->cur_fn->chunk);
+	OP_VAR_GET_WRITE(prsr->cur_fn, glbl_idx.idx, def_ln);
+	OP_CONST_WRITE(prsr->cur_fn, VAL_CREATE_NUMBER(range_end),
 		       prsr->previous.line);
 	//LESS_EQ
-	OP_LESS_WRITE(prsr->stack, prsr->previous.line);
-	int exit_jump = OP_JUMP_IF_FALSE_WRITE(prsr->stack, def_ln);
-	OP_POP_WRITE(prsr->stack, def_ln);
+	OP_LESS_WRITE(prsr->cur_fn, prsr->previous.line);
+	int exit_jump = OP_JUMP_IF_FALSE_WRITE(prsr->cur_fn, def_ln);
+	OP_POP_WRITE(prsr->cur_fn, def_ln);
 
 	if (!parser_check(prsr, TKN_LEFT_BRACE)) {
 		parser_error_at_current(prsr, "Expected left brace");
@@ -517,15 +517,15 @@ static void __parse_for_stmt(parser_t *prsr)
 	// TODO: have unreleased scopes
 	__parse_decl(prsr);
 
-	OP_VAR_GET_WRITE(prsr->stack, glbl_idx.idx, prsr->previous.line);
-	OP_CONST_WRITE(prsr->stack, VAL_CREATE_NUMBER(1), prsr->previous.line);
-	OP_ADD_WRITE(prsr->stack, prsr->previous.line);
-	OP_VAR_SET_WRITE(prsr->stack, glbl_idx.idx, prsr->previous.line);
-	OP_POP_WRITE(prsr->stack, prsr->previous.line);
-	OP_LOOP_WRITE(prsr->stack, inc_start, prsr->previous.line);
+	OP_VAR_GET_WRITE(prsr->cur_fn, glbl_idx.idx, prsr->previous.line);
+	OP_CONST_WRITE(prsr->cur_fn, VAL_CREATE_NUMBER(1), prsr->previous.line);
+	OP_ADD_WRITE(prsr->cur_fn, prsr->previous.line);
+	OP_VAR_SET_WRITE(prsr->cur_fn, glbl_idx.idx, prsr->previous.line);
+	OP_POP_WRITE(prsr->cur_fn, prsr->previous.line);
+	OP_LOOP_WRITE(prsr->cur_fn, inc_start, prsr->previous.line);
 
-	op_patch_jump(prsr->stack, exit_jump);
-	OP_POP_WRITE(prsr->stack, prsr->previous.line);
+	op_patch_jump(prsr->cur_fn, exit_jump);
+	OP_POP_WRITE(prsr->cur_fn, prsr->previous.line);
 	__compiler_end_scope(prsr);
 }
 
@@ -536,7 +536,7 @@ static void __compiler_begin_scope(parser_t *prsr)
 
 static void __compiler_end_scope(parser_t *prsr)
 {
-	OP_POP_COUNT_WRITE(prsr->stack,
+	OP_POP_COUNT_WRITE(prsr->cur_fn,
 			   map_size(lookup_cur_scope(&prsr->state->lookup)),
 			   prsr->previous.line);
 	lookup_end_scope(&prsr->state->lookup);

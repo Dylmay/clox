@@ -9,7 +9,7 @@
 
 typedef struct {
 	uint8_t *ip;
-	struct chunk *chunk;
+	lox_fn_t *fn;
 	struct state state;
 	list_t stack;
 	linked_list_t objects;

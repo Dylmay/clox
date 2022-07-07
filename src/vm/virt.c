@@ -66,7 +66,7 @@ struct var_printer {
 vm_t vm_init()
 {
 	vm_t vm = (vm_t){
-		.chunk = NULL,
+		.fn = NULL,
 		.stack = list_of_type(lox_val_t),
 		.state = state_new(),
 		.ip = NULL,
@@ -85,13 +85,13 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 {
 	enum vm_res res;
 
-	vm->chunk = compile(src, &vm->state);
+	vm->fn = compile(src, &vm->state);
 
-	if (!vm->chunk) {
+	if (!vm->fn) {
 		return INTERPRET_COMPILE_ERROR;
 	}
 
-	vm->ip = vm->chunk->code.data;
+	vm->ip = vm->fn->chunk.code.data;
 
 #ifdef DEBUG_BENCH
 	struct timespec timer;
@@ -114,9 +114,7 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 	puts("}");
 #endif
 
-	chunk_free(vm->chunk);
-	reallocate(vm->chunk, sizeof(struct chunk), 0);
-	vm->chunk = NULL;
+	object_free((struct object *)vm->fn);
 
 #ifdef DEBUG_TRACE_EXECUTION
 	if (res == INTERPRET_OK) {
@@ -220,7 +218,7 @@ static enum vm_res __vm_run(vm_t *vm)
 #ifdef DEBUG_TRACE_EXECUTION
 		printf("\t\t");
 		vm_print_stack(vm);
-		disassem_inst(vm->chunk, __vm_instr_offset(vm));
+		disassem_inst(&vm->fn->chunk, __vm_instr_offset(vm));
 #endif // DEBUG_TRACE_EXECUTION
 #ifdef DEBUG_BENCH
 		struct timespec timer;
@@ -478,7 +476,7 @@ static int16_t __vm_proc_jump_offset(vm_t *vm)
 static void __vm_proc_const(vm_t *vm, uint32_t idx)
 {
 	__vm_assert_inst_ptr_valid(vm);
-	__vm_push_const(vm, chunk_get_const(vm->chunk, idx));
+	__vm_push_const(vm, chunk_get_const(&vm->fn->chunk, idx));
 }
 
 static void __vm_proc_negate_in_place(vm_t *vm)
@@ -521,7 +519,7 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 	fputs("\n", stderr);
 
 	size_t offset = ((size_t)__vm_instr_offset(vm)) - 1;
-	int line = chunk_get_line(vm->chunk, offset);
+	int line = chunk_get_line(&vm->fn->chunk, offset);
 	fprintf(stderr, "Lox Runtime Error at line %d\n", line);
 	list_reset(&vm->stack);
 }
@@ -529,8 +527,9 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 static inline void __vm_assert_inst_ptr_valid(const vm_t *vm)
 {
 	assert(("Instruction pointer has passed code end",
-		vm->ip < vm->chunk->code.data + (vm->chunk->code.cnt *
-						 vm->chunk->code.type_sz)));
+		vm->ip < vm->fn->chunk.code.data +
+				 (vm->fn->chunk.code.cnt *
+				  vm->fn->chunk.code.type_sz)));
 }
 
 static inline char __vm_read_byte(vm_t *vm)
@@ -540,7 +539,7 @@ static inline char __vm_read_byte(vm_t *vm)
 
 static inline int __vm_instr_offset(const vm_t *vm)
 {
-	return (int)(vm->ip - vm->chunk->code.data);
+	return (int)(vm->ip - vm->fn->chunk.code.data);
 }
 
 static void __vm_str_concat(vm_t *vm)

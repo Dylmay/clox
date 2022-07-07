@@ -2,6 +2,7 @@
 
 #include "util/mem/mem.h"
 #include "util/map/hash_util.h"
+#include "chunk/func/chunk_func.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -21,6 +22,17 @@ static struct object *__allocate_object(size_t, enum object_type);
 struct object_str *object_str_new(const char *chars, size_t len)
 {
 	return __create_object_str(chars, len);
+}
+
+struct object_fn *object_fn_new()
+{
+	struct object_fn *fn = ALLOCATE_OBJECT(struct object_fn, OBJ_FN);
+
+	fn->arity = 0;
+	fn->name = NULL;
+	fn->chunk = chunk_new();
+
+	return fn;
 }
 
 struct object_str *object_str_concat(const struct object_str *a,
@@ -48,6 +60,12 @@ void object_free(struct object *obj)
 			   0);
 	} break;
 
+	case OBJ_FN: {
+		struct object_fn *fn = (struct object_fn *)obj;
+		chunk_free(&fn->chunk);
+		FREE(struct object_fn, fn);
+	} break;
+
 	default:
 		break;
 	}
@@ -58,6 +76,10 @@ void object_print(lox_val_t val)
 	switch (OBJECT_TYPE(val)) {
 	case OBJ_STRING:
 		printf("%s", OBJECT_AS_CSTRING(val));
+		break;
+
+	case OBJ_FN:
+		printf("<fn %s>", OBJECT_AS_FN(val)->name->chars);
 		break;
 
 	default:

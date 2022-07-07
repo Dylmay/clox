@@ -3,11 +3,11 @@
 
 #include "util/common.h"
 #include "lexer/lexer.h"
-#include "chunk/chunk.h"
+#include "val/val.h"
 
 typedef struct {
 	lexer_t lexer;
-	struct chunk *stack;
+	lox_fn_t *cur_fn;
 	struct state *state;
 	token_t current;
 	token_t previous;
@@ -38,8 +38,7 @@ struct parse_rule {
 	enum precedence prec;
 };
 
-parser_t parser_new(const char *source, struct chunk *chunk,
-		    struct state *state);
+parser_t parser_new(const char *source, lox_fn_t *fn, struct state *state);
 bool parser_check(const parser_t *prsr, enum tkn_type type);
 bool parser_match(parser_t *prsr, enum tkn_type type);
 void parser_advance(parser_t *prsr);
