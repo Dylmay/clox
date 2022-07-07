@@ -8,7 +8,8 @@
 
 typedef struct {
 	uint8_t *ip;
-	chunk_t chunk;
+	chunk_t *chunk;
+	struct state state;
 	list_t stack;
 	linked_list_t objects;
 } vm_t;

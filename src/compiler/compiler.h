@@ -2,7 +2,8 @@
 #define __CLOX_COMPILER_H__
 
 #include "chunk/chunk.h"
+#include "chunk/state.h"
 
-bool compile(const char *src, chunk_t *chunk);
+chunk_t *compile(const char *src, struct state *state);
 
 #endif // __CLOX_COMPILER_H__

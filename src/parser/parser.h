@@ -8,6 +8,7 @@
 typedef struct {
 	lexer_t lexer;
 	chunk_t *stack;
+	struct state *state;
 	token_t current;
 	token_t previous;
 	bool had_err;
@@ -37,7 +38,7 @@ struct parse_rule {
 	enum precedence prec;
 };
 
-parser_t parser_new(const char *source, chunk_t *chunk);
+parser_t parser_new(const char *source, chunk_t *chunk, struct state *state);
 bool parser_check(const parser_t *prsr, enum tkn_type type);
 bool parser_match(parser_t *prsr, enum tkn_type type);
 void parser_advance(parser_t *prsr);

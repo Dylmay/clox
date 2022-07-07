@@ -49,8 +49,9 @@ struct var_printer {
 vm_t vm_init()
 {
 	vm_t vm = (vm_t){
-		.chunk = chunk_new(),
+		.chunk = NULL,
 		.stack = list_of_type(lox_val_t),
+		.state = state_new(),
 		.ip = NULL,
 		.objects = linked_list_of_type(lox_obj_t *),
 	};
@@ -63,23 +64,26 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 {
 	enum vm_res res;
 
-	chunk_t prev_chunk = vm->chunk;
-	vm->chunk = chunk_using_state(vm->chunk.vals);
-	chunk_free(&prev_chunk, false);
+	vm->chunk = compile(src, &vm->state);
 
-	if (!compile(src, &vm->chunk)) {
+	if (!vm->chunk) {
 		return INTERPRET_COMPILE_ERROR;
 	}
 
-	vm->ip = vm->chunk.code.data;
+	vm->ip = vm->chunk->code.data;
 
 	res = __vm_run(vm);
+
+	chunk_free(vm->chunk);
+	reallocate(vm->chunk, sizeof(chunk_t), 0);
+	vm->chunk = NULL;
 
 #ifdef DEBUG_TRACE_EXECUTION
 	if (res == INTERPRET_OK) {
 		vm_print_vars(vm);
 	}
 #endif // DEBUG_TRACE_EXECUTION
+
 	return res;
 }
 
@@ -87,7 +91,7 @@ void vm_free(vm_t *vm)
 {
 	list_free(&vm->stack);
 	__vm_free_objects(vm);
-	chunk_free(&vm->chunk, true);
+	state_free(&vm->state);
 }
 void _var_prnt(map_entry_t entry, for_each_entry_t *d)
 {
@@ -121,20 +125,20 @@ void vm_print_vars(vm_t *vm)
 	};
 
 	puts("Globals: {");
-	map_entries_for_each(lookup_scope_at_depth(&vm->chunk.vals.lookup, 1),
+	map_entries_for_each(lookup_scope_at_depth(&vm->state.lookup, 1),
 			     (for_each_entry_t *)&var_prnt);
 	puts("}");
 
-	for (int depth = 2; depth < lookup_cur_depth(&vm->chunk.vals.lookup);
+	for (int depth = 2; depth < lookup_cur_depth(&vm->state.lookup);
 	     depth++) {
 		var_prnt.depth = depth - 1;
 
 		INDENT_BY(depth - 2);
 		printf("Scope @%d: {", depth);
 		INDENT_BY(depth - 2);
-		map_entries_for_each(
-			lookup_scope_at_depth(&vm->chunk.vals.lookup, depth),
-			(for_each_entry_t *)&var_prnt);
+		map_entries_for_each(lookup_scope_at_depth(&vm->state.lookup,
+							   depth),
+				     (for_each_entry_t *)&var_prnt);
 		INDENT_BY(depth - 2);
 		puts("}");
 	}
@@ -173,7 +177,7 @@ static enum vm_res __vm_run(vm_t *vm)
 #ifdef DEBUG_TRACE_EXECUTION
 		printf("\t\t");
 		vm_print_stack(vm);
-		disassem_inst(&vm->chunk, __vm_instr_offset(vm));
+		disassem_inst(vm->chunk, __vm_instr_offset(vm));
 #endif // DEBUG_TRACE_EXECUTION
 
 		switch (instr = __vm_read_byte(vm)) {
@@ -417,7 +421,7 @@ static int16_t __vm_proc_jump_offset(vm_t *vm)
 static void __vm_proc_const(vm_t *vm, uint32_t idx)
 {
 	__vm_assert_inst_ptr_valid(vm);
-	__vm_push_const(vm, chunk_get_const(&vm->chunk, idx));
+	__vm_push_const(vm, chunk_get_const(vm->chunk, idx));
 }
 
 static void __vm_proc_negate_in_place(vm_t *vm)
@@ -460,7 +464,7 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 	fputs("\n", stderr);
 
 	size_t offset = ((size_t)__vm_instr_offset(vm)) - 1;
-	int line = chunk_get_line(&vm->chunk, offset);
+	int line = chunk_get_line(vm->chunk, offset);
 	fprintf(stderr, "Lox Runtime Error at line %d\n", line);
 	list_reset(&vm->stack);
 }
@@ -468,8 +472,8 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 static inline void __vm_assert_inst_ptr_valid(const vm_t *vm)
 {
 	assert(("Instruction pointer has passed code end",
-		vm->ip < vm->chunk.code.data + (vm->chunk.code.cnt *
-						vm->chunk.code.type_sz)));
+		vm->ip < vm->chunk->code.data + (vm->chunk->code.cnt *
+						 vm->chunk->code.type_sz)));
 }
 
 static inline char __vm_read_byte(vm_t *vm)
@@ -479,12 +483,12 @@ static inline char __vm_read_byte(vm_t *vm)
 
 static inline int __vm_instr_offset(const vm_t *vm)
 {
-	return (int)(vm->ip - vm->chunk.code.data);
+	return (int)(vm->ip - vm->chunk->code.data);
 }
 
 static void __vm_str_concat(vm_t *vm)
 {
-	interner_t *str_interner = &vm->chunk.vals.strings;
+	interner_t *str_interner = &vm->state.strings;
 
 	const lox_str_t *b_str = OBJECT_AS_STRING(__vm_pop_const(vm));
 	const lox_str_t *a_str = OBJECT_AS_STRING(__vm_pop_const(vm));

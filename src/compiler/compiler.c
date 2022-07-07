@@ -91,21 +91,29 @@ static const struct parse_rule *__compiler_get_rule(enum tkn_type tkn)
 	return &PARSE_RULES[tkn];
 }
 
-bool compile(const char *src, chunk_t *chunk)
+chunk_t *compile(const char *src, struct state *state)
 {
-	parser_t prsr = parser_new(src, chunk);
+	chunk_t *chunk = reallocate(NULL, 0, sizeof(chunk_t));
+	*chunk = chunk_new();
+
+	parser_t prsr = parser_new(src, chunk, state);
 
 	while (!parser_match(&prsr, TKN_EOF)) {
 		__parse_decl(&prsr);
 	}
 
 	OP_RETURN_WRITE(chunk, prsr.current.line);
+
+	if (prsr.had_err) {
+		reallocate(chunk, sizeof(chunk_t), 0);
+
+		return NULL;
+	} else {
 #ifdef DEBUG_PRINT_CODE
-	if (!prsr.had_err) {
 		disassem_chunk(chunk, "code");
-	}
 #endif
-	return !prsr.had_err;
+		return chunk;
+	}
 }
 
 static void __parse_expr(parser_t *prsr)
@@ -244,8 +252,9 @@ static void __parse_lit(parser_t *prsr)
 
 static void __parse_string(parser_t *prsr)
 {
-	struct object_str *string = chunk_intern_string(
-		prsr->stack, prsr->previous.start + 1, prsr->previous.len - 2);
+	struct object_str *string =
+		intern_string(&prsr->state->strings, prsr->previous.start + 1,
+			      prsr->previous.len - 2);
 
 	OP_CONST_WRITE(prsr->stack, VAL_CREATE_OBJ(string),
 		       prsr->previous.line);
@@ -273,7 +282,7 @@ static void __parse_var_decl(parser_t *prsr)
 	const char *name = prsr->previous.start;
 	size_t len = prsr->previous.len;
 
-	if (lookup_scope_has_name(&prsr->stack->vals.lookup, name, len)) {
+	if (lookup_scope_has_name(&prsr->state->lookup, name, len)) {
 		parser_error_at_previous(prsr,
 					 "Variables cannot be redefined.");
 	}
@@ -289,7 +298,7 @@ static void __parse_var_decl(parser_t *prsr)
 
 	if (!prsr->had_err) {
 		lookup_var_t glbl_idx = lookup_scope_define(
-			&prsr->stack->vals.lookup, name, len,
+			&prsr->state->lookup, name, len,
 			is_mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_NO_FLAGS);
 
 		OP_VAR_DEFINE_WRITE(prsr->stack, glbl_idx.idx, def_ln);
@@ -345,7 +354,7 @@ static void __parse_var(parser_t *prsr)
 {
 	token_t name_tkn = prsr->previous;
 
-	lookup_var_t var = lookup_find_name(&prsr->stack->vals.lookup,
+	lookup_var_t var = lookup_find_name(&prsr->state->lookup,
 					    name_tkn.start, name_tkn.len);
 
 	if (lookup_var_is_invalid(var)) {
@@ -460,7 +469,7 @@ static void __parse_for_stmt(parser_t *prsr)
 	const char *name = prsr->previous.start;
 	size_t len = prsr->previous.len;
 
-	if (lookup_scope_has_name(&prsr->stack->vals.lookup, name, len)) {
+	if (lookup_scope_has_name(&prsr->state->lookup, name, len)) {
 		parser_error_at_previous(prsr,
 					 "Variable has already been defined.");
 	}
@@ -471,8 +480,8 @@ static void __parse_for_stmt(parser_t *prsr)
 	double range_start = strtod(prsr->previous.start, NULL);
 	OP_CONST_WRITE(prsr->stack, VAL_CREATE_NUMBER(range_start),
 		       prsr->previous.line);
-	lookup_var_t glbl_idx = lookup_scope_define(
-		&prsr->stack->vals.lookup, name, len, LOOKUP_VAR_MUTABLE);
+	lookup_var_t glbl_idx = lookup_scope_define(&prsr->state->lookup, name,
+						    len, LOOKUP_VAR_MUTABLE);
 	OP_VAR_DEFINE_WRITE(prsr->stack, glbl_idx.idx, def_ln);
 
 	parser_consume(prsr, TKN_DOT, "Expected range '..'");
@@ -511,14 +520,13 @@ static void __parse_for_stmt(parser_t *prsr)
 
 static void __compiler_begin_scope(parser_t *prsr)
 {
-	chunk_start_scope(prsr->stack);
+	lookup_begin_scope(&prsr->state->lookup);
 }
 
 static void __compiler_end_scope(parser_t *prsr)
 {
-	OP_POP_COUNT_WRITE(
-		prsr->stack,
-		map_size(lookup_cur_scope(&prsr->stack->vals.lookup)),
-		prsr->previous.line);
-	chunk_end_scope(prsr->stack);
+	OP_POP_COUNT_WRITE(prsr->stack,
+			   map_size(lookup_cur_scope(&prsr->state->lookup)),
+			   prsr->previous.line);
+	lookup_end_scope(&prsr->state->lookup);
 }
