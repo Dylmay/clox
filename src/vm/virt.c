@@ -8,6 +8,7 @@
 #include "virt.h"
 #include "debug/debug.h"
 #include "ops/ops.h"
+#include "chunk/func/chunk_func.h"
 #include "val/func/val_func.h"
 #include "val/func/object_func.h"
 #include "compiler/compiler.h"
@@ -75,7 +76,7 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 	res = __vm_run(vm);
 
 	chunk_free(vm->chunk);
-	reallocate(vm->chunk, sizeof(chunk_t), 0);
+	reallocate(vm->chunk, sizeof(struct chunk), 0);
 	vm->chunk = NULL;
 
 #ifdef DEBUG_TRACE_EXECUTION

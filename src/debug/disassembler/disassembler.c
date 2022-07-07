@@ -3,17 +3,18 @@
 #include "disassembler.h"
 #include "ops/ops.h"
 #include "val/func/val_func.h"
+#include "chunk/func/chunk_func.h"
 
 static size_t __simple_instr(const char *, size_t);
-static size_t __const_instr(const char *, chunk_t *, uint32_t);
-static size_t __const_long_instr(const char *, chunk_t *, uint32_t);
-static size_t __var_instr(const char *, chunk_t *, uint32_t);
-static size_t __var_long_instr(const char *, chunk_t *, uint32_t);
-static size_t __pop_count_instr(const char *, chunk_t *, uint32_t);
-static uint32_t __jump_instr(const char *, chunk_t *, uint32_t);
-static uint32_t __get_ext_pos(chunk_t *, uint32_t);
+static size_t __const_instr(const char *, struct chunk *, uint32_t);
+static size_t __const_long_instr(const char *, struct chunk *, uint32_t);
+static size_t __var_instr(const char *, struct chunk *, uint32_t);
+static size_t __var_long_instr(const char *, struct chunk *, uint32_t);
+static size_t __pop_count_instr(const char *, struct chunk *, uint32_t);
+static uint32_t __jump_instr(const char *, struct chunk *, uint32_t);
+static uint32_t __get_ext_pos(struct chunk *, uint32_t);
 
-void disassem_chunk(chunk_t *chnk, const char *name)
+void disassem_chunk(struct chunk *chnk, const char *name)
 {
 	printf("== %s ==\n", name);
 	puts("| OFFSET | LINE |        OP NAME       | VALUE");
@@ -24,7 +25,7 @@ void disassem_chunk(chunk_t *chnk, const char *name)
 	}
 }
 
-size_t disassem_inst(chunk_t *chunk, size_t offset)
+size_t disassem_inst(struct chunk *chunk, size_t offset)
 {
 	printf("| %06lu |", offset);
 
@@ -122,7 +123,8 @@ static size_t __simple_instr(const char *name, size_t offset)
 	return offset + 1;
 }
 
-static size_t __const_instr(const char *name, chunk_t *chunk, uint32_t offset)
+static size_t __const_instr(const char *name, struct chunk *chunk,
+			    uint32_t offset)
 {
 	code_t const_pos = chunk_get_code(chunk, offset + 1);
 	printf(" %-20s | @%04d $'", name, const_pos);
@@ -133,7 +135,7 @@ static size_t __const_instr(const char *name, chunk_t *chunk, uint32_t offset)
 	return offset + 2;
 }
 
-static size_t __const_long_instr(const char *name, chunk_t *chunk,
+static size_t __const_long_instr(const char *name, struct chunk *chunk,
 				 uint32_t offset)
 {
 #define GET_CONST_POS()                                                        \
@@ -149,7 +151,8 @@ static size_t __const_long_instr(const char *name, chunk_t *chunk,
 	return offset + 4;
 }
 
-static size_t __var_instr(const char *name, chunk_t *chunk, uint32_t offset)
+static size_t __var_instr(const char *name, struct chunk *chunk,
+			  uint32_t offset)
 {
 	code_t var_pos = chunk_get_code(chunk, offset + 1);
 	printf(" %-20s |  %04d | ", name, var_pos);
@@ -158,7 +161,7 @@ static size_t __var_instr(const char *name, chunk_t *chunk, uint32_t offset)
 	return offset + 2;
 }
 
-static size_t __var_long_instr(const char *name, chunk_t *chunk,
+static size_t __var_long_instr(const char *name, struct chunk *chunk,
 			       uint32_t offset)
 {
 	uint32_t var_pos = __get_ext_pos(chunk, offset);
@@ -168,7 +171,7 @@ static size_t __var_long_instr(const char *name, chunk_t *chunk,
 	return offset + 2;
 }
 
-static size_t __pop_count_instr(const char *name, chunk_t *chunk,
+static size_t __pop_count_instr(const char *name, struct chunk *chunk,
 				uint32_t offset)
 {
 	code_t pop_cnt = chunk_get_code(chunk, offset + 1);
@@ -178,7 +181,8 @@ static size_t __pop_count_instr(const char *name, chunk_t *chunk,
 	return offset + 2;
 }
 
-static uint32_t __jump_instr(const char *name, chunk_t *chunk, uint32_t offset)
+static uint32_t __jump_instr(const char *name, struct chunk *chunk,
+			     uint32_t offset)
 {
 	int16_t jump_pos = *((int16_t *)list_get(&chunk->code, offset + 1));
 
@@ -188,7 +192,7 @@ static uint32_t __jump_instr(const char *name, chunk_t *chunk, uint32_t offset)
 	return offset + 3;
 }
 
-static uint32_t __get_ext_pos(chunk_t *chunk, uint32_t offset)
+static uint32_t __get_ext_pos(struct chunk *chunk, uint32_t offset)
 {
 	return *((uint32_t *)list_get(&chunk->code, offset + 1)) &
 	       EXT_CODE_MASK;

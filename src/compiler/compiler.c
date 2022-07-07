@@ -3,11 +3,12 @@
 
 #include "util/common.h"
 #include "compiler.h"
-#include "parser/parser.h"
-#include "ops/ops_func.h"
+#include "compiler/parser/parser.h"
+#include "ops/func/ops_func.h"
+#include "chunk/func/chunk_func.h"
 #include "val/func/val_func.h"
 #include "val/func/object_func.h"
-#include "lexer/lexer.h"
+#include "compiler/lexer/lexer.h"
 
 #ifdef DEBUG_PRINT_CODE
 #include "debug/debug.h"
@@ -91,9 +92,9 @@ static const struct parse_rule *__compiler_get_rule(enum tkn_type tkn)
 	return &PARSE_RULES[tkn];
 }
 
-chunk_t *compile(const char *src, struct state *state)
+struct chunk *compile(const char *src, struct state *state)
 {
-	chunk_t *chunk = reallocate(NULL, 0, sizeof(chunk_t));
+	struct chunk *chunk = reallocate(NULL, 0, sizeof(struct chunk));
 	*chunk = chunk_new();
 
 	parser_t prsr = parser_new(src, chunk, state);
@@ -105,7 +106,7 @@ chunk_t *compile(const char *src, struct state *state)
 	OP_RETURN_WRITE(chunk, prsr.current.line);
 
 	if (prsr.had_err) {
-		reallocate(chunk, sizeof(chunk_t), 0);
+		reallocate(chunk, sizeof(struct chunk), 0);
 
 		return NULL;
 	} else {

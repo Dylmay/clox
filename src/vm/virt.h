@@ -2,13 +2,14 @@
 #define __CLOX_VM_VIRT_H__
 
 #include "chunk/chunk.h"
+#include "state/state.h"
 #include "val/object.h"
 #include "util/list/list.h"
 #include "util/list/linked_list.h"
 
 typedef struct {
 	uint8_t *ip;
-	chunk_t *chunk;
+	struct chunk *chunk;
 	struct state state;
 	list_t stack;
 	linked_list_t objects;
