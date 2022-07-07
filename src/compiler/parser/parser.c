@@ -41,13 +41,11 @@ void parser_consume(parser_t *prsr, enum tkn_type tkn, const char *err_msg)
 	parser_error_at_current(prsr, err_msg);
 }
 
-parser_t parser_new(const char *source, lox_fn_t *fn, struct state *state)
+parser_t parser_new(const char *source)
 {
 	lexer_t lexer = lexer_init(source);
 	parser_t prsr = (parser_t){
 		.lexer = lexer,
-		.cur_fn = fn,
-		.state = state,
 	};
 
 	parser_advance(&prsr);

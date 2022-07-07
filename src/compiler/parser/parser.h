@@ -4,19 +4,15 @@
 #include "util/common.h"
 #include "lexer/lexer.h"
 #include "val/val.h"
+#include "util/list/linked_list.h"
 
 typedef struct {
 	lexer_t lexer;
-	lox_fn_t *cur_fn;
-	struct state *state;
 	token_t current;
 	token_t previous;
 	bool had_err;
 	bool panic_mode;
-	bool can_assign;
 } parser_t;
-
-typedef void (*parse_fn)(parser_t *);
 
 enum precedence {
 	PREC_NONE,
@@ -32,13 +28,7 @@ enum precedence {
 	PREC_PRIMARY
 };
 
-struct parse_rule {
-	parse_fn prefix;
-	parse_fn infix;
-	enum precedence prec;
-};
-
-parser_t parser_new(const char *source, lox_fn_t *fn, struct state *state);
+parser_t parser_new(const char *source);
 bool parser_check(const parser_t *prsr, enum tkn_type type);
 bool parser_match(parser_t *prsr, enum tkn_type type);
 void parser_advance(parser_t *prsr);
