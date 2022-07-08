@@ -45,6 +45,7 @@ static void __vm_free_objects(vm_t *vm);
 static void __vm_define_var(vm_t *vm, lox_val_t *val);
 static lox_val_t *__vm_get_var(vm_t *vm, uint32_t glbl);
 static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val);
+static void __vm_set_main(vm_t *vm, lox_fn_t *main);
 
 static void __vm_proc_const(vm_t *vm, struct vm_call_frame *frame,
 			    uint32_t idx);
@@ -77,7 +78,6 @@ vm_t vm_init()
 			map_of_type(struct timespec, (hash_fn)&asciiz_gen_hash),
 #endif
 	};
-	list_reset(&vm.stack);
 
 	return vm;
 }
@@ -92,7 +92,8 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 		return INTERPRET_COMPILE_ERROR;
 	}
 
-	__vm_push_const(vm, VAL_CREATE_OBJ(fn));
+	__vm_set_main(vm, fn);
+
 	struct vm_call_frame frame = {
 		.fn = fn,
 		.ip = fn->chunk.code.data,
@@ -411,6 +412,10 @@ static enum vm_res __vm_run(vm_t *vm)
 			}
 		} break;
 
+		case OP_CALL: {
+			// cur_frame = &vm->frames
+		} break;
+
 		case OP_RETURN:
 			return INTERPRET_OK;
 
@@ -458,6 +463,16 @@ static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val)
 	lox_val_t *val_ptr = (lox_val_t *)list_get(&vm->stack, glbl);
 	memcpy(val_ptr, val, sizeof(lox_val_t));
 	return true;
+}
+
+static void __vm_set_main(vm_t *vm, lox_fn_t *main)
+{
+	if (list_size(&vm->stack)) {
+		*(((lox_val_t *)list_get(&vm->stack, 0))) =
+			VAL_CREATE_OBJ(main);
+	} else {
+		list_push(&vm->stack, &VAL_CREATE_OBJ(main));
+	}
 }
 
 static uint32_t __frame_proc_idx(struct vm_call_frame *frame)

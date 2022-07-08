@@ -68,7 +68,7 @@ enum tkn_type keyword_traverse(const char *identifier, size_t id_len)
 		return MATCH(identifier, 1, "hile", TKN_WHILE);
 
 	case 'f':
-		if (id_len > 1) {
+		if (id_len > 2) {
 			switch (*(identifier + 1)) {
 			case 'a':
 				return MATCH(identifier, 2, "lse", TKN_FALSE);

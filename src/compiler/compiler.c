@@ -14,7 +14,6 @@
 #endif
 
 struct compiler {
-	struct compiler *enclosing;
 	parser_t *prsr;
 	struct state *state;
 	lox_fn_t *fn;
@@ -62,10 +61,11 @@ static void __parse_or(struct compiler *);
 static void __parse_for_stmt(struct compiler *);
 static void __parse_fn_decl(struct compiler *);
 static void __parse_fn(struct compiler *);
+static void __parse_call(struct compiler *);
 
 static struct parse_rule PARSE_RULES[] = {
 	// single char tokens
-	[TKN_LEFT_PAREN] = { __parse_grouping, NULL, PREC_NONE },
+	[TKN_LEFT_PAREN] = { __parse_grouping, __parse_call, PREC_NONE },
 	[TKN_RIGHT_PAREN] = { NULL, NULL, PREC_NONE },
 	[TKN_LEFT_BRACE] = { NULL, NULL, PREC_NONE },
 	[TKN_RIGHT_BRACE] = { NULL, NULL, PREC_NONE },
@@ -119,7 +119,6 @@ static const struct parse_rule *__compiler_get_rule(enum tkn_type tkn)
 static struct compiler __compiler_new(parser_t *prsr, struct state *state)
 {
 	return (struct compiler){
-		.enclosing = NULL,
 		.prsr = prsr,
 		.state = state,
 		.fn = object_fn_new(),
@@ -609,21 +608,46 @@ static void __parse_fn_decl(struct compiler *compiler)
 			"Variables/functions cannot be redefined.");
 	}
 
+	lox_str_t *fn_name =
+		intern_string(&compiler->state->strings, name, len);
 	__parse_fn(compiler);
 
 	if (!compiler->prsr->had_err) {
 		lookup_var_t glbl_idx = __compiler_define_var(
 			compiler, name, len,
 			is_mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_NO_FLAGS);
+		lox_fn_t *fn = OBJECT_AS_FN(
+			*(lox_val_t *)list_peek(&compiler->fn->chunk.consts));
 
 		OP_VAR_DEFINE_WRITE(compiler->fn, glbl_idx.idx, def_ln);
-	} else {
-		OP_VAR_DEFINE_WRITE(compiler->fn, 0, def_ln);
+
+		fn->name = fn_name;
+		OP_VAR_SET_WRITE(compiler->fn, glbl_idx.idx, def_ln);
 	}
 }
 
 static void __parse_fn(struct compiler *compiler)
 {
+	struct compiler new_comp =
+		__compiler_new(compiler->prsr, compiler->state);
+
+	__compiler_begin_scope(&new_comp);
+	parser_consume(new_comp.prsr, TKN_LEFT_PAREN,
+		       "Expected '(' after function name.");
+	parser_consume(new_comp.prsr, TKN_RIGHT_PAREN,
+		       "Expected ')' after function params.");
+	parser_consume(new_comp.prsr, TKN_LEFT_BRACE, "Expected block start.");
+	__parse_block(compiler);
+	__compiler_end_scope(&new_comp);
+
+	lox_fn_t *comp_res = new_comp.fn;
+	OP_CONST_WRITE(compiler->fn, VAL_CREATE_OBJ(comp_res),
+		       compiler->prsr->previous.line);
+}
+
+static void __parse_call(struct compiler *compiler)
+{
+	OP_CALL_WRITE(compiler->fn, 0);
 }
 
 static void __compiler_begin_scope(struct compiler *compiler)
