@@ -7,8 +7,8 @@
 #include "util/list/list.h"
 #include "util/list/linked_list.h"
 
-#define FRAMES_MAX 256
 #define FRAMES_MIN 32
+#define STACK_MAIN_POS 0
 
 struct vm_call_frame {
 	lox_fn_t *fn;

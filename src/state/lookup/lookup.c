@@ -48,7 +48,7 @@ lookup_t lookup_new()
 
 	lookup_t lookup = (lookup_t){
 		.scopes = list_of_type(hashmap_t),
-		.cur_idx = LOOKUP_RESERVED_CNT,
+		.cur_idx = STACK_RESERVED_COUNT,
 	};
 	lookup_begin_scope(&lookup);
 

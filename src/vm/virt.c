@@ -46,6 +46,7 @@ static void __vm_define_var(vm_t *vm, lox_val_t *val);
 static lox_val_t *__vm_get_var(vm_t *vm, uint32_t glbl);
 static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val);
 static void __vm_set_main(vm_t *vm, lox_fn_t *main);
+static bool __vm_call(vm_t *vm, lox_fn_t *fn, int cnt);
 
 static void __vm_proc_const(vm_t *vm, struct vm_call_frame *frame,
 			    uint32_t idx);
@@ -78,6 +79,7 @@ vm_t vm_init()
 			map_of_type(struct timespec, (hash_fn)&asciiz_gen_hash),
 #endif
 	};
+	list_write_bulk(&vm.stack, NULL, STACK_RESERVED_COUNT);
 
 	return vm;
 }
@@ -93,13 +95,6 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 	}
 
 	__vm_set_main(vm, fn);
-
-	struct vm_call_frame frame = {
-		.fn = fn,
-		.ip = fn->chunk.code.data,
-		.slots = &vm->stack,
-	};
-	list_push(&vm->frames, &frame);
 
 #ifdef DEBUG_BENCH
 	struct timespec timer;
@@ -467,12 +462,9 @@ static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val)
 
 static void __vm_set_main(vm_t *vm, lox_fn_t *main)
 {
-	if (list_size(&vm->stack)) {
-		*(((lox_val_t *)list_get(&vm->stack, 0))) =
-			VAL_CREATE_OBJ(main);
-	} else {
-		list_push(&vm->stack, &VAL_CREATE_OBJ(main));
-	}
+	*(((lox_val_t *)list_get(&vm->stack, STACK_MAIN_POS))) =
+		VAL_CREATE_OBJ(main);
+	__vm_call(vm, main, 0);
 }
 
 static uint32_t __frame_proc_idx(struct vm_call_frame *frame)
@@ -612,4 +604,15 @@ static void __vm_free_objects(vm_t *vm)
 static void __vm_discard(vm_t *vm, uint32_t discard_cnt)
 {
 	list_adjust_cnt(&vm->stack, -discard_cnt);
+}
+static bool __vm_call(vm_t *vm, lox_fn_t *fn, int cnt)
+{
+	struct vm_call_frame frame = {
+		.fn = fn,
+		.ip = fn->chunk.code.data,
+		.slots = &vm->stack,
+	};
+	list_push(&vm->frames, &frame);
+
+	return true;
 }

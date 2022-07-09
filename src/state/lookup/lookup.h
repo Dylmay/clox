@@ -5,8 +5,6 @@
 #include "util/map/map.h"
 #include "val/val.h"
 
-#define LOOKUP_RESERVED_CNT 1
-
 typedef uint8_t var_flags_t;
 #define LOOKUP_VAR_NO_FLAGS (0)
 #define LOOKUP_VAR_MUTABLE (1 << 1)
