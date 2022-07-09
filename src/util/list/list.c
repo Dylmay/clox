@@ -24,7 +24,12 @@ size_t list_write_bulk(list_t *lst, const void *restrict val, size_t cnt)
 		list_set_cap(lst,
 			     GROW_CAPACITY_AT_LEAST(lst->cnt + cnt, lst->cnt));
 	}
-	memcpy(lst->head, val, lst->type_sz * cnt);
+
+	if (val) {
+		memcpy(lst->head, val, lst->type_sz * cnt);
+	} else {
+		memset(lst->head, 0, lst->type_sz * cnt);
+	}
 
 	__list_adj_head(lst, (int)cnt);
 
