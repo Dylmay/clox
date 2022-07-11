@@ -8,12 +8,14 @@
 #include "util/list/linked_list.h"
 
 #define FRAMES_MIN 32
-#define STACK_MAIN_POS 0
+
+#define STACK_RESERVED_COUNT 1
+#define STACK_MAIN_IDX 0
 
 struct vm_call_frame {
 	lox_fn_t *fn;
 	uint8_t *ip;
-	list_t *slots;
+	size_t stack_snapshot;
 };
 
 typedef struct {

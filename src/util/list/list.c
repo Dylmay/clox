@@ -83,6 +83,17 @@ void list_set_cap(list_t *lst, size_t cap)
 	lst->head = lst->data + (lst->type_sz * lst->cnt);
 }
 
+void list_set_cnt(list_t *lst, size_t cnt)
+{
+	lst->cnt = cnt;
+
+	if (cnt > lst->cap) {
+		list_set_cap(lst, GROW_CAPACITY_AT_LEAST(cnt, lst->cap));
+	} else {
+		lst->head = lst->data + (lst->type_sz * lst->cnt);
+	}
+}
+
 void list_adjust_cnt(list_t *lst, int adjust)
 {
 	if (adjust < 0) {
@@ -90,7 +101,7 @@ void list_adjust_cnt(list_t *lst, int adjust)
 			(-adjust) <= lst->cnt));
 	} else if (lst->cap < lst->cnt + adjust) {
 		list_set_cap(lst, GROW_CAPACITY_AT_LEAST(lst->cnt + adjust,
-							 lst->cnt));
+							 lst->cap));
 	}
 
 	__list_adj_head(lst, adjust);

@@ -22,6 +22,7 @@ size_t list_write_bulk(list_t *lst, const void *restrict value, size_t cnt);
 
 void *list_get(list_t *lst, size_t idx);
 void list_set_cap(list_t *lst, size_t cap);
+void list_set_cnt(list_t *lst, size_t cnt);
 void list_adjust_cnt(list_t *lst, int adjust);
 void list_free(list_t *lst);
 

@@ -46,6 +46,7 @@ static void __vm_define_var(vm_t *vm, lox_val_t *val);
 static lox_val_t *__vm_get_var(vm_t *vm, uint32_t glbl);
 static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val);
 static void __vm_set_main(vm_t *vm, lox_fn_t *main);
+static bool __vm_call_val(vm_t *vm, lox_val_t callee, int cnt);
 static bool __vm_call(vm_t *vm, lox_fn_t *fn, int cnt);
 
 static void __vm_proc_const(vm_t *vm, struct vm_call_frame *frame,
@@ -79,7 +80,6 @@ vm_t vm_init()
 			map_of_type(struct timespec, (hash_fn)&asciiz_gen_hash),
 #endif
 	};
-	list_write_bulk(&vm.stack, NULL, STACK_RESERVED_COUNT);
 
 	return vm;
 }
@@ -141,7 +141,7 @@ void _var_prnt(map_entry_t entry, for_each_entry_t *d)
 {
 	struct var_printer *data = (struct var_printer *)d;
 	struct string *name = (struct string *)entry.key;
-	uint32_t idx = *((uint32_t *)entry.value);
+	uint32_t idx = *((uint32_t *)entry.value) + STACK_RESERVED_COUNT;
 
 	for (size_t i = 0; i < data->depth; i++) {
 		putchar('\t');
@@ -353,7 +353,8 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_VAR_GET: {
-			uint32_t idx = __frame_proc_idx(cur_frame);
+			uint32_t idx = cur_frame->stack_snapshot +
+				       __frame_proc_idx(cur_frame);
 			lox_val_t *val = __vm_get_var(vm, idx);
 
 			if (!val) {
@@ -364,7 +365,8 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_VAR_GET_LONG: {
-			uint32_t idx = __frame_proc_idx_ext(cur_frame);
+			uint32_t idx = cur_frame->stack_snapshot +
+				       __frame_proc_idx_ext(cur_frame);
 			lox_val_t *val = __vm_get_var(vm, idx);
 
 			if (!val) {
@@ -375,7 +377,8 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_VAR_SET: {
-			uint32_t idx = __frame_proc_idx(cur_frame);
+			uint32_t idx = cur_frame->stack_snapshot +
+				       __frame_proc_idx(cur_frame);
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
 
 			if (!__vm_set_var(vm, idx, val)) {
@@ -385,7 +388,8 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_VAR_SET_LONG: {
-			uint32_t idx = __frame_proc_idx_ext(cur_frame);
+			uint32_t idx = cur_frame->stack_snapshot +
+				       __frame_proc_idx_ext(cur_frame);
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
 
 			if (!__vm_set_var(vm, idx, val)) {
@@ -408,11 +412,32 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_CALL: {
-			// cur_frame = &vm->frames
+			int argCnt = 0;
+
+			if (!__vm_call_val(vm, __vm_peek_const(vm, argCnt),
+					   argCnt)) {
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			cur_frame = list_peek(&vm->frames);
 		} break;
 
-		case OP_RETURN:
-			return INTERPRET_OK;
+		case OP_RETURN: {
+			// arg_sz + 1
+			list_pop(&vm->frames);
+
+			if (!list_size(&vm->frames)) {
+				__vm_pop_const(vm);
+				return INTERPRET_OK;
+			}
+
+			lox_val_t retval = __vm_pop_const(vm);
+
+			list_set_cnt(&vm->stack, cur_frame->stack_snapshot - 1);
+
+			__vm_push_const(vm, retval);
+			cur_frame = list_peek(&vm->frames);
+		} break;
 
 		default:
 			printf("UNKNOWN OPCODE: %d\n", instr);
@@ -462,9 +487,21 @@ static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val)
 
 static void __vm_set_main(vm_t *vm, lox_fn_t *main)
 {
-	*(((lox_val_t *)list_get(&vm->stack, STACK_MAIN_POS))) =
-		VAL_CREATE_OBJ(main);
-	__vm_call(vm, main, 0);
+	lox_val_t main_obj = VAL_CREATE_OBJ(main);
+
+	struct vm_call_frame main_frame = {
+		.fn = main,
+		.ip = main->chunk.code.data,
+		.stack_snapshot = STACK_RESERVED_COUNT,
+	};
+
+	if (!list_size(&vm->stack)) {
+		list_push(&vm->stack, &main_obj);
+	} else {
+		*(lox_val_t *)list_get(&vm->stack, STACK_MAIN_IDX) = main_obj;
+	}
+
+	list_push(&vm->frames, &main_frame);
 }
 
 static uint32_t __frame_proc_idx(struct vm_call_frame *frame)
@@ -605,12 +642,27 @@ static void __vm_discard(vm_t *vm, uint32_t discard_cnt)
 {
 	list_adjust_cnt(&vm->stack, -discard_cnt);
 }
+
+static bool __vm_call_val(vm_t *vm, lox_val_t callee, int cnt)
+{
+	if (VAL_IS_OBJ(callee)) {
+		switch (OBJECT_TYPE(callee)) {
+		case OBJ_FN:
+			return __vm_call(vm, OBJECT_AS_FN(callee), cnt);
+
+		default:
+			break;
+		}
+	}
+	__vm_runtime_error(vm, "Can only call functions and classes");
+}
+
 static bool __vm_call(vm_t *vm, lox_fn_t *fn, int cnt)
 {
 	struct vm_call_frame frame = {
 		.fn = fn,
 		.ip = fn->chunk.code.data,
-		.slots = &vm->stack,
+		.stack_snapshot = list_size(&vm->stack),
 	};
 	list_push(&vm->frames, &frame);
 

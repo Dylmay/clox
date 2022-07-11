@@ -28,6 +28,7 @@ struct parse_rule {
 	enum precedence prec;
 };
 
+static lox_fn_t *__compiler_run(struct compiler compiler, bool is_main);
 static const struct parse_rule *__compiler_get_rule(enum tkn_type);
 static void __compiler_begin_scope(struct compiler *compiler);
 static void __compiler_end_scope(struct compiler *compiler);
@@ -65,7 +66,7 @@ static void __parse_call(struct compiler *);
 
 static struct parse_rule PARSE_RULES[] = {
 	// single char tokens
-	[TKN_LEFT_PAREN] = { __parse_grouping, __parse_call, PREC_NONE },
+	[TKN_LEFT_PAREN] = { __parse_grouping, __parse_call, PREC_CALL },
 	[TKN_RIGHT_PAREN] = { NULL, NULL, PREC_NONE },
 	[TKN_LEFT_BRACE] = { NULL, NULL, PREC_NONE },
 	[TKN_RIGHT_BRACE] = { NULL, NULL, PREC_NONE },
@@ -126,23 +127,26 @@ static struct compiler __compiler_new(parser_t *prsr, struct state *state)
 	};
 }
 
-lox_fn_t *compile(const char *src, struct state *state)
+static lox_fn_t *__compiler_run(struct compiler compiler, bool is_main)
 {
-	parser_t prsr = parser_new(src);
-	struct compiler compiler = __compiler_new(&prsr, state);
-
 #ifdef DEBUG_BENCH
 	struct timespec timer;
 	timer_start(&timer);
 #endif
 
-	while (!parser_match(compiler.prsr, TKN_EOF)) {
-		__parse_decl(&compiler);
+	if (is_main) {
+		while (!parser_match(compiler.prsr, TKN_EOF)) {
+			__parse_decl(&compiler);
+		}
+	} else {
+		__parse_block(&compiler);
 	}
 
-	OP_RETURN_WRITE(compiler.fn, prsr.current.line);
+	OP_CONST_WRITE(compiler.fn, VAL_CREATE_NIL,
+		       compiler.prsr->current.line);
+	OP_RETURN_WRITE(compiler.fn, compiler.prsr->current.line);
 
-	if (prsr.had_err) {
+	if (compiler.prsr->had_err) {
 		reallocate(compiler.fn, sizeof(struct chunk), 0);
 
 		return NULL;
@@ -160,6 +164,14 @@ lox_fn_t *compile(const char *src, struct state *state)
 #endif
 		return compiler.fn;
 	}
+}
+
+lox_fn_t *compile(const char *src, struct state *state)
+{
+	parser_t prsr = parser_new(src);
+	struct compiler compiler = __compiler_new(&prsr, state);
+
+	return __compiler_run(compiler, true);
 }
 
 static void __parse_expr(struct compiler *compiler)
@@ -598,7 +610,6 @@ static void __parse_fn_decl(struct compiler *compiler)
 
 	parser_consume(compiler->prsr, TKN_ID, "Expected function name");
 
-	int def_ln = compiler->prsr->previous.line;
 	const char *name = compiler->prsr->previous.start;
 	size_t len = compiler->prsr->previous.len;
 
@@ -619,13 +630,16 @@ static void __parse_fn_decl(struct compiler *compiler)
 		lox_fn_t *fn = OBJECT_AS_FN(
 			*(lox_val_t *)list_peek(&compiler->fn->chunk.consts));
 
-		OP_VAR_DEFINE_WRITE(compiler->fn, glbl_idx.idx, def_ln);
+		OP_VAR_DEFINE_WRITE(compiler->fn, glbl_idx.idx,
+				    compiler->prsr->previous.line);
 
 		fn->name = fn_name;
-		OP_VAR_SET_WRITE(compiler->fn, glbl_idx.idx, def_ln);
+		OP_VAR_SET_WRITE(compiler->fn, glbl_idx.idx,
+				 compiler->prsr->previous.line);
 	}
 }
 
+// NOTE: currently scopes args and internals separately
 static void __parse_fn(struct compiler *compiler)
 {
 	struct compiler new_comp =
@@ -637,7 +651,7 @@ static void __parse_fn(struct compiler *compiler)
 	parser_consume(new_comp.prsr, TKN_RIGHT_PAREN,
 		       "Expected ')' after function params.");
 	parser_consume(new_comp.prsr, TKN_LEFT_BRACE, "Expected block start.");
-	__parse_block(compiler);
+	__compiler_run(new_comp, false);
 	__compiler_end_scope(&new_comp);
 
 	lox_fn_t *comp_res = new_comp.fn;
@@ -647,7 +661,9 @@ static void __parse_fn(struct compiler *compiler)
 
 static void __parse_call(struct compiler *compiler)
 {
-	OP_CALL_WRITE(compiler->fn, 0);
+	parser_consume(compiler->prsr, TKN_RIGHT_PAREN,
+		       "Expected ')' after arguments.");
+	OP_CALL_WRITE(compiler->fn, compiler->prsr->previous.line);
 }
 
 static void __compiler_begin_scope(struct compiler *compiler)
@@ -659,7 +675,7 @@ static void __compiler_end_scope(struct compiler *compiler)
 {
 	OP_POP_COUNT_WRITE(compiler->fn,
 			   map_size(lookup_cur_scope(&compiler->state->lookup)),
-			   compiler->prsr->previous.line);
+			   compiler->prsr->current.line);
 	lookup_end_scope(&compiler->state->lookup);
 }
 
