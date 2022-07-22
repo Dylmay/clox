@@ -67,6 +67,24 @@ size_t disassem_inst(struct chunk *chunk, size_t offset)
 	case OP_VAR_GET_LONG:
 		return __var_long_instr(op_name(instruction), chunk, offset);
 
+	case OP_GLOBAL_DEFINE:
+		return __var_instr(op_name(instruction), chunk, offset);
+
+	case OP_GLOBAL_DEFINE_LONG:
+		return __var_long_instr(op_name(instruction), chunk, offset);
+
+	case OP_GLOBAL_SET:
+		return __var_instr(op_name(instruction), chunk, offset);
+
+	case OP_GLOBAL_SET_LONG:
+		return __var_long_instr(op_name(instruction), chunk, offset);
+
+	case OP_GLOBAL_GET:
+		return __var_instr(op_name(instruction), chunk, offset);
+
+	case OP_GLOBAL_GET_LONG:
+		return __var_long_instr(op_name(instruction), chunk, offset);
+
 	case OP_POP_COUNT:
 		return __pop_count_instr(op_name(instruction), chunk, offset);
 

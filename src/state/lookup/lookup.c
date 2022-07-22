@@ -14,6 +14,8 @@ struct name_matcher {
 
 static hashmap_t __lookup_scope_new();
 static struct name_matcher __create_matcher(const char *name, size_t len);
+static lookup_var_t *__lookup_find_name_ptr(lookup_t *lookup, const char *name,
+					    size_t len);
 
 void lookup_entry_free(map_entry_t entry, for_each_entry_t *data)
 {
@@ -49,6 +51,7 @@ lookup_t lookup_new()
 	lookup_t lookup = (lookup_t){
 		.scopes = list_of_type(hashmap_t),
 		.cur_idx = 0,
+		.glbl_idx = 0,
 	};
 	lookup_begin_scope(&lookup);
 
@@ -62,33 +65,50 @@ void lookup_free(lookup_t *lookup)
 	list_free(&lookup->scopes);
 }
 
-lookup_var_t lookup_scope_define(lookup_t *lookup, const char *name, size_t len,
-				 var_flags_t flags)
+void lookup_set_flags(lookup_t *lookup, const char *name, size_t len,
+		      var_flags_t flags)
 {
-	lookup_var_t var = (lookup_var_t){
-		.idx = lookup->cur_idx,
-		.var_flags = flags,
-	};
+	struct name_matcher matcher = __create_matcher(name, len);
+	lookup_var_t *var = map_find_by_key(lookup_cur_scope(lookup),
+					    (key_matcher_t *)&matcher)
+				    .value;
 
-	lookup->cur_idx++;
+	var->var_flags = flags;
+}
 
-	struct string *str = string_new(name, len);
+lookup_var_t lookup_define(lookup_t *lookup, const char *chars, size_t len,
+			   var_flags_t flags)
+{
+	struct string *name = string_new(chars, len);
+	hashmap_t *scope;
+	lookup_var_t var;
 
-	map_insert(lookup_cur_scope(lookup), str, &var);
+	if (flags & LOOKUP_VAR_GLOBAL) {
+		var = (lookup_var_t){
+			.idx = lookup->glbl_idx,
+			.var_flags = flags,
+		};
+		lookup->glbl_idx++;
+
+		scope = lookup_global_scope(lookup);
+	} else {
+		var = (lookup_var_t){
+			.idx = lookup->cur_idx,
+			.var_flags = flags,
+		};
+
+		lookup->cur_idx++;
+
+		scope = lookup_cur_scope(lookup);
+	}
+
+	map_insert(scope, name, &var);
 
 	return var;
 }
 
-bool lookup_scope_has_name(lookup_t *lookup, const char *name, size_t len)
-{
-	struct name_matcher matcher = __create_matcher(name, len);
-
-	return map_find_by_key(lookup_cur_scope(lookup),
-			       (key_matcher_t *)&matcher)
-		.value;
-}
-
-lookup_var_t lookup_find_name(lookup_t *lookup, const char *name, size_t len)
+static lookup_var_t *__lookup_find_name_ptr(lookup_t *lookup, const char *name,
+					    size_t len)
 {
 	struct name_matcher matcher = __create_matcher(name, len);
 
@@ -98,11 +118,19 @@ lookup_var_t lookup_find_name(lookup_t *lookup, const char *name, size_t len)
 			map_find_by_key(scope, (key_matcher_t *)&matcher).value;
 
 		if (found) {
-			return *found;
+			return found;
 		}
 	}
 
-	return (lookup_var_t){ .var_flags = LOOKUP_VAR_INVALID };
+	return NULL;
+}
+
+lookup_var_t lookup_find_name(lookup_t *lookup, const char *name, size_t len)
+{
+	lookup_var_t *var = __lookup_find_name_ptr(lookup, name, len);
+
+	return var ? *var :
+		     (lookup_var_t){ .var_flags = LOOKUP_VAR_NOT_DEFINED };
 }
 
 void lookup_begin_scope(lookup_t *lookup)

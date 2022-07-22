@@ -88,18 +88,18 @@ token_t lexer_next_token(lexer_t *lexer)
 	case '!':
 		return TOKEN(lexer, __lexer_match_char(lexer, '=') ?
 					    TKN_BANG_EQ :
-						  TKN_BANG);
+					    TKN_BANG);
 	case '=':
 		return TOKEN(lexer, __lexer_match_char(lexer, '=') ? TKN_EQ_EQ :
-									   TKN_EQ);
+								     TKN_EQ);
 	case '<':
 		return TOKEN(lexer, __lexer_match_char(lexer, '=') ?
 					    TKN_LESS_EQ :
-						  TKN_LESS);
+					    TKN_LESS);
 	case '>':
 		return TOKEN(lexer, __lexer_match_char(lexer, '=') ?
 					    TKN_GREATER_EQ :
-						  TKN_GREATER);
+					    TKN_GREATER);
 
 		break;
 	case '"':

@@ -42,6 +42,9 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...);
 static void __vm_assign_object(vm_t *vm, lox_obj_t *obj);
 static void __vm_str_concat(vm_t *vm);
 static void __vm_free_objects(vm_t *vm);
+static void __vm_define_global(vm_t *vm, lox_val_t *val);
+static lox_val_t *__vm_get_global(vm_t *vm, uint32_t glbl);
+static bool __vm_set_global(vm_t *vm, uint32_t glbl, lox_val_t *val);
 static void __vm_define_var(vm_t *vm, lox_val_t *val);
 static lox_val_t *__vm_get_var(vm_t *vm, uint32_t glbl);
 static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val);
@@ -72,6 +75,7 @@ vm_t vm_init()
 {
 	vm_t vm = (vm_t){
 		.stack = list_of_type(lox_val_t),
+		.globals = list_of_type(lox_val_t),
 		.frames = list_of_type(struct vm_call_frame),
 		.objects = linked_list_of_type(lox_obj_t *),
 		.state = state_new(),
@@ -131,23 +135,31 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 void vm_free(vm_t *vm)
 {
 	list_free(&vm->stack);
+	list_free(&vm->globals);
 	__vm_free_objects(vm);
 	state_free(&vm->state);
 #ifdef DEBUG_BENCH
 	map_free(&vm->timings_map);
 #endif
 }
+
 void _var_prnt(map_entry_t entry, for_each_entry_t *d)
 {
 	struct var_printer *data = (struct var_printer *)d;
 	struct string *name = (struct string *)entry.key;
-	uint32_t idx = *((uint32_t *)entry.value) + STACK_RESERVED_COUNT;
+	lookup_var_t var_def = *((lookup_var_t *)entry.value);
 
 	for (size_t i = 0; i < data->depth; i++) {
 		putchar('\t');
 	}
-	printf("(%u) %s: ", idx, string_get_cstring(name));
-	val_print(*((lox_val_t *)list_get(data->vm_vars, idx)));
+
+	if (lookup_var_is_assigned(var_def)) {
+		printf("(%u) %s: ", var_def.idx, string_get_cstring(name));
+		val_print(*((lox_val_t *)list_get(data->vm_vars, var_def.idx)));
+	} else {
+		printf("(?) %s: ", string_get_cstring(name));
+	}
+
 	puts("");
 }
 
@@ -164,7 +176,7 @@ void vm_print_vars(vm_t *vm)
 		.for_each = {
 			.func = &_var_prnt,
 	},
-		.vm_vars = &vm->stack,
+		.vm_vars = &vm->globals,
 		.depth = 1,
 	};
 
@@ -173,19 +185,19 @@ void vm_print_vars(vm_t *vm)
 			     (for_each_entry_t *)&var_prnt);
 	puts("}");
 
-	for (int depth = 2; depth < lookup_cur_depth(&vm->state.lookup);
-	     depth++) {
-		var_prnt.depth = depth - 1;
+	// for (int depth = 2; depth < lookup_cur_depth(&vm->state.lookup);
+	//      depth++) {
+	// 	var_prnt.depth = depth - 1;
 
-		INDENT_BY(depth - 2);
-		printf("Scope @%d: {", depth);
-		INDENT_BY(depth - 2);
-		map_entries_for_each(lookup_scope_at_depth(&vm->state.lookup,
-							   depth),
-				     (for_each_entry_t *)&var_prnt);
-		INDENT_BY(depth - 2);
-		puts("}");
-	}
+	// 	INDENT_BY(depth - 2);
+	// 	printf("Scope @%d: {", depth);
+	// 	INDENT_BY(depth - 2);
+	// 	map_entries_for_each(lookup_scope_at_depth(&vm->state.lookup,
+	// 						   depth),
+	// 			     (for_each_entry_t *)&var_prnt);
+	// 	INDENT_BY(depth - 2);
+	// 	puts("}");
+	// }
 #undef INDENT_BY
 }
 
@@ -336,6 +348,63 @@ static enum vm_res __vm_run(vm_t *vm)
 						    __vm_pop_const(vm))));
 			break;
 
+		case OP_GLOBAL_DEFINE: {
+			__frame_proc_idx(cur_frame);
+			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+
+			__vm_define_global(vm, val);
+			__vm_pop_const(vm);
+		} break;
+
+		case OP_GLOBAL_DEFINE_LONG: {
+			__frame_proc_idx(cur_frame);
+			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+
+			__vm_define_global(vm, val);
+			__vm_pop_const(vm);
+		} break;
+
+		case OP_GLOBAL_GET: {
+			uint32_t idx = __frame_proc_idx(cur_frame);
+			lox_val_t *val = __vm_get_global(vm, idx);
+
+			if (!val) {
+				__vm_runtime_error(vm, "undefined global.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			__vm_push_const(vm, *val);
+		} break;
+
+		case OP_GLOBAL_GET_LONG: {
+			uint32_t idx = __frame_proc_idx_ext(cur_frame);
+			lox_val_t *val = __vm_get_global(vm, idx);
+
+			if (!val) {
+				__vm_runtime_error(vm, "undefined global.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+			__vm_push_const(vm, *val);
+		} break;
+
+		case OP_GLOBAL_SET: {
+			uint32_t idx = __frame_proc_idx(cur_frame);
+			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+
+			if (!__vm_set_global(vm, idx, val)) {
+				__vm_runtime_error(vm, "Undefined global.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+		} break;
+
+		case OP_GLOBAL_SET_LONG: {
+			uint32_t idx = __frame_proc_idx_ext(cur_frame);
+			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+
+			if (!__vm_set_global(vm, idx, val)) {
+				__vm_runtime_error(vm, "Undefined global.");
+				return INTERPRET_RUNTIME_ERROR;
+			}
+		} break;
 		case OP_VAR_DEFINE: {
 			__frame_proc_idx(cur_frame);
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
@@ -460,6 +529,30 @@ static enum vm_res __vm_run(vm_t *vm)
 #undef COMPARISON_OP
 }
 
+static void __vm_define_global(vm_t *vm, lox_val_t *val)
+{
+	list_push(&vm->globals, val);
+}
+
+static lox_val_t *__vm_get_global(vm_t *vm, uint32_t glbl)
+{
+	if (glbl >= vm->globals.cnt) {
+		return NULL;
+	}
+
+	return (lox_val_t *)list_get(&vm->globals, glbl);
+}
+
+static bool __vm_set_global(vm_t *vm, uint32_t glbl, lox_val_t *val)
+{
+	if (glbl >= vm->globals.cnt) {
+		return false;
+	}
+
+	lox_val_t *val_ptr = (lox_val_t *)list_get(&vm->globals, glbl);
+	memcpy(val_ptr, val, sizeof(lox_val_t));
+	return true;
+}
 static void __vm_define_var(vm_t *vm, lox_val_t *val)
 {
 	list_push(&vm->stack, val);

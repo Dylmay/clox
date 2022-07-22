@@ -7,6 +7,7 @@
 struct state {
 	interner_t strings;
 	lookup_t lookup;
+	lookup_t globals;
 };
 
 static inline struct state state_new()
