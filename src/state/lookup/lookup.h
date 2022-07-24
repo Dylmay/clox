@@ -7,9 +7,17 @@
 
 typedef uint8_t var_flags_t;
 #define LOOKUP_VAR_NO_FLAGS (0)
+
+#define LOOKUP_VAR_IMMUTABLE (0 << 1)
 #define LOOKUP_VAR_MUTABLE (1 << 1)
-#define LOOKUP_VAR_NOT_DEFINED (1 << 2)
-#define LOOKUP_VAR_NOT_ASSIGNED (1 << 3)
+
+#define LOOKUP_VAR_NOT_DEFINED (0 << 2)
+#define LOOKUP_VAR_DEFINED (1 << 2)
+
+#define LOOKUP_VAR_NOT_ASSIGNED (0 << 3)
+#define LOOKUP_VAR_ASSIGNED (1 << 3)
+
+#define LOOKUP_VAR_LOCAL (0 << 4)
 #define LOOKUP_VAR_GLOBAL (1 << 4)
 
 typedef struct {
@@ -29,7 +37,7 @@ void lookup_free(lookup_t *lookup);
 void lookup_begin_scope(lookup_t *lookup);
 size_t lookup_cur_depth(const lookup_t *lookup);
 lookup_var_t lookup_define(lookup_t *lookup, const char *name, size_t len,
-			   var_flags_t flags);
+			   bool mutable);
 lox_str_t *lookup_scope_find(const lookup_t *lookup, uint32_t idx);
 lookup_var_t lookup_find_name(lookup_t *lookup, const char *name, size_t len);
 bool lookup_has_defined(lookup_t *lookup, const char *name, size_t len);

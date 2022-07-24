@@ -77,29 +77,34 @@ void lookup_set_flags(lookup_t *lookup, const char *name, size_t len,
 }
 
 lookup_var_t lookup_define(lookup_t *lookup, const char *chars, size_t len,
-			   var_flags_t flags)
+			   bool mutable)
 {
 	struct string *name = string_new(chars, len);
 	hashmap_t *scope;
 	lookup_var_t var;
 
-	if (flags & LOOKUP_VAR_GLOBAL) {
-		var = (lookup_var_t){
-			.idx = lookup->glbl_idx,
-			.var_flags = flags,
-		};
-		lookup->glbl_idx++;
+	var_flags_t flags =
+		LOOKUP_VAR_DEFINED |
+		(mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_IMMUTABLE);
 
-		scope = lookup_global_scope(lookup);
-	} else {
+	if (lookup_is_scoped(lookup)) {
 		var = (lookup_var_t){
+
 			.idx = lookup->cur_idx,
-			.var_flags = flags,
+			.var_flags = flags | LOOKUP_VAR_LOCAL,
 		};
 
 		lookup->cur_idx++;
 
 		scope = lookup_cur_scope(lookup);
+	} else {
+		var = (lookup_var_t){
+			.idx = lookup->glbl_idx,
+			.var_flags = flags | LOOKUP_VAR_GLOBAL,
+		};
+		lookup->glbl_idx++;
+
+		scope = lookup_global_scope(lookup);
 	}
 
 	map_insert(scope, name, &var);

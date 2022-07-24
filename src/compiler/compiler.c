@@ -34,7 +34,7 @@ static void __compiler_begin_scope(struct compiler *compiler);
 static void __compiler_end_scope(struct compiler *compiler);
 static lookup_var_t __compiler_define_var(struct compiler *compiler,
 					  const char *name, size_t len,
-					  int line, var_flags_t flags);
+					  int line, bool mutable);
 static void __compiler_set_var(struct compiler *compiler, lookup_var_t var,
 			       int line);
 static void __compiler_get_var(struct compiler *compiler, lookup_var_t var,
@@ -361,10 +361,10 @@ static void __parse_var_decl(struct compiler *compiler)
 	// issue: book keeping no longer fully handled by lookup
 	// solution: lookup_define_or_assign(), returns
 
-	if (__compiler_has_defined(compiler, name, len)) {
-		parser_error_at_previous(compiler->prsr,
-					 "Variables cannot be redefined.");
-	}
+	// if (__compiler_has_defined(compiler, name, len)) {
+	// 	parser_error_at_previous(compiler->prsr,
+	// 				 "Variables cannot be redefined.");
+	// }
 
 	if (parser_match(compiler->prsr, TKN_EQ)) {
 		__parse_expr(compiler);
@@ -378,9 +378,7 @@ static void __parse_var_decl(struct compiler *compiler)
 	// if undef_var exists, set flags on object
 	// could have a list of pendings
 	if (!compiler->prsr->had_err) {
-		__compiler_define_var(compiler, name, len, def_ln,
-				      is_mutable ? LOOKUP_VAR_MUTABLE :
-						   LOOKUP_VAR_NO_FLAGS);
+		__compiler_define_var(compiler, name, len, def_ln, is_mutable);
 	} else {
 		OP_VAR_DEFINE_WRITE(compiler->fn, 0, def_ln);
 	}
@@ -440,8 +438,9 @@ static void __parse_var(struct compiler *compiler)
 					    name_tkn.start, name_tkn.len);
 
 	if (lookup_var_not_defined(var)) {
-		lookup_reserve(&compiler->state->lookup, name_tkn.start,
-			       name_tkn.len, LOOKUP_VAR_GLOBAL);
+		// TODO
+		// lookup_reserve(&compiler->state->lookup, name_tkn.start,
+		// 	       name_tkn.len, LOOKUP_VAR_GLOBAL);
 		//parser_error_at_previous(compiler->prsr, "Unknown identifier");
 	}
 
@@ -565,10 +564,10 @@ static void __parse_for_stmt(struct compiler *compiler)
 	const char *name = compiler->prsr->previous.start;
 	size_t len = compiler->prsr->previous.len;
 
-	if (__compiler_has_defined(compiler, name, len)) {
-		parser_error_at_previous(compiler->prsr,
-					 "Variable has already been defined.");
-	}
+	// if (__compiler_has_defined(compiler, name, len)) {
+	// 	parser_error_at_previous(compiler->prsr,
+	// 				 "Variable has already been defined.");
+	// }
 
 	parser_consume(compiler->prsr, TKN_IN, "Expected 'in'.");
 	parser_consume(compiler->prsr, TKN_NUM, "Expected range start");
@@ -576,8 +575,8 @@ static void __parse_for_stmt(struct compiler *compiler)
 	double range_start = strtod(compiler->prsr->previous.start, NULL);
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_NUMBER(range_start),
 		       compiler->prsr->previous.line);
-	lookup_var_t glbl_idx = __compiler_define_var(
-		compiler, name, len, def_ln, LOOKUP_VAR_MUTABLE);
+	lookup_var_t glbl_idx =
+		__compiler_define_var(compiler, name, len, def_ln, true);
 
 	parser_consume(compiler->prsr, TKN_DOT, "Expected range '..'");
 	parser_consume(compiler->prsr, TKN_DOT, "Expected range '..'");
@@ -624,20 +623,21 @@ static void __parse_fn_decl(struct compiler *compiler)
 	const char *name = compiler->prsr->previous.start;
 	size_t len = compiler->prsr->previous.len;
 
-	if (__compiler_has_defined(compiler, name, len)) {
-		parser_error_at_previous(
-			compiler->prsr,
-			"Variables/functions cannot be redefined.");
-	}
+	// if (__compiler_has_defined(compiler, name, len)) {
+	// 	parser_error_at_previous(
+	// 		compiler->prsr,
+	// 		"Variables/functions cannot be redefined.");
+	// }
 
 	lox_str_t *fn_name =
 		intern_string(&compiler->state->strings, name, len);
 	__parse_fn(compiler, fn_name);
 
 	if (!compiler->prsr->had_err) {
-		lookup_var_t glbl_idx = __compiler_define_var(
-			compiler, name, len, compiler->prsr->previous.line,
-			is_mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_NO_FLAGS);
+		lookup_var_t glbl_idx =
+			__compiler_define_var(compiler, name, len,
+					      compiler->prsr->previous.line,
+					      is_mutable);
 
 		lox_fn_t *fn = OBJECT_AS_FN(
 			*(lox_val_t *)list_peek(&compiler->fn->chunk.consts));
@@ -689,21 +689,15 @@ static void __compiler_end_scope(struct compiler *compiler)
 
 static lookup_var_t __compiler_define_var(struct compiler *compiler,
 					  const char *name, size_t len,
-					  int line, var_flags_t flags)
+					  int line, bool mutable)
 {
-	lookup_var_t new_var;
+	lookup_var_t new_var =
+		lookup_define(&compiler->state->lookup, name, len, mutable);
 
-	if (lookup_is_scoped(&compiler->state->lookup) &&
-	    !(flags & LOOKUP_VAR_GLOBAL)) {
-		new_var = lookup_define(&compiler->state->lookup, name, len,
-					flags);
-
-		OP_VAR_DEFINE_WRITE(compiler->fn, new_var.idx, line);
-	} else {
-		new_var = lookup_define(&compiler->state->lookup, name, len,
-					flags | LOOKUP_VAR_GLOBAL);
-
+	if (lookup_var_is_global(new_var)) {
 		OP_GLOBAL_DEFINE_WRITE(compiler->fn, new_var.idx, line);
+	} else {
+		OP_VAR_DEFINE_WRITE(compiler->fn, new_var.idx, line);
 	}
 
 	return new_var;
