@@ -16,6 +16,8 @@ static hashmap_t __lookup_scope_new();
 static struct name_matcher __create_matcher(const char *name, size_t len);
 static lookup_var_t *__lookup_find_name_ptr(lookup_t *lookup, const char *name,
 					    size_t len);
+static lookup_var_t *__lookup_scope_find_name_ptr(lookup_t *lookup,
+						  const char *name, size_t len);
 
 void lookup_entry_free(map_entry_t entry, for_each_entry_t *data)
 {
@@ -51,7 +53,6 @@ lookup_t lookup_new()
 	lookup_t lookup = (lookup_t){
 		.scopes = list_of_type(hashmap_t),
 		.cur_idx = 0,
-		.glbl_idx = 0,
 	};
 	lookup_begin_scope(&lookup);
 
@@ -65,51 +66,83 @@ void lookup_free(lookup_t *lookup)
 	list_free(&lookup->scopes);
 }
 
-void lookup_set_flags(lookup_t *lookup, const char *name, size_t len,
-		      var_flags_t flags)
+lookup_var_t lookup_declare(lookup_t *lookup, const char *chars, size_t len,
+			    bool mutable)
 {
-	struct name_matcher matcher = __create_matcher(name, len);
-	lookup_var_t *var = map_find_by_key(lookup_cur_scope(lookup),
-					    (key_matcher_t *)&matcher)
-				    .value;
+	struct string *name = string_new(chars, len);
 
-	var->var_flags = flags;
+	var_flags_t flags =
+		LOOKUP_VAR_DEFINED |
+		(mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_IMMUTABLE);
+
+	lookup_var_t var = (lookup_var_t){
+
+		.idx = lookup->cur_idx,
+		.var_flags = flags,
+	};
+
+	lookup->cur_idx++;
+
+	map_insert(lookup_cur_scope(lookup), name, &var);
+
+	return var;
 }
 
 lookup_var_t lookup_define(lookup_t *lookup, const char *chars, size_t len,
 			   bool mutable)
 {
 	struct string *name = string_new(chars, len);
-	hashmap_t *scope;
-	lookup_var_t var;
 
-	var_flags_t flags =
-		LOOKUP_VAR_DEFINED |
-		(mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_IMMUTABLE);
+	lookup_var_t *reserved =
+		__lookup_scope_find_name_ptr(lookup, chars, len);
 
-	if (lookup_is_scoped(lookup)) {
-		var = (lookup_var_t){
+	if (reserved) {
+		if (lookup_var_is_assigned(*reserved)) {
+			return (lookup_var_t){
+				.idx = 0,
+				.var_flags = LOOKUP_VAR_INVALID,
+			};
+		}
 
-			.idx = lookup->cur_idx,
-			.var_flags = flags | LOOKUP_VAR_LOCAL,
-		};
-
-		lookup->cur_idx++;
-
-		scope = lookup_cur_scope(lookup);
-	} else {
-		var = (lookup_var_t){
-			.idx = lookup->glbl_idx,
-			.var_flags = flags | LOOKUP_VAR_GLOBAL,
-		};
-		lookup->glbl_idx++;
-
-		scope = lookup_global_scope(lookup);
+		reserved->var_flags |= LOOKUP_VAR_ASSIGNED;
+		return *reserved;
 	}
 
-	map_insert(scope, name, &var);
+	var_flags_t flags =
+		LOOKUP_VAR_DEFINED | LOOKUP_VAR_ASSIGNED |
+		(mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_IMMUTABLE);
+
+	lookup_var_t var = (lookup_var_t){
+
+		.idx = lookup->cur_idx,
+		.var_flags = flags,
+	};
+
+	lookup->cur_idx++;
+
+	map_insert(lookup_cur_scope(lookup), name, &var);
 
 	return var;
+}
+
+bool lookup_scope_has_name(lookup_t *lookup, const char *name, size_t len)
+{
+	struct name_matcher matcher = __create_matcher(name, len);
+
+	return map_find_by_key(lookup_cur_scope(lookup),
+			       (key_matcher_t *)&matcher)
+		.value;
+}
+
+static lookup_var_t *__lookup_scope_find_name_ptr(lookup_t *lookup,
+						  const char *name, size_t len)
+{
+	struct name_matcher matcher = __create_matcher(name, len);
+	lookup_var_t *found = map_find_by_key(lookup_cur_scope(lookup),
+					      (key_matcher_t *)&matcher)
+				      .value;
+
+	return found;
 }
 
 static lookup_var_t *__lookup_find_name_ptr(lookup_t *lookup, const char *name,
@@ -119,7 +152,7 @@ static lookup_var_t *__lookup_find_name_ptr(lookup_t *lookup, const char *name,
 
 	for (size_t depth = lookup_cur_depth(lookup); depth >= 1; depth--) {
 		const hashmap_t *scope = lookup_scope_at_depth(lookup, depth);
-		const lookup_var_t *found =
+		lookup_var_t *found =
 			map_find_by_key(scope, (key_matcher_t *)&matcher).value;
 
 		if (found) {

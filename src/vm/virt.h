@@ -21,7 +21,7 @@ struct vm_call_frame {
 typedef struct {
 	list_t frames;
 	struct state state;
-	list_t globals; // TODO: setup
+	list_t globals;
 	list_t stack;
 	linked_list_t objects;
 #ifdef DEBUG_BENCH

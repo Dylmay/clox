@@ -42,7 +42,7 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...);
 static void __vm_assign_object(vm_t *vm, lox_obj_t *obj);
 static void __vm_str_concat(vm_t *vm);
 static void __vm_free_objects(vm_t *vm);
-static void __vm_define_global(vm_t *vm, lox_val_t *val);
+static void __vm_define_global(vm_t *vm, lox_val_t *val, size_t idx);
 static lox_val_t *__vm_get_global(vm_t *vm, uint32_t glbl);
 static bool __vm_set_global(vm_t *vm, uint32_t glbl, lox_val_t *val);
 static void __vm_define_var(vm_t *vm, lox_val_t *val);
@@ -181,7 +181,7 @@ void vm_print_vars(vm_t *vm)
 	};
 
 	puts("Globals: {");
-	map_entries_for_each(lookup_scope_at_depth(&vm->state.lookup, 1),
+	map_entries_for_each(lookup_scope_at_depth(&vm->state.globals, 1),
 			     (for_each_entry_t *)&var_prnt);
 	puts("}");
 
@@ -349,18 +349,18 @@ static enum vm_res __vm_run(vm_t *vm)
 			break;
 
 		case OP_GLOBAL_DEFINE: {
-			__frame_proc_idx(cur_frame);
+			uint32_t idx = __frame_proc_idx(cur_frame);
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
 
-			__vm_define_global(vm, val);
+			__vm_define_global(vm, val, idx);
 			__vm_pop_const(vm);
 		} break;
 
 		case OP_GLOBAL_DEFINE_LONG: {
-			__frame_proc_idx(cur_frame);
+			uint32_t idx = __frame_proc_idx(cur_frame);
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
 
-			__vm_define_global(vm, val);
+			__vm_define_global(vm, val, idx);
 			__vm_pop_const(vm);
 		} break;
 
@@ -529,9 +529,13 @@ static enum vm_res __vm_run(vm_t *vm)
 #undef COMPARISON_OP
 }
 
-static void __vm_define_global(vm_t *vm, lox_val_t *val)
+static void __vm_define_global(vm_t *vm, lox_val_t *val, size_t idx)
 {
-	list_push(&vm->globals, val);
+	if (idx >= list_size(&vm->globals)) {
+		list_set_cnt(&vm->globals, idx + 1);
+	}
+
+	*((lox_val_t *)list_get(&vm->globals, idx)) = *val;
 }
 
 static lox_val_t *__vm_get_global(vm_t *vm, uint32_t glbl)
