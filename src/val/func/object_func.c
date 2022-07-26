@@ -110,10 +110,8 @@ bool object_equals(const struct object *a, const struct object *b)
 	}
 }
 
-hash_t obj_str_gen_hash(const void *key)
+hash_t obj_str_gen_hash(const struct object_str *str)
 {
-	const struct object_str *str = (const struct object_str *)key;
-
 	return c_str_gen_hash(str->chars, str->len);
 }
 

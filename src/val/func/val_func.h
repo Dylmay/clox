@@ -19,10 +19,30 @@
 #define VAL_IS_NUMBER(value) ((value).type == VAL_NUMBER)
 #define VAL_IS_OBJ(value) ((value).type == VAL_OBJ)
 
+/**
+ * @brief whether the passed value is falsey
+ *
+ * @param val the value to test
+ * @return true the value is truthy
+ * @return false the value is falsey
+ */
 bool val_is_falsey(lox_val_t val);
 
+/**
+ * @brief prints the passed value to stdout
+ *
+ * @param val the value to print
+ */
 void val_print(lox_val_t val);
 
+/**
+ * @brief whether the passed values are equal
+ *
+ * @param a value a
+ * @param b value b
+ * @return true the two values are equal
+ * @return false the two values are false
+ */
 bool val_equals(lox_val_t a, lox_val_t b);
 
 #endif // __CLOX_VAL_FUNC_H__
