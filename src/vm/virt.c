@@ -121,7 +121,7 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 	puts("}");
 #endif
 
-	// object_free((struct object *)vm->fn);
+	//object_free((struct object *)vm->fn);
 
 #ifdef DEBUG_TRACE_EXECUTION
 	if (res == INTERPRET_OK) {
@@ -671,11 +671,17 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 	va_end(args);
 	fputs("\n", stderr);
 
-	struct vm_call_frame *cur_frame = list_peek(&vm->frames);
+	for (int i = list_size(&vm->frames) - 1; i >= 0; i--) {
+		struct vm_call_frame *cur_frame = list_get(&vm->frames, i);
+		lox_fn_t *fn = cur_frame->fn;
 
-	size_t offset = ((size_t)__frame_instr_offset(cur_frame)) - 1;
-	int line = chunk_get_line(&cur_frame->fn->chunk, offset);
-	fprintf(stderr, "Lox Runtime Error at line %d\n", line);
+		size_t offset = ((size_t)__frame_instr_offset(cur_frame)) - 1;
+		int line = chunk_get_line(&fn->chunk, offset);
+
+		fprintf(stderr, "[line %d] in %s()\n", line,
+			fn->name ? fn->name->chars : "script");
+	}
+
 	list_reset(&vm->stack);
 }
 
@@ -753,6 +759,14 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 					"Too %s arguments to function call, expected %d, have %d",
 					fn->arity > call_arity ? "few" : "many",
 					fn->arity, call_arity);
+				return false;
+			}
+
+			if (list_size(&vm->frames) == FRAMES_MAX) {
+				__vm_runtime_error(
+					vm,
+					"Stack overflow. Recursion depth of %d was reached",
+					FRAMES_MAX);
 				return false;
 			}
 

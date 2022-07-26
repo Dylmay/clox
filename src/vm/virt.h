@@ -7,7 +7,7 @@
 #include "util/list/list.h"
 #include "util/list/linked_list.h"
 
-#define FRAMES_MIN 32
+#define FRAMES_MAX 999
 
 #define STACK_RESERVED_COUNT 1
 #define STACK_MAIN_IDX 0
