@@ -6,7 +6,7 @@
 
 #define SIZEOF_STRING(len) (sizeof(struct string) + (sizeof(char) * (len)))
 
-size_t c_str_count_len(const char *c_str, size_t max_len)
+static size_t __c_str_count_len(const char *c_str, size_t max_len)
 {
 	if (!c_str) {
 		return 0;
@@ -24,7 +24,7 @@ size_t c_str_count_len(const char *c_str, size_t max_len)
 struct string *string_new(const char *c_str, size_t len)
 {
 	assert(("string cannot have a null c_string", c_str));
-	size_t max_len = c_str_count_len(c_str, len);
+	size_t max_len = __c_str_count_len(c_str, len);
 
 	struct string *str_ptr = malloc(SIZEOF_STRING(max_len) + sizeof(char));
 
@@ -54,11 +54,11 @@ struct string *string_concat(const struct string *a, const struct string *b)
 	}
 
 	if (!a) {
-		return string_copy(a);
+		return string_copy(b);
 	}
 
 	if (!b) {
-		return string_copy(b);
+		return string_copy(a);
 	}
 
 	size_t len = a->len + b->len;
@@ -79,7 +79,7 @@ struct string *string_copy(const struct string *str)
 	return string_new(str->c_str, str->len);
 }
 
-struct string *string_c_append(const struct string *str, const char *chars,
+struct string *string_c_append(struct string *str, const char *chars,
 			       size_t c_len)
 {
 	assert(("chars cannot be null", chars));
@@ -88,7 +88,7 @@ struct string *string_c_append(const struct string *str, const char *chars,
 		return string_new(chars, c_len);
 	}
 
-	size_t c_max_len = c_str_count_len(chars, c_len);
+	size_t c_max_len = __c_str_count_len(chars, c_len);
 	size_t len = str->len + c_max_len;
 	struct string *str_ptr = malloc(SIZEOF_STRING(len) + sizeof(char));
 	str_ptr->len = len;
@@ -96,6 +96,7 @@ struct string *string_c_append(const struct string *str, const char *chars,
 	strncpy(str_ptr->c_str + str->len, chars, c_max_len);
 	str_ptr->c_str[str_ptr->len] = '\0';
 
+	string_free(str);
 	return str_ptr;
 }
 

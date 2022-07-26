@@ -65,9 +65,7 @@ static void __run_repl(vm_t *vm)
 			}
 		}
 
-		struct string *old_src = source;
 		source = string_c_append(source, line_buf, sizeof(line_buf));
-		string_free(old_src);
 
 		if (list_size(&scope_stack) != 0) {
 			for (size_t i = 0; i < list_size(&scope_stack); i++) {
