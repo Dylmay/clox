@@ -61,6 +61,9 @@ enum tkn_type keyword_traverse(const char *identifier, size_t id_len)
 	case 'o':
 		return MATCH(identifier, 1, "r", TKN_OR);
 
+	case 'r':
+		return MATCH(identifier, 1, "eturn", TKN_RETURN);
+
 	case 's':
 		return MATCH(identifier, 1, "uper", TKN_ELSE);
 

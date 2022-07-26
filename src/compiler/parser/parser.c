@@ -90,7 +90,7 @@ void parser_sync(parser_t *prsr)
 		case TKN_IF:
 		case TKN_WHILE:
 		case TKN_PRINT:
-		case TKN_RET:
+		case TKN_RETURN:
 			return;
 
 		default:

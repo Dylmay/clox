@@ -13,6 +13,12 @@
 #include "debug/debug.h"
 #endif
 
+struct compile_unit {
+	lox_fn_t *fn;
+	bool can_assign;
+};
+
+// TODO: move to compile units. all share a pointer to the compiler struct
 struct compiler {
 	parser_t *prsr;
 	struct state *state;
@@ -61,6 +67,7 @@ static void __parse_for_stmt(struct compiler *);
 static void __parse_fn_decl(struct compiler *);
 static void __parse_fn(struct compiler *, lox_str_t *);
 static void __parse_call(struct compiler *);
+static void __parse_return_stmt(struct compiler *);
 static uint8_t __parse_arglist(struct compiler *);
 static bool __compiler_has_defined(struct compiler *, const char *, size_t);
 /* Forwards */
@@ -102,7 +109,7 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_NIL] = { __parse_lit, NULL, PREC_NONE },
 	[TKN_OR] = { NULL, __parse_or, PREC_OR },
 	[TKN_PRINT] = { __parse_print, NULL, PREC_NONE },
-	[TKN_RET] = { NULL, NULL, PREC_NONE },
+	[TKN_RETURN] = { NULL, NULL, PREC_NONE },
 	[TKN_SUPER] = { NULL, NULL, PREC_NONE },
 	[TKN_THIS] = { NULL, NULL, PREC_NONE },
 	[TKN_TRUE] = { __parse_lit, NULL, PREC_NONE },
@@ -148,6 +155,7 @@ static lox_fn_t *__compiler_run(struct compiler compiler, bool is_main)
 		__parse_block(&compiler);
 	}
 
+	// TODO: only push if no return was found
 	OP_CONST_WRITE(compiler.fn, VAL_CREATE_NIL,
 		       compiler.prsr->current.line);
 	OP_RETURN_WRITE(compiler.fn, compiler.prsr->current.line);
@@ -387,6 +395,8 @@ static void __parse_stmnt(struct compiler *compiler)
 		__parse_print(compiler);
 	} else if (parser_match(compiler->prsr, TKN_IF)) {
 		__parse_if_stmt(compiler);
+	} else if (parser_match(compiler->prsr, TKN_RETURN)) {
+		__parse_return_stmt(compiler);
 	} else if (parser_match(compiler->prsr, TKN_WHILE)) {
 		__parse_while_stmt(compiler);
 	} else if (parser_match(compiler->prsr, TKN_FOR)) {
@@ -700,6 +710,22 @@ static void __parse_call(struct compiler *compiler)
 {
 	uint8_t args = __parse_arglist(compiler);
 	OP_CALL_WRITE(compiler->fn, args, compiler->prsr->previous.line);
+}
+
+// TODO: as soon as reached, exit function compile
+static void __parse_return_stmt(struct compiler *compiler)
+{
+	if (parser_match(compiler->prsr, TKN_SEMICOLON)) {
+		//return nil
+		OP_CONST_WRITE(compiler->fn, VAL_CREATE_NIL,
+			       compiler->prsr->current.line);
+	} else {
+		// TODO: only allow number in top level
+		__parse_expr(compiler);
+		parser_consume(compiler->prsr, TKN_SEMICOLON,
+			       "Expected ';' after return value.");
+	}
+	OP_RETURN_WRITE(compiler->fn, compiler->prsr->current.line);
 }
 
 static void __compiler_begin_scope(struct compiler *compiler)

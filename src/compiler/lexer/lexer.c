@@ -177,7 +177,7 @@ static char __lexer_peek_next(const lexer_t *lexer)
 static bool __lexer_consume_comment(lexer_t *lexer)
 {
 	if (__lexer_peek_next(lexer) == '/') {
-		while (__lexer_peek(lexer) != '\n' && __lexer_at_end(lexer)) {
+		while (__lexer_peek(lexer) != '\n' && !__lexer_at_end(lexer)) {
 			__lexer_advance(lexer);
 		}
 		return true;

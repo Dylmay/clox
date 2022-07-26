@@ -41,7 +41,7 @@ enum tkn_type {
 	TKN_NIL,
 	TKN_OR,
 	TKN_PRINT,
-	TKN_RET,
+	TKN_RETURN,
 	TKN_SUPER,
 	TKN_THIS,
 	TKN_TRUE,
