@@ -29,18 +29,16 @@ struct parse_rule {
 	enum precedence prec;
 };
 
-static lox_fn_t *__compiler_run(struct compiler compiler, bool is_main);
+/* Forwards */
+static lox_fn_t *__compiler_run(struct compiler, bool);
 static const struct parse_rule *__compiler_get_rule(enum tkn_type);
-static void __compiler_begin_scope(struct compiler *compiler);
-static void __compiler_end_scope(struct compiler *compiler);
-static lookup_var_t __compiler_define_var(struct compiler *compiler,
-					  const char *name, size_t len,
-					  int line, bool mutable, bool local);
-static void __compiler_set_var(struct compiler *compiler, lookup_var_t var,
-			       int line, bool local);
-static void __compiler_get_var(struct compiler *compiler, lookup_var_t var,
-			       int line, bool local);
-static void __parse_block(struct compiler *compiler);
+static void __compiler_begin_scope(struct compiler *);
+static void __compiler_end_scope(struct compiler *);
+static lookup_var_t __compiler_define_var(struct compiler *, const char *,
+					  size_t, int, bool, bool);
+static void __compiler_set_var(struct compiler *, lookup_var_t, int, bool);
+static void __compiler_get_var(struct compiler *, lookup_var_t, int, bool);
+static void __parse_block(struct compiler *);
 static void __parse_expr(struct compiler *);
 static void __parse_precedence(struct compiler *, enum precedence);
 static void __parse_unary(struct compiler *);
@@ -61,10 +59,11 @@ static void __parse_and(struct compiler *);
 static void __parse_or(struct compiler *);
 static void __parse_for_stmt(struct compiler *);
 static void __parse_fn_decl(struct compiler *);
-static void __parse_fn(struct compiler *, lox_str_t *name);
+static void __parse_fn(struct compiler *, lox_str_t *);
 static void __parse_call(struct compiler *);
-static bool __compiler_has_defined(struct compiler *compiler, const char *name,
-				   size_t len);
+static uint8_t __parse_arglist(struct compiler *);
+static bool __compiler_has_defined(struct compiler *, const char *, size_t);
+/* Forwards */
 
 static struct parse_rule PARSE_RULES[] = {
 	// single char tokens
@@ -358,13 +357,6 @@ static void __parse_var_decl(struct compiler *compiler)
 	const char *name = compiler->prsr->previous.start;
 	size_t len = compiler->prsr->previous.len;
 
-	// if compiler has reserved the variable
-	// allow redefinition
-	// issue is: lookup_define allows very similar entries (doesn't fully alloc based on hash, also uses ptr)
-	// have to search through the lookup tree anyway, might as well ask for pointer
-	// issue: book keeping no longer fully handled by lookup
-	// solution: lookup_define_or_assign(), returns
-
 	if (__compiler_has_defined(compiler, name, len)) {
 		parser_error_at_previous(compiler->prsr,
 					 "Variables cannot be redefined.");
@@ -442,8 +434,6 @@ static void __parse_var(struct compiler *compiler)
 	lookup_var_t var = lookup_find_name(local ? compiler->locals :
 						    &compiler->state->globals,
 					    name_tkn.start, name_tkn.len);
-
-	// if var not in locals, reserve var in globals
 
 	if (!lookup_var_defined(var)) {
 		var = lookup_declare(&compiler->state->globals, name_tkn.start,
@@ -657,12 +647,44 @@ static void __parse_fn_decl(struct compiler *compiler)
 // NOTE: currently scopes args and internals separately
 static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 {
+	uint8_t arity = 0;
 	struct compiler new_comp =
 		__compiler_new(compiler->prsr, compiler->state, name);
 
 	__compiler_begin_scope(&new_comp);
 	parser_consume(new_comp.prsr, TKN_LEFT_PAREN,
 		       "Expected '(' after function name.");
+	if (!parser_check(compiler->prsr, TKN_RIGHT_PAREN)) {
+		do {
+			if (arity == 255) {
+				parser_error_at_current(
+					compiler->prsr,
+					"Can't have more than 255 parameters.");
+			}
+			arity++;
+
+			bool is_mutable = parser_match(compiler->prsr, TKN_MUT);
+			parser_consume(compiler->prsr, TKN_ID,
+				       "Expected variable name");
+
+			int def_ln = compiler->prsr->previous.line;
+			const char *name = compiler->prsr->previous.start;
+			size_t len = compiler->prsr->previous.len;
+
+			if (__compiler_has_defined(compiler, name, len)) {
+				parser_error_at_previous(
+					compiler->prsr,
+					"Variables cannot be redefined.");
+			}
+
+			if (!compiler->prsr->had_err) {
+				__compiler_define_var(&new_comp, name, len,
+						      def_ln, is_mutable,
+						      new_comp.locals);
+			}
+		} while (parser_match(compiler->prsr, TKN_COMMA));
+	}
+	new_comp.fn->arity = arity;
 	parser_consume(new_comp.prsr, TKN_RIGHT_PAREN,
 		       "Expected ')' after function params.");
 	parser_consume(new_comp.prsr, TKN_LEFT_BRACE, "Expected block start.");
@@ -676,9 +698,8 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 
 static void __parse_call(struct compiler *compiler)
 {
-	parser_consume(compiler->prsr, TKN_RIGHT_PAREN,
-		       "Expected ')' after arguments.");
-	OP_CALL_WRITE(compiler->fn, compiler->prsr->previous.line);
+	uint8_t args = __parse_arglist(compiler);
+	OP_CALL_WRITE(compiler->fn, args, compiler->prsr->previous.line);
 }
 
 static void __compiler_begin_scope(struct compiler *compiler)
@@ -756,4 +777,20 @@ static bool __compiler_has_defined(struct compiler *compiler, const char *name,
 {
 	return compiler->locals &&
 	       lookup_scope_has_name(compiler->locals, name, len);
+}
+
+static uint8_t __parse_arglist(struct compiler *compiler)
+{
+	uint8_t arg_cnt = 0;
+
+	if (!parser_check(compiler->prsr, TKN_RIGHT_PAREN)) {
+		do {
+			__parse_expr(compiler);
+			arg_cnt++;
+		} while (parser_match(compiler->prsr, TKN_COMMA));
+	}
+	parser_consume(compiler->prsr, TKN_RIGHT_PAREN,
+		       "Expected ')' after argument list");
+
+	return arg_cnt;
 }

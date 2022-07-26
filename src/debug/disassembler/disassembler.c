@@ -13,6 +13,8 @@ static size_t __var_long_instr(const char *, struct chunk *, uint32_t);
 static size_t __pop_count_instr(const char *, struct chunk *, uint32_t);
 static uint32_t __jump_instr(const char *, struct chunk *, uint32_t);
 static uint32_t __get_ext_pos(struct chunk *, uint32_t);
+static size_t __call_instr(const char *name, struct chunk *chunk,
+			   size_t offset);
 
 void disassem_chunk(struct chunk *chnk, const char *name)
 {
@@ -94,6 +96,9 @@ size_t disassem_inst(struct chunk *chunk, size_t offset)
 	case OP_JUMP_IF_FALSE:
 		return __jump_instr(op_name(instruction), chunk, offset);
 
+	case OP_CALL:
+		return __call_instr(op_name(instruction), chunk, offset);
+
 		CASE_SIMPLE_INSTR(OP_RETURN);
 
 		CASE_SIMPLE_INSTR(OP_NIL);
@@ -126,14 +131,19 @@ size_t disassem_inst(struct chunk *chunk, size_t offset)
 
 		CASE_SIMPLE_INSTR(OP_MOD);
 
-		CASE_SIMPLE_INSTR(OP_CALL);
-
 	default:
 		printf("Unknown opcode %u\n", instruction);
 		return offset + 1;
 
 #undef CASE_SIMPLE_INSTR
 	}
+}
+
+static size_t __call_instr(const char *name, struct chunk *chunk, size_t offset)
+{
+	printf(" %-20s | %04d\n", name, chunk_get_code(chunk, offset + 1));
+
+	return offset + 2;
 }
 
 static size_t __simple_instr(const char *name, size_t offset)

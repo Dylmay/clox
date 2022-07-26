@@ -5,7 +5,12 @@
 #include "util/list/list.h"
 #include "object.h"
 
-enum value_type { VAL_BOOL, VAL_NIL, VAL_NUMBER, VAL_OBJ };
+enum value_type {
+	VAL_NIL,
+	VAL_BOOL,
+	VAL_NUMBER,
+	VAL_OBJ,
+};
 
 typedef double lox_num_t;
 typedef bool lox_bool_t;

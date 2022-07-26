@@ -50,6 +50,12 @@ static inline void OP_CONST_WRITE(lox_fn_t *fn, lox_val_t const_val, int line)
 		      line);
 }
 
+static inline void OP_CALL_WRITE(lox_fn_t *fn, uint8_t arg_cnt, int line)
+{
+	chunk_write_code(&fn->chunk, OP_CALL, line);
+	chunk_write_code(&fn->chunk, (code_t)arg_cnt, line);
+}
+
 static inline void OP_POP_COUNT_WRITE(lox_fn_t *fn, uint32_t cnt, int line)
 {
 	chunk_write_code(&fn->chunk, OP_POP_COUNT, line);
@@ -109,7 +115,6 @@ CREATE_WRITE_FUNC(OP_LESS)
 CREATE_WRITE_FUNC(OP_PRINT)
 CREATE_WRITE_FUNC(OP_POP)
 CREATE_WRITE_FUNC(OP_MOD)
-CREATE_WRITE_FUNC(OP_CALL)
 
 CREATE_EXTENDED_WRITE_FUNC(OP_VAR_DEFINE, OP_GLOBAL_DEFINE_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_VAR_GET, OP_GLOBAL_GET_LONG)

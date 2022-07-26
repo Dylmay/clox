@@ -49,8 +49,8 @@ static void __vm_define_var(vm_t *vm, lox_val_t *val);
 static lox_val_t *__vm_get_var(vm_t *vm, uint32_t glbl);
 static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val);
 static void __vm_set_main(vm_t *vm, lox_fn_t *main);
-static bool __vm_call_val(vm_t *vm, lox_val_t callee, int cnt);
-static bool __vm_call(vm_t *vm, lox_fn_t *fn, int cnt);
+static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t arity);
+static bool __vm_call(vm_t *vm, lox_fn_t *fn);
 
 static void __vm_proc_const(vm_t *vm, struct vm_call_frame *frame,
 			    uint32_t idx);
@@ -481,10 +481,10 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_CALL: {
-			int argCnt = 0;
+			uint8_t arg_cnt = __frame_proc_idx(cur_frame);
 
-			if (!__vm_call_val(vm, __vm_peek_const(vm, argCnt),
-					   argCnt)) {
+			if (!__vm_call_val(vm, __vm_peek_const(vm, arg_cnt),
+					   arg_cnt)) {
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
@@ -740,26 +740,40 @@ static void __vm_discard(vm_t *vm, uint32_t discard_cnt)
 	list_adjust_cnt(&vm->stack, -discard_cnt);
 }
 
-static bool __vm_call_val(vm_t *vm, lox_val_t callee, int cnt)
+static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 {
 	if (VAL_IS_OBJ(callee)) {
 		switch (OBJECT_TYPE(callee)) {
-		case OBJ_FN:
-			return __vm_call(vm, OBJECT_AS_FN(callee), cnt);
+		case OBJ_FN: {
+			lox_fn_t *fn = OBJECT_AS_FN(callee);
+
+			if (fn->arity != call_arity) {
+				__vm_runtime_error(
+					vm,
+					"Too %s arguments to function call, expected %d, have %d",
+					fn->arity > call_arity ? "few" : "many",
+					fn->arity, call_arity);
+				return false;
+			}
+
+			return __vm_call(vm, OBJECT_AS_FN(callee));
+		} break;
 
 		default:
 			break;
 		}
 	}
 	__vm_runtime_error(vm, "Can only call functions and classes");
+
+	return false;
 }
 
-static bool __vm_call(vm_t *vm, lox_fn_t *fn, int cnt)
+static bool __vm_call(vm_t *vm, lox_fn_t *fn)
 {
 	struct vm_call_frame frame = {
 		.fn = fn,
 		.ip = fn->chunk.code.data,
-		.stack_snapshot = list_size(&vm->stack),
+		.stack_snapshot = list_size(&vm->stack) - fn->arity,
 	};
 	list_push(&vm->frames, &frame);
 
