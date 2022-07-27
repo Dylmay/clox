@@ -16,7 +16,7 @@ struct string {
 };
 
 /**
- * @brief Constructs a new immutable string handled in memory
+ * @brief Constructs a new immutable string handled on the heap
  *
  * @param c_str the c string, size len or '\0' delimited
  * @param len the expected/maximum length of the c string. set to SIZE_MAX if the length is unknown and the entire string is required

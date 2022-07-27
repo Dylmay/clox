@@ -5,8 +5,6 @@
 
 typedef hashmap_t hashset_t;
 
-#define SET_MAX_LOAD MAP_MAX_LOAD
-
 #define set_new(fn) (map_new(0, fn))
 #define set_free(set) (map_free(set))
 #define set_insert(set, key) (map_insert(set, key, NULL))

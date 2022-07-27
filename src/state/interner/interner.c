@@ -17,7 +17,7 @@ static struct object_str_matcher __create_matcher(const char *chars,
 
 interner_t intern_new()
 {
-	return set_new(&obj_str_gen_hash);
+	return set_new((hash_fn)&obj_str_gen_hash);
 }
 
 void intern_free(interner_t *interner)
