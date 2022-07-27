@@ -22,7 +22,6 @@ struct compile_unit {
 struct compiler {
 	parser_t *prsr;
 	struct state *state;
-	lookup_t *locals; // TODO: make a linked list | arraylist. remove list from lookup_t
 	lox_fn_t *fn;
 	bool can_assign;
 };
@@ -41,9 +40,9 @@ static const struct parse_rule *__compiler_get_rule(enum tkn_type);
 static void __compiler_begin_scope(struct compiler *);
 static void __compiler_end_scope(struct compiler *);
 static lookup_var_t __compiler_define_var(struct compiler *, const char *,
-					  size_t, int, bool, bool);
-static void __compiler_set_var(struct compiler *, lookup_var_t, int, bool);
-static void __compiler_get_var(struct compiler *, lookup_var_t, int, bool);
+					  size_t, int, bool);
+static void __compiler_set_var(struct compiler *, lookup_var_t, int);
+static void __compiler_get_var(struct compiler *, lookup_var_t, int);
 static void __parse_block(struct compiler *);
 static void __parse_expr(struct compiler *);
 static void __parse_precedence(struct compiler *, enum precedence);
@@ -134,7 +133,6 @@ static struct compiler __compiler_new(parser_t *prsr, struct state *state,
 	return (struct compiler){
 		.prsr = prsr,
 		.state = state,
-		.locals = NULL,
 		.fn = fn,
 		.can_assign = false,
 	};
@@ -382,8 +380,7 @@ static void __parse_var_decl(struct compiler *compiler)
 	// if undef_var exists, set flags on object
 	// could have a list of pendings
 	if (!compiler->prsr->had_err) {
-		__compiler_define_var(compiler, name, len, def_ln, is_mutable,
-				      compiler->locals);
+		__compiler_define_var(compiler, name, len, def_ln, is_mutable);
 	} else {
 		OP_VAR_DEFINE_WRITE(compiler->fn, 0, def_ln);
 	}
@@ -440,15 +437,13 @@ static void __parse_print(struct compiler *compiler)
 static void __parse_var(struct compiler *compiler)
 {
 	token_t name_tkn = compiler->prsr->previous;
-	bool local = compiler->locals;
-	lookup_var_t var = lookup_find_name(local ? compiler->locals :
-						    &compiler->state->globals,
+	lookup_var_t var = lookup_find_name(&compiler->state->lookup,
 					    name_tkn.start, name_tkn.len);
 
-	if (!lookup_var_defined(var)) {
-		var = lookup_declare(&compiler->state->globals, name_tkn.start,
+	if (!lookup_var_is_declared(var)) {
+		var = lookup_declare(&compiler->state->lookup,
+				     LOOKUP_GLOBAL_DEPTH, name_tkn.start,
 				     name_tkn.len, false);
-		local = false;
 	}
 
 	if (compiler->can_assign && parser_match(compiler->prsr, TKN_EQ)) {
@@ -459,11 +454,11 @@ static void __parse_var(struct compiler *compiler)
 				     "Variable isn't mutable");
 		}
 
-		__compiler_set_var(compiler, var, compiler->prsr->previous.line,
-				   local);
+		__compiler_set_var(compiler, var,
+				   compiler->prsr->previous.line);
 	} else {
-		__compiler_get_var(compiler, var, compiler->prsr->previous.line,
-				   local);
+		__compiler_get_var(compiler, var,
+				   compiler->prsr->previous.line);
 	}
 }
 
@@ -581,8 +576,8 @@ static void __parse_for_stmt(struct compiler *compiler)
 	double range_start = strtod(compiler->prsr->previous.start, NULL);
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_NUMBER(range_start),
 		       compiler->prsr->previous.line);
-	lookup_var_t glbl_idx = __compiler_define_var(
-		compiler, name, len, def_ln, true, compiler->locals);
+	lookup_var_t glbl_idx =
+		__compiler_define_var(compiler, name, len, def_ln, true);
 
 	parser_consume(compiler->prsr, TKN_DOT, "Expected range '..'");
 	parser_consume(compiler->prsr, TKN_DOT, "Expected range '..'");
@@ -611,8 +606,7 @@ static void __parse_for_stmt(struct compiler *compiler)
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_NUMBER(1),
 		       compiler->prsr->previous.line);
 	OP_ADD_WRITE(compiler->fn, compiler->prsr->previous.line);
-	__compiler_set_var(compiler, glbl_idx, compiler->prsr->previous.line,
-			   compiler->locals);
+	__compiler_set_var(compiler, glbl_idx, compiler->prsr->previous.line);
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
 	OP_LOOP_WRITE(compiler->fn, inc_start, compiler->prsr->previous.line);
 
@@ -641,16 +635,13 @@ static void __parse_fn_decl(struct compiler *compiler)
 	__parse_fn(compiler, fn_name);
 
 	if (!compiler->prsr->had_err) {
-		lookup_var_t glbl_idx =
-			__compiler_define_var(compiler, name, len,
-					      compiler->prsr->previous.line,
-					      is_mutable, compiler->locals);
+		__compiler_define_var(compiler, name, len,
+				      compiler->prsr->previous.line,
+				      is_mutable);
 
 		lox_fn_t *fn = OBJECT_AS_FN(
 			*(lox_val_t *)list_peek(&compiler->fn->chunk.consts));
 		fn->name = fn_name;
-		// __compiler_set_var(compiler, glbl_idx,
-		// 		   compiler->prsr->previous.line);
 	}
 }
 
@@ -689,8 +680,7 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 
 			if (!compiler->prsr->had_err) {
 				__compiler_define_var(&new_comp, name, len,
-						      def_ln, is_mutable,
-						      new_comp.locals);
+						      def_ln, is_mutable);
 			}
 		} while (parser_match(compiler->prsr, TKN_COMMA));
 	}
@@ -730,79 +720,62 @@ static void __parse_return_stmt(struct compiler *compiler)
 
 static void __compiler_begin_scope(struct compiler *compiler)
 {
-	if (compiler->locals) {
-		lookup_begin_scope(compiler->locals);
-	} else {
-		lookup_t *locals = malloc(sizeof(lookup_t));
-		*locals = lookup_new();
-		compiler->locals = locals;
-	}
+	lookup_begin_scope(&compiler->state->lookup);
 }
 
 static void __compiler_end_scope(struct compiler *compiler)
 {
-	assert(("Locals cannot be null (already in global scope)",
-		compiler->locals));
-
 	OP_POP_COUNT_WRITE(compiler->fn,
-			   map_size(lookup_cur_scope(compiler->locals)),
+			   map_size(lookup_cur_scope(&compiler->state->lookup)),
 			   compiler->prsr->current.line);
 
-	if (lookup_cur_depth(compiler->locals) == 1) {
-		lookup_free(compiler->locals);
-		free(compiler->locals);
-		compiler->locals = NULL;
-	} else {
-		lookup_end_scope(compiler->locals);
-	}
+	lookup_end_scope(&compiler->state->lookup);
 }
 
 static lookup_var_t __compiler_define_var(struct compiler *compiler,
 					  const char *name, size_t len,
-					  int line, bool mutable, bool local)
+					  int line, bool mutable)
 {
-	lookup_var_t new_var = lookup_define(
-		compiler->locals ? compiler->locals : &compiler->state->globals,
-		name, len, mutable);
+	lookup_var_t new_var =
+		lookup_define(&compiler->state->lookup, name, len, mutable);
 
-	if (local) {
-		OP_VAR_DEFINE_WRITE(compiler->fn, new_var.idx, line);
-	} else {
+	if (lookup_var_is_global(new_var)) {
 		OP_GLOBAL_DEFINE_WRITE(compiler->fn, new_var.idx, line);
+	} else {
+		OP_VAR_DEFINE_WRITE(compiler->fn, new_var.idx, line);
 	}
 
 	return new_var;
 }
 
 static void __compiler_set_var(struct compiler *compiler, lookup_var_t var,
-			       int line, bool local)
+			       int line)
 {
-	if (local) {
-		OP_VAR_SET_WRITE(compiler->fn, var.idx,
-				 compiler->prsr->previous.line);
-	} else {
+	if (lookup_var_is_global(var)) {
 		OP_GLOBAL_SET_WRITE(compiler->fn, var.idx,
 				    compiler->prsr->previous.line);
+	} else {
+		OP_VAR_SET_WRITE(compiler->fn, var.idx,
+				 compiler->prsr->previous.line);
 	}
 }
 
 static void __compiler_get_var(struct compiler *compiler, lookup_var_t var,
-			       int line, bool local)
+			       int line)
 {
-	if (local) {
-		OP_VAR_GET_WRITE(compiler->fn, var.idx,
-				 compiler->prsr->previous.line);
-	} else {
+	if (lookup_var_is_global(var)) {
 		OP_GLOBAL_GET_WRITE(compiler->fn, var.idx,
 				    compiler->prsr->previous.line);
+	} else {
+		OP_VAR_GET_WRITE(compiler->fn, var.idx,
+				 compiler->prsr->previous.line);
 	}
 }
 
 static bool __compiler_has_defined(struct compiler *compiler, const char *name,
 				   size_t len)
 {
-	return compiler->locals &&
-	       lookup_scope_has_name(compiler->locals, name, len);
+	return lookup_scope_has_name(&compiler->state->lookup, name, len);
 }
 
 static uint8_t __parse_arglist(struct compiler *compiler)

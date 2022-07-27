@@ -18,6 +18,8 @@ static lookup_var_t *__lookup_find_name_ptr(lookup_t *lookup, const char *name,
 					    size_t len);
 static lookup_var_t *__lookup_scope_find_name_ptr(lookup_t *lookup,
 						  const char *name, size_t len);
+static size_t __lookup_inc_global_cnt(lookup_t *lookup);
+static size_t __lookup_inc_local_cnt(lookup_t *lookup);
 
 void lookup_entry_free(map_entry_t entry, for_each_entry_t *data)
 {
@@ -52,6 +54,7 @@ lookup_t lookup_new()
 
 	lookup_t lookup = (lookup_t){
 		.scopes = list_of_type(hashmap_t),
+		.glbl_idx = 0,
 		.cur_idx = 0,
 	};
 	lookup_begin_scope(&lookup);
@@ -66,24 +69,28 @@ void lookup_free(lookup_t *lookup)
 	list_free(&lookup->scopes);
 }
 
-lookup_var_t lookup_declare(lookup_t *lookup, const char *chars, size_t len,
-			    bool mutable)
+lookup_var_t lookup_declare(lookup_t *lookup, size_t scope_depth,
+			    const char *chars, size_t len, bool mutable)
 {
+	assert(("scope starts at 1", scope_depth));
+
 	struct string *name = string_new(chars, len);
 
+	bool is_glbl = scope_depth == LOOKUP_GLOBAL_DEPTH;
+
 	var_flags_t flags =
-		LOOKUP_VAR_DEFINED |
+		LOOKUP_VAR_DECLARED |
+		(is_glbl ? LOOKUP_VAR_GLOBAL : LOOKUP_VAR_LOCAL) |
 		(mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_IMMUTABLE);
 
 	lookup_var_t var = (lookup_var_t){
 
-		.idx = lookup->cur_idx,
+		.idx = is_glbl ? __lookup_inc_global_cnt(lookup) :
+				 __lookup_inc_local_cnt(lookup),
 		.var_flags = flags,
 	};
 
-	lookup->cur_idx++;
-
-	map_insert(lookup_cur_scope(lookup), name, &var);
+	map_insert(lookup_scope_at_depth(lookup, scope_depth), name, &var);
 
 	return var;
 }
@@ -97,28 +104,29 @@ lookup_var_t lookup_define(lookup_t *lookup, const char *chars, size_t len,
 		__lookup_scope_find_name_ptr(lookup, chars, len);
 
 	if (reserved) {
-		if (lookup_var_is_assigned(*reserved)) {
+		if (lookup_var_is_defined(*reserved)) {
 			return (lookup_var_t){
 				.idx = 0,
 				.var_flags = LOOKUP_VAR_INVALID,
 			};
 		}
 
-		reserved->var_flags |= LOOKUP_VAR_ASSIGNED;
+		reserved->var_flags |= LOOKUP_VAR_DEFINED;
 		return *reserved;
 	}
+	bool is_glbl = lookup_cur_depth(lookup) == LOOKUP_GLOBAL_DEPTH;
 
 	var_flags_t flags =
-		LOOKUP_VAR_DEFINED | LOOKUP_VAR_ASSIGNED |
+		LOOKUP_VAR_DECLARED | LOOKUP_VAR_DEFINED |
+		(is_glbl ? LOOKUP_VAR_GLOBAL : LOOKUP_VAR_LOCAL) |
 		(mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_IMMUTABLE);
 
 	lookup_var_t var = (lookup_var_t){
 
-		.idx = lookup->cur_idx,
+		.idx = is_glbl ? __lookup_inc_global_cnt(lookup) :
+				 __lookup_inc_local_cnt(lookup),
 		.var_flags = flags,
 	};
-
-	lookup->cur_idx++;
 
 	map_insert(lookup_cur_scope(lookup), name, &var);
 
@@ -128,10 +136,58 @@ lookup_var_t lookup_define(lookup_t *lookup, const char *chars, size_t len,
 bool lookup_scope_has_name(lookup_t *lookup, const char *name, size_t len)
 {
 	struct name_matcher matcher = __create_matcher(name, len);
+	lookup_var_t *var = map_find_by_key(lookup_cur_scope(lookup),
+					    (key_matcher_t *)&matcher)
+				    .value;
 
-	return map_find_by_key(lookup_cur_scope(lookup),
-			       (key_matcher_t *)&matcher)
-		.value;
+	return var && lookup_var_is_defined(*var);
+}
+
+lookup_var_t lookup_find_name(lookup_t *lookup, const char *name, size_t len)
+{
+	lookup_var_t *var = __lookup_find_name_ptr(lookup, name, len);
+
+	return var ? *var :
+		     (lookup_var_t){ .var_flags = LOOKUP_VAR_NOT_DECLARED };
+}
+
+void lookup_begin_scope(lookup_t *lookup)
+{
+	hashmap_t scope = __lookup_scope_new();
+	list_push(&lookup->scopes, &scope);
+}
+
+void lookup_end_scope(lookup_t *lookup)
+{
+	assert(("lookup depth must be over 1", lookup_cur_depth(lookup) > 1));
+	hashmap_t *scope = (hashmap_t *)list_pop(&lookup->scopes);
+	lookup->cur_idx -= map_size(scope);
+
+	map_free(scope);
+}
+
+hashmap_t *lookup_scope_at_depth(lookup_t *lookup, size_t idx)
+{
+	assert(("Indexing begins at 1", idx));
+
+	return (hashmap_t *)list_get(&lookup->scopes, idx - 1);
+}
+
+static hashmap_t __lookup_scope_new()
+{
+	return map_of_type(lookup_var_t, (hash_fn)&string_gen_hash);
+}
+
+static struct name_matcher __create_matcher(const char *name, size_t len)
+{
+	return (struct name_matcher){
+		.m = {
+			.hash = c_str_gen_hash(name, len),
+			.is_match = &match_key,
+		},
+		.str = name,
+		.strlen = len,
+	};
 }
 
 static lookup_var_t *__lookup_scope_find_name_ptr(lookup_t *lookup,
@@ -163,59 +219,12 @@ static lookup_var_t *__lookup_find_name_ptr(lookup_t *lookup, const char *name,
 	return NULL;
 }
 
-lookup_var_t lookup_find_name(lookup_t *lookup, const char *name, size_t len)
+static size_t __lookup_inc_global_cnt(lookup_t *lookup)
 {
-	lookup_var_t *var = __lookup_find_name_ptr(lookup, name, len);
-
-	return var ? *var :
-		     (lookup_var_t){ .var_flags = LOOKUP_VAR_NOT_DEFINED };
+	return lookup->glbl_idx++;
 }
 
-void lookup_begin_scope(lookup_t *lookup)
+static size_t __lookup_inc_local_cnt(lookup_t *lookup)
 {
-	hashmap_t scope = __lookup_scope_new();
-	list_push(&lookup->scopes, &scope);
-}
-
-void lookup_end_scope(lookup_t *lookup)
-{
-	assert(("lookup depth must be over 1", lookup_cur_depth(lookup) > 1));
-	hashmap_t *scope = (hashmap_t *)list_pop(&lookup->scopes);
-	lookup->cur_idx -= map_size(scope);
-
-	map_free(scope);
-}
-
-size_t lookup_cur_depth(const lookup_t *lookup)
-{
-	return list_size(&lookup->scopes);
-}
-
-hashmap_t *lookup_cur_scope(lookup_t *lookup)
-{
-	return (hashmap_t *)list_peek(&lookup->scopes);
-}
-
-static hashmap_t __lookup_scope_new()
-{
-	return map_of_type(lookup_var_t, (hash_fn)&string_gen_hash);
-}
-
-hashmap_t *lookup_scope_at_depth(lookup_t *lookup, size_t idx)
-{
-	assert(("Indexing begins at 1", idx));
-
-	return (hashmap_t *)list_get(&lookup->scopes, idx - 1);
-}
-
-static struct name_matcher __create_matcher(const char *name, size_t len)
-{
-	return (struct name_matcher){
-		.m = {
-			.hash = c_str_gen_hash(name, len),
-			.is_match = &match_key,
-		},
-		.str = name,
-		.strlen = len,
-	};
+	return lookup->cur_idx++;
 }

@@ -153,7 +153,7 @@ void _var_prnt(map_entry_t entry, for_each_entry_t *d)
 		putchar('\t');
 	}
 
-	if (lookup_var_is_assigned(var_def)) {
+	if (lookup_var_is_defined(var_def)) {
 		printf("(%u) %s: ", var_def.idx, string_get_cstring(name));
 		val_print(*((lox_val_t *)list_get(data->vm_vars, var_def.idx)));
 	} else {
