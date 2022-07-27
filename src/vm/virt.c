@@ -39,9 +39,7 @@ static void __vm_proc_negate_in_place(vm_t *vm);
 static lox_val_t __vm_peek_const(vm_t *vm, size_t dist);
 static lox_val_t *__vm_peek_const_ptr(vm_t *vm, size_t dist);
 static void __vm_runtime_error(vm_t *vm, const char *fmt, ...);
-static void __vm_assign_object(vm_t *vm, lox_obj_t *obj);
 static void __vm_str_concat(vm_t *vm);
-static void __vm_free_objects(vm_t *vm);
 static void __vm_define_global(vm_t *vm, lox_val_t *val, size_t idx);
 static lox_val_t *__vm_get_global(vm_t *vm, uint32_t glbl);
 static bool __vm_set_global(vm_t *vm, uint32_t glbl, lox_val_t *val);
@@ -77,7 +75,6 @@ vm_t vm_init()
 		.stack = list_of_type(lox_val_t),
 		.globals = list_of_type(lox_val_t),
 		.frames = list_of_type(struct vm_call_frame),
-		.objects = linked_list_of_type(lox_obj_t *),
 		.state = state_new(),
 #ifdef DEBUG_BENCH
 		.timings_map =
@@ -136,7 +133,6 @@ void vm_free(vm_t *vm)
 {
 	list_free(&vm->stack);
 	list_free(&vm->globals);
-	__vm_free_objects(vm);
 	state_free(&vm->state);
 #ifdef DEBUG_BENCH
 	map_free(&vm->timings_map);
@@ -181,7 +177,8 @@ void vm_print_vars(vm_t *vm)
 	};
 
 	puts("Globals: {");
-	map_entries_for_each(lookup_scope_at_depth(&vm->state.globals, 1),
+	map_entries_for_each(lookup_scope_at_depth(&vm->state.lookup,
+						   LOOKUP_GLOBAL_DEPTH),
 			     (for_each_entry_t *)&var_prnt);
 	puts("}");
 
@@ -721,24 +718,7 @@ static void __vm_str_concat(vm_t *vm)
 		interned_str = concat_str;
 	}
 
-	// __vm_assign_object(vm, (lox_obj_t *)interned_str);
 	__vm_push_const(vm, VAL_CREATE_OBJ(interned_str));
-}
-
-static void __vm_assign_object(vm_t *vm, lox_obj_t *obj)
-{
-	linked_list_insert_back(&vm->objects, &obj);
-}
-
-static void __vm_free_objects(vm_t *vm)
-{
-	list_iterator_t iter = list_iter(vm->objects, true);
-
-	while (list_iter_has_next(&iter)) {
-		lox_obj_t **next = list_iter_next(&iter);
-		object_free(*next);
-	}
-	linked_list_free(vm->objects);
 }
 
 static void __vm_discard(vm_t *vm, uint32_t discard_cnt)

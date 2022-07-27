@@ -12,29 +12,66 @@
 #define STACK_RESERVED_COUNT 1
 #define STACK_MAIN_IDX 0
 
+//! @brief call frame for lox functions
 struct vm_call_frame {
 	lox_fn_t *fn;
 	uint8_t *ip;
 	size_t stack_snapshot;
 };
 
+//! @brief vm struct
 typedef struct {
 	list_t frames;
 	struct state state;
 	list_t globals;
 	list_t stack;
-	linked_list_t objects;
 #ifdef DEBUG_BENCH
 	hashmap_t timings_map;
 #endif
 } vm_t;
 
-enum vm_res { INTERPRET_OK, INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR };
+//! @brief vm return results
+enum vm_res {
+	INTERPRET_OK,
+	INTERPRET_COMPILE_ERROR,
+	INTERPRET_RUNTIME_ERROR,
+};
 
+/**
+ * @brief initializes a new virtual machine
+ *
+ * @return vm_t the new virtual machine
+ */
 vm_t vm_init();
+
+/**
+ * @brief begins interpreting the passed lox source code
+ *
+ * @param vm the vm to interpret with
+ * @param src the source code to interpret
+ * @return enum vm_res the vm result
+ */
 enum vm_res vm_interpret(vm_t *vm, const char *src);
+
+/**
+ * @brief frees the passed vm and its related objects
+ *
+ * @param vm the vm to free
+ */
 void vm_free(vm_t *vm);
+
+/**
+ * @brief prints the variables currently held by the vm
+ *
+ * @param vm the vm
+ */
 void vm_print_vars(vm_t *vm);
+
+/**
+ * @brief prints the current vm stack
+ *
+ * @param vm the vm
+ */
 void vm_print_stack(vm_t *vm);
 
 #endif // __CLOX_VM_VIRT_H__
