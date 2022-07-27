@@ -21,7 +21,7 @@
 
 #ifdef DEBUG_BENCH
 #include "ops/ops_name.h"
-void _vm_print_time(map_entry_t entry, for_each_entry_t *_)
+void _vm_print_time(struct map_entry entry, struct map_for_each_entry *_)
 {
 	const char *name = entry.key;
 	const struct timespec *avg_time = entry.value;
@@ -64,7 +64,7 @@ static void __vm_discard(vm_t *vm, uint32_t discard_cnt);
 #define VM_PEEK_BOOL(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.boolean)
 
 struct var_printer {
-	for_each_entry_t for_each;
+	struct map_for_each_entry for_each;
 	list_t *vm_vars;
 	size_t depth;
 };
@@ -110,7 +110,7 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 	puts("");
 
 	puts("Time taken per op: {");
-	for_each_entry_t for_each = {
+	struct map_for_each_entry for_each = {
 		.func = &_vm_print_time,
 	};
 	map_entries_for_each(&vm->timings_map, &for_each);
@@ -139,7 +139,7 @@ void vm_free(vm_t *vm)
 #endif
 }
 
-void _var_prnt(map_entry_t entry, for_each_entry_t *d)
+void _var_prnt(struct map_entry entry, struct map_for_each_entry *d)
 {
 	struct var_printer *data = (struct var_printer *)d;
 	struct string *name = (struct string *)entry.key;
@@ -179,7 +179,7 @@ void vm_print_vars(vm_t *vm)
 	puts("Globals: {");
 	map_entries_for_each(lookup_scope_at_depth(&vm->state.lookup,
 						   LOOKUP_GLOBAL_DEPTH),
-			     (for_each_entry_t *)&var_prnt);
+			     (struct map_for_each_entry *)&var_prnt);
 	puts("}");
 
 	// for (int depth = 2; depth < lookup_cur_depth(&vm->state.lookup);
@@ -191,7 +191,7 @@ void vm_print_vars(vm_t *vm)
 	// 	INDENT_BY(depth - 2);
 	// 	map_entries_for_each(lookup_scope_at_depth(&vm->state.lookup,
 	// 						   depth),
-	// 			     (for_each_entry_t *)&var_prnt);
+	// 			     (struct map_for_each_entry *)&var_prnt);
 	// 	INDENT_BY(depth - 2);
 	// 	puts("}");
 	// }

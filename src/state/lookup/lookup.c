@@ -7,7 +7,7 @@
 #include "util/string/string_util.h"
 
 struct name_matcher {
-	const key_matcher_t m;
+	const struct key_matcher m;
 	const char *str;
 	size_t strlen;
 };
@@ -21,23 +21,23 @@ static lookup_var_t *__lookup_scope_find_name_ptr(lookup_t *lookup,
 static size_t __lookup_inc_global_cnt(lookup_t *lookup);
 static size_t __lookup_inc_local_cnt(lookup_t *lookup);
 
-void lookup_entry_free(map_entry_t entry, for_each_entry_t *data)
+void lookup_entry_free(struct map_entry entry, struct map_for_each_entry *data)
 {
 	string_free(entry.key);
 }
 
 void scope_free(const void *m)
 {
-	for_each_entry_t lookup_free = (for_each_entry_t){
+	struct map_for_each_entry lookup_free = (struct map_for_each_entry){
 		.func = &lookup_entry_free,
 	};
 
 	hashmap_t *map = (hashmap_t *)m;
-	map_entries_for_each(map, (for_each_entry_t *)&lookup_free);
+	map_entries_for_each(map, (struct map_for_each_entry *)&lookup_free);
 	map_free(map);
 }
 
-bool match_key(const void *key, key_matcher_t *m)
+bool match_key(const void *key, struct key_matcher *m)
 {
 	struct string *str = (struct string *)key;
 	struct name_matcher *matcher = (struct name_matcher *)m;
@@ -137,7 +137,7 @@ bool lookup_scope_has_name(lookup_t *lookup, const char *name, size_t len)
 {
 	struct name_matcher matcher = __create_matcher(name, len);
 	lookup_var_t *var = map_find_by_key(lookup_cur_scope(lookup),
-					    (key_matcher_t *)&matcher)
+					    (struct key_matcher *)&matcher)
 				    .value;
 
 	return var && lookup_var_is_defined(*var);
@@ -195,7 +195,7 @@ static lookup_var_t *__lookup_scope_find_name_ptr(lookup_t *lookup,
 {
 	struct name_matcher matcher = __create_matcher(name, len);
 	lookup_var_t *found = map_find_by_key(lookup_cur_scope(lookup),
-					      (key_matcher_t *)&matcher)
+					      (struct key_matcher *)&matcher)
 				      .value;
 
 	return found;
@@ -209,7 +209,8 @@ static lookup_var_t *__lookup_find_name_ptr(lookup_t *lookup, const char *name,
 	for (size_t depth = lookup_cur_depth(lookup); depth >= 1; depth--) {
 		const hashmap_t *scope = lookup_scope_at_depth(lookup, depth);
 		lookup_var_t *found =
-			map_find_by_key(scope, (key_matcher_t *)&matcher).value;
+			map_find_by_key(scope, (struct key_matcher *)&matcher)
+				.value;
 
 		if (found) {
 			return found;
