@@ -399,7 +399,9 @@ static void __parse_stmnt(struct compiler *compiler)
 	} else if (parser_match(compiler->prsr, TKN_FOR)) {
 		__parse_for_stmt(compiler);
 	} else if (parser_match(compiler->prsr, TKN_LEFT_BRACE)) {
+		__compiler_begin_scope(compiler);
 		__parse_block(compiler);
+		__compiler_end_scope(compiler);
 	} else {
 		__parse_expr_stmt(compiler);
 	}
@@ -407,7 +409,6 @@ static void __parse_stmnt(struct compiler *compiler)
 
 static void __parse_block(struct compiler *compiler)
 {
-	__compiler_begin_scope(compiler);
 	while (!parser_check(compiler->prsr, TKN_RIGHT_BRACE) &&
 	       !parser_check(compiler->prsr, TKN_EOF)) {
 		__parse_decl(compiler);
@@ -415,7 +416,6 @@ static void __parse_block(struct compiler *compiler)
 
 	parser_consume(compiler->prsr, TKN_RIGHT_BRACE,
 		       "Expected '}' after block.");
-	__compiler_end_scope(compiler);
 }
 
 static void __parse_expr_stmt(struct compiler *compiler)
