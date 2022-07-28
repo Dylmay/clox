@@ -1,12 +1,11 @@
-#ifndef __CLOX_UTIL_MEM_H__
-#define __CLOX_UTIL_MEM_H__
-
 /**
  * @file mem.h
  * @author Dylan Mayor
  * @brief header file for general memory management
  *
  */
+#ifndef __CLOX_UTIL_MEM_H__
+#define __CLOX_UTIL_MEM_H__
 
 #include "util/common.h"
 

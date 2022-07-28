@@ -1,11 +1,11 @@
-#ifndef __CLOX_UTIL_hashset_H__
-#define __CLOX_UTIL_hashset_H__
 /**
  * @file set.h
  * @author Dylan Mayor
  * @brief header file for hashset implementation
  *
  */
+#ifndef __CLOX_UTIL_hashset_H__
+#define __CLOX_UTIL_hashset_H__
 
 #include "map.h"
 

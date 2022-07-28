@@ -1,3 +1,9 @@
+/**
+ * @file string_util.h
+ * @author Dylan Mayor
+ * @brief header file for counted string utility functions
+ *
+ */
 #ifndef __CLOX_UTIL_STRING_H__
 #define __CLOX_UTIL_STRING_H__
 

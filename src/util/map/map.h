@@ -1,15 +1,13 @@
-#ifndef __CLOX_UTIL_MAP_H__
-#define __CLOX_UTIL_MAP_H__
-
 /**
  * @file map.h
  * @author Dylan Mayor
  * @brief header file for generic hash map implementation.
  *
  */
+#ifndef __CLOX_UTIL_MAP_H__
+#define __CLOX_UTIL_MAP_H__
 
-#include <stdbool.h>
-#include <stddef.h>
+#include "util/common.h"
 
 #include "hash.h"
 
