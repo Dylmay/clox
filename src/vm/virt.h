@@ -1,3 +1,8 @@
+/**
+ * @file virt.h
+ * @author Dylan Mayor
+ * @brief header file for virtual machine implementation
+ */
 #ifndef __CLOX_VM_VIRT_H__
 #define __CLOX_VM_VIRT_H__
 
@@ -6,9 +11,9 @@
 #include "val/object.h"
 #include "util/list/list.h"
 
-#define FRAMES_MAX 999
-
+//! @brief number of stack slots reserved by the vm
 #define STACK_RESERVED_COUNT 1
+//! @brief stack main function/script index
 #define STACK_MAIN_IDX 0
 
 //! @brief call frame for lox functions

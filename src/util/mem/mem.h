@@ -9,10 +9,7 @@
 
 #include "util/common.h"
 
-/**
- * @brief the minimum capacity for an array
- *
- */
+//! @brief the minimum capacity for an array
 #define MIN_CAP 8
 
 /**

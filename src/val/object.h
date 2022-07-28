@@ -1,3 +1,9 @@
+/**
+ * @file object.h
+ * @author Dylan Mayor
+ * @brief header file for lox objects
+ *
+ */
 #ifndef __CLOX_VAL_OBJECT_H__
 #define __CLOX_VAL_OBJECT_H__
 

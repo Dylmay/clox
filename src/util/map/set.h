@@ -56,7 +56,7 @@ typedef hashmap_t hashset_t;
 #define hashset_remove(set, value) (map_remove((set), (value)))
 
 /**
- * @brief inserta all values from the 'from' hash set in to the 'into' hash set
+ * @brief inserts all values from the 'from' hash set in to the 'into' hash set
  *
  * @param into the hash set to insert in to
  * @param from the hash set to insert from

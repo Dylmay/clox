@@ -1,3 +1,11 @@
+/**
+ * @file val.h
+ * @author Dylan Mayor
+ * @brief header file for lox value types
+ *
+ * @see object.h for definitions of lox objects
+ *
+ */
 #ifndef __CLOX_UTIL_VALUE_H__
 #define __CLOX_UTIL_VALUE_H__
 

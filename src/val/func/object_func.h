@@ -1,3 +1,9 @@
+/**
+ * @file object_func.h
+ * @author Dylan Mayor
+ * @brief header file for lox object-related functions
+ *
+ */
 #ifndef __CLOX_OBJECT_FUNC_H__
 #define __CLOX_OBJECT_FUNC_H__
 
@@ -5,11 +11,76 @@
 #include "val_func.h"
 #include "util/map/hash.h"
 
+/**
+ * @brief Gets the object type of the given lox value
+ *
+ * @see enum object_type
+ *
+ * @param obj lox_val_t struct that is known to contain a lox object
+ *
+ * @return enum object_type The type of object
+ *
+ */
 #define OBJECT_TYPE(obj) (VAL_AS_OBJ(obj)->type)
+
+/**
+ * @brief Checks whether the passed lox value is a string
+ *
+ * @see lox_str_t
+ *
+ * @param obj lox_val_t struct
+ *
+ * @return true lox_val_t is an object and is a string
+ * @return false lox_val_t is not an object and is not an object string
+ *
+ */
 #define OBJECT_IS_STRING(obj) (object_is_type(obj, OBJ_STRING))
+
+/**
+ * @brief Checks whether the passed lox value is a function
+ *
+ * @see lox_fn_t
+ *
+ * @return true lox_val_t is an object and is a function
+ * @return false lox_val_t is not an object and is not a object function
+ *
+ */
 #define OBJECT_IS_FN(obj) (object_is_type(obj, OBJ_FN))
+
+/**
+ * @brief returns the the passed lox value as a lox string. Undefined behaviour if the value is not a lox object and is not lox string
+ *
+ * @see lox_str_t
+ *
+ * @param obj the lox value to get as a lox string
+ *
+ * @return struct object_str * lox string
+ */
 #define OBJECT_AS_STRING(obj) (((struct object_str *)VAL_AS_OBJ(obj)))
+
+/**
+ * @brief returns the passed lox value as a lox function. Undefined behaviour if the value is not a lox object and is not a lox function
+ *
+ * @see lox_fn_t
+ *
+ * @param obj the lox value to get as a lox function
+ *
+ * @return struct object_fn * lox function
+ *
+ */
 #define OBJECT_AS_FN(obj) (((struct object_fn *)VAL_AS_OBJ(obj)))
+
+/**
+ * @brief returns the passed lox value as a lox string and gets the c string (asciiz) associated with it.
+ * Undefined behaviour if the value is not a lox object and is not a lox function
+ *
+ * @see lox_str_t
+ *
+ * @param obj the lox value to get the c string from
+ *
+ * @return char* c string of the passed lox value
+ *
+ */
 #define OBJECT_AS_CSTRING(obj) (((struct object_str *)VAL_AS_OBJ(obj))->chars)
 
 /**

@@ -1,3 +1,9 @@
+/**
+ * @file hash_util.h
+ * @author Dylan Mayor
+ * @brief header file for hash gen utility functions
+ *
+ */
 #ifndef __CLOX_UTIL_HASH_UTIL_H__
 #define __CLOX_UTIL_HASH_UTIL_H__
 

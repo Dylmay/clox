@@ -1,22 +1,98 @@
+/**
+ * @file lookup_var.h
+ * @author Dylan Mayor
+ * @brief header file for lookup variable definitions
+ *
+ */
 #ifndef __CLOX_STATE_LOOKUP_VAR_H__
 #define __CLOX_STATE_LOOKUP_VAR_H__
 
 #include "util/common.h"
 
+//! @brief flags related to lox variable definitions
 typedef uint8_t var_flags_t;
+/**
+ * @brief constant to test whether all flags are off. I.E. the var is invalid
+ *
+ * @see var_flags_t
+ * @see lookup_var_is_valid()
+ *
+ */
 #define LOOKUP_VAR_INVALID (0)
+/**
+ * @brief constant to set var_flags_t to zero
+ *
+ * @see var_flags_t
+ *
+ */
 #define LOOKUP_VAR_NO_FLAGS (0)
 
+/**
+ * @brief flag to indicate lookup variable is not mutable. Default value
+ *
+ * @see var_flags_t
+ * @see lookup_var_is_mutable()
+ *
+ */
 #define LOOKUP_VAR_IMMUTABLE (0 << 0)
+/**
+ * @brief flag to indicate lookup variable is mutable
+ *
+ * @see var_flags_t
+ * @see lookup_var_is_mutable()
+ *
+ */
 #define LOOKUP_VAR_MUTABLE (1 << 0)
 
+/**
+ * @brief flag to indicate lookup variable is not declared. Default value
+ *
+ * @see var_flags_t
+ * @see lookup_var_is_declared()
+ */
 #define LOOKUP_VAR_NOT_DECLARED (0 << 1)
+/**
+ * @brief flag to indicate lookup variable is declared.
+ * lookup variables will always have at least this flag set if valid
+ *
+ * @see var_flags_t
+ * @see lookup_var_is_declared()
+ *
+ */
 #define LOOKUP_VAR_DECLARED (1 << 1)
 
+/**
+ * @brief flag to indicate lookup variable is not defined. Default value
+ *
+ * @see var_flags_t
+ * @see lookup_var_is_defined()
+ *
+ */
 #define LOOKUP_VAR_NOT_DEFINED (0 << 2)
+/**
+ * @brief flag to indicate lookup variable is defined
+ *
+ * @see var_flags_t
+ * @see lookup_var_is_defined()
+ *
+ */
 #define LOOKUP_VAR_DEFINED (1 << 2)
 
+/**
+ * @brief flag to indicate lookup variable is in local scope. Default value
+ *
+ * @see var_flags_t
+ * @see lookup_var_is_global()
+ *
+ */
 #define LOOKUP_VAR_LOCAL (0 << 3)
+/**
+ * @brief flag to indicate lookup variable is in global scope
+ *
+ * @see var_flags_t
+ * @see lookup_var_is_global()
+ *
+ */
 #define LOOKUP_VAR_GLOBAL (1 << 3)
 
 //! @brief lookup variable
@@ -24,6 +100,11 @@ typedef struct {
 	uint32_t idx;
 	var_flags_t var_flags;
 } lookup_var_t;
+
+static inline bool lookup_var_is_valid(lookup_var_t var)
+{
+	return var.var_flags & ~LOOKUP_VAR_INVALID;
+}
 
 /**
  * @brief returns whether the passed variable is mutable

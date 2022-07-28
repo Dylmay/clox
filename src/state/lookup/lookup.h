@@ -1,3 +1,9 @@
+/**
+ * @file lookup.h
+ * @author Dylan Mayor
+ * @brief header file for lookup table implementation for lox variables
+ *
+ */
 #ifndef __CLOX_STATE_LOOKUP_H__
 #define __CLOX_STATE_LOOKUP_H__
 
@@ -6,6 +12,7 @@
 #include "val/val.h"
 #include "lookup_var.h"
 
+//! @brief global scope depth
 #define LOOKUP_GLOBAL_DEPTH 1
 
 //! @brief lookup table for variables

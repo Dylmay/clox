@@ -1,3 +1,13 @@
+/**
+ * @file ops_table.h
+ * @author Dylan Mayor
+ * @brief X define header file which holds information about vm operations and their display names.
+ * Used to populate op name and function defines whilst keeping opcode information in one place
+ *
+ * @see ops_name.h
+ * @see ops.h
+ *
+ */
 X(OP_CONSTANT, "OP_CONSTANT")
 X(OP_CONSTANT_LONG, "OP_CONSTANT_LONG")
 X(OP_EQUAL, "OP_EQUAL")

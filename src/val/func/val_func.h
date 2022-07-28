@@ -1,22 +1,132 @@
+/**
+ * @file val_func.h
+ * @author Dylan Mayor
+ * @brief header file for lox value-related functions
+ *
+ */
 #ifndef __CLOX_VAL_FUNC_H__
 #define __CLOX_VAL_FUNC_H__
 
 #include "val/val.h"
 
+/**
+ * @brief creates a new lox bool value
+ *
+ * @see lox_bool_t
+ *
+ * @param value of the boolean. Non-zero is true
+ *
+ * @return lox_val_t boolean lox value
+ *
+ */
 #define VAL_CREATE_BOOL(value) ((lox_val_t){ VAL_BOOL, { .boolean = value } })
-#define VAL_CREATE_NIL ((lox_val_t){ VAL_NIL, { .number = 0 } })
+/**
+ * @brief creates a new lox nil value
+ *
+ * @return lox_val_t nil value
+ *
+ */
+#define VAL_CREATE_NIL ((lox_val_t){ VAL_NIL, { .boolean = false } })
+/**
+ * @brief creates a new lox number value
+ *
+ * @see lox_num_t
+ *
+ * @param value the float value of the number
+ *
+ * @return lox_val_t number value
+ *
+ */
 #define VAL_CREATE_NUMBER(value)                                               \
 	((lox_val_t){ VAL_NUMBER, { .number = value } })
+/**
+ * @brief creates a new lox object value
+ *
+ * @see lox_obj_t
+ *
+ * @param object the pointer to the lox object. Undefined behaviour if the object is not a lox object pointer
+ *
+ * @return lox_val_t lox object
+ *
+ */
 #define VAL_CREATE_OBJ(object)                                                 \
 	((lox_val_t){ VAL_OBJ, { .obj = (lox_obj_t *)object } })
 
+/**
+ * @brief gets the given value as a lox boolean
+ *
+ * @see lox_bool_t
+ *
+ * @param value the lox value to interpret as a lox bool
+ *
+ * @return lox_bool_t the boolean
+ *
+ */
 #define VAL_AS_BOOL(value) ((value).as.boolean)
+/**
+ * @brief gets the given value as a lox number. Undefined behaviour for lox values which are not numbers
+ *
+ * @see lox_num_t
+ *
+ * @param value the lox value to interpret as a lox number
+ *
+ * @return lox_num_t the number
+ *
+ */
 #define VAL_AS_NUMBER(value) ((value).as.number)
+/**
+ * @brief gets the given value as a lox object. Undefined behaviour for lox values which are not objects
+ *
+ * @see lox_obj_t
+ *
+ * @param value the lox value to interpret as a lox object
+ *
+ * @return lox_obj_t the object
+ *
+ */
 #define VAL_AS_OBJ(value) ((value).as.obj)
 
+/**
+ * @brief checks whether the given value is a lox bool
+ *
+ * @see lox_bool_t
+ *
+ * @param value the lox value to chedk
+ *
+ * @return true the lox value is a lox bool
+ * @return true the lox value is not a lox bool
+ *
+ */
 #define VAL_IS_BOOL(value) ((value).type == VAL_BOOL)
+/**
+ * @brief checks whether the given value is a lox nil
+ *
+ * @param value the lox value to check
+ *
+ * @return true the lox value is a lox nil
+ * @return false the lox value is not a lox ni
+ *
+ */
 #define VAL_IS_NIL(value) ((value).type == VAL_NIL)
+/**
+ * @brief checks whether the given value is a lox number
+ *
+ * @param value the lox value to check
+ *
+ * @return true the lox value is a lox number
+ * @return false the lox value is not a lox number
+ *
+ */
 #define VAL_IS_NUMBER(value) ((value).type == VAL_NUMBER)
+/**
+ * @brief checks whether the given value is a lox object
+ *
+ * @param value the lox value to check
+ *
+ * @return true the lox value is a lox object
+ * @return false the lox value is not a lox object
+ *
+ */
 #define VAL_IS_OBJ(value) ((value).type == VAL_OBJ)
 
 /**

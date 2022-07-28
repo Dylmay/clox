@@ -1,3 +1,9 @@
+/**
+ * @file hash.h
+ * @author Dylan Mayor
+ * @brief header file for table hash function and value
+ *
+ */
 #ifndef __UTIL_MAP_HASH_H__
 #define __UTIL_MAP_HASH_H__
 
