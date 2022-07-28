@@ -5,7 +5,6 @@
 #include "state/state.h"
 #include "val/object.h"
 #include "util/list/list.h"
-#include "util/list/linked_list.h"
 
 #define FRAMES_MAX 999
 

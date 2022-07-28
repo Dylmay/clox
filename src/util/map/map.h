@@ -1,12 +1,20 @@
 #ifndef __CLOX_UTIL_MAP_H__
 #define __CLOX_UTIL_MAP_H__
 
+/**
+ * @file map.h
+ * @author Dylan Mayor
+ * @brief header file for generic hash map implementation.
+ *
+ */
+
 #include <stdbool.h>
-#include "util/list/list.h"
+#include <stddef.h>
+
 #include "hash.h"
 
 /**
- * @brief hashmap struct. Created using map_new(), contents must be freed after use by map_free()
+ * @brief hashmap struct. Created using map_new() or map_of_type(). contents must be freed after use by map_free()
  * @see map_new()
  * @see map_free()
  */
@@ -51,10 +59,18 @@ struct map_for_each_entry {
 	void (*func)(struct map_entry entry, struct map_for_each_entry *data);
 };
 
-// max map load possible before the table should grow
+//! @brief hash map max load value. The backing array expands when met
 #define MAP_MAX_LOAD 0.75
 
-//! \def map_of_type(elem_type, fn) @brief Creates a new map with the given type
+/**
+ * @brief Creates a new map with the given type
+ *
+ * @param elem_type the element type
+ * @param fn the hashing function
+ *
+ * @return the new hashmap
+ *
+ */
 #define map_of_type(elem_type, fn) (map_new(sizeof(elem_type), fn))
 
 /**
@@ -117,13 +133,13 @@ bool map_insert(hashmap_t *map, void *key, const void *value);
 bool map_remove(hashmap_t *map, const void *key);
 
 /**
- * @brief
+ * @brief sets the given key within the map to reference the passed value
  *
- * @param map
- * @param key
- * @param value
- * @return true
- * @return false
+ * @param map the map to set within
+ * @param key the key to set
+ * @param value the new value
+ * @return true the set succeeded
+ * @return false the set failed due to the key not being found
  */
 bool map_set(hashmap_t *map, const void *key, const void *value);
 
@@ -146,7 +162,17 @@ void map_insert_all(hashmap_t *into, const hashmap_t *from);
 void *map_get(const hashmap_t *map, const void *key);
 
 /**
- * @brief finds an entry mathing by key
+ * @brief checks whether the given key is present within the map
+ *
+ * @param map the hashmap
+ * @param key the key
+ * @return true the key was found within the map
+ * @return false the key was not found within the map
+ */
+bool map_has(const hashmap_t *map, const void *key);
+
+/**
+ * @brief finds an entry matching by key
  *
  * @param map the hashmap to search
  * @param matcher the the key matcher to validate the passed key

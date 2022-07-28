@@ -4,6 +4,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include "mem.h"
+
 struct __map_entry {
 	void *key;
 	hash_t hash;
@@ -97,6 +99,17 @@ void *map_get(const hashmap_t *map, const void *key)
 	}
 
 	return NULL;
+}
+
+bool map_has(const hashmap_t *map, const void *key)
+{
+	if (!key || !map->cnt) {
+		return false;
+	}
+
+	struct __map_entry *entry = __map_find(map, key, map->hash(key));
+
+	return entry->key;
 }
 
 bool map_set(hashmap_t *map, const void *key, const void *value)
