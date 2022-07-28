@@ -4,7 +4,6 @@
 #include "lexer.h"
 #include "keywords/keywords.h"
 #include "util/common.h"
-#include "util/char.h"
 
 static bool __lexer_at_end(const lexer_t *lexer);
 static char __lexer_advance(lexer_t *lexer);
@@ -16,6 +15,12 @@ static bool __lexer_consume_comment(lexer_t *lexer);
 static token_t __lexer_str_token(lexer_t *lexer);
 static token_t __lexer_id_token(lexer_t *lexer);
 static token_t __lexer_num_token(lexer_t *lexer);
+
+#define CHAR_IS_DIGIT(chara) ((chara) >= '0' && (chara) <= '9')
+
+#define CHAR_IS_ALPHA(chara)                                                   \
+	((chara >= 'a' && chara <= 'z') || (chara >= 'A' && chara <= 'Z') ||   \
+	 chara == '_')
 
 #define TOKEN(lexer, name)                                                     \
 	((token_t){                                                            \
