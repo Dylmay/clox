@@ -36,7 +36,7 @@ size_t chunk_cur_ip(const struct chunk *chunk)
 
 void chunk_reserve_code(struct chunk *chunk, uint32_t count)
 {
-	list_adjust_cnt(&chunk->code, count);
+	list_push_bulk(&chunk->code, NULL, count);
 
 	((struct line_encode *)list_get(&chunk->lines, chunk->lines.cnt - 1))
 		->count += count;
@@ -57,7 +57,7 @@ size_t chunk_write_code(struct chunk *chunk, code_t code, int line)
 		struct line_encode encoding =
 			line_encode_diff(chunk->prev_line, line);
 
-		list_write_to(&chunk->lines, &encoding);
+		list_push(&chunk->lines, &encoding);
 
 		chunk->prev_line = line;
 	} else {
@@ -66,7 +66,7 @@ size_t chunk_write_code(struct chunk *chunk, code_t code, int line)
 			->count++;
 	}
 
-	return list_write_to(&chunk->code, &code);
+	return list_push(&chunk->code, &code);
 }
 
 size_t chunk_write_code_bulk(struct chunk *chunk, code_t code, int line,
@@ -82,12 +82,12 @@ size_t chunk_write_code_bulk(struct chunk *chunk, code_t code, int line,
 
 	encoding->count += data_cnt;
 
-	return list_write_bulk(&chunk->code, data, data_cnt);
+	return list_push_bulk(&chunk->code, data, data_cnt);
 }
 
 size_t chunk_write_const(struct chunk *chunk, lox_val_t const_val)
 {
-	return list_write_to(&(chunk->consts), &const_val);
+	return list_push(&(chunk->consts), &const_val);
 }
 
 code_t chunk_get_code(struct chunk *chunk, size_t offset)

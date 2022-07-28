@@ -723,7 +723,7 @@ static void __vm_str_concat(vm_t *vm)
 
 static void __vm_discard(vm_t *vm, uint32_t discard_cnt)
 {
-	list_adjust_cnt(&vm->stack, -discard_cnt);
+	list_pop_bulk(&vm->stack, discard_cnt);
 }
 
 static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
@@ -742,11 +742,11 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 				return false;
 			}
 
-			if (list_size(&vm->frames) == FRAMES_MAX) {
+			if (list_size(&vm->frames) == CALL_FRAMES_MAX) {
 				__vm_runtime_error(
 					vm,
 					"Stack overflow. Recursion depth of %d was reached",
-					FRAMES_MAX);
+					CALL_FRAMES_MAX);
 				return false;
 			}
 

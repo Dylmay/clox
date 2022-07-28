@@ -9,14 +9,10 @@
 	(reallocate(pointer, (data_sz)*old_cnt, 0))
 
 static void __list_init(list_t *);
-static void __list_adj_head(list_t *lst, int cnt);
+static void __list_inc_head(list_t *lst, size_t cnt);
+static void __list_dec_head(list_t *lst, size_t cnt);
 
-size_t list_write_to(list_t *lst, const void *restrict val)
-{
-	return list_write_bulk(lst, val, 1);
-}
-
-size_t list_write_bulk(list_t *lst, const void *restrict val, size_t cnt)
+size_t list_push_bulk(list_t *lst, const void *restrict val, size_t cnt)
 {
 	size_t idx = lst->cnt;
 
@@ -31,26 +27,24 @@ size_t list_write_bulk(list_t *lst, const void *restrict val, size_t cnt)
 		memset(lst->head, 0, lst->type_sz * cnt);
 	}
 
-	__list_adj_head(lst, (int)cnt);
+	__list_inc_head(lst, cnt);
 
 	return idx;
 }
 
-void list_push(list_t *lst, const void *restrict value)
+void *list_pop_bulk(list_t *lst, size_t cnt)
 {
-	list_write_to(lst, value);
-}
-
-void *list_pop(list_t *lst)
-{
-	__list_adj_head(lst, -1);
+	__list_dec_head(lst, cnt);
 
 	return lst->head;
 }
 
 void *list_peek_offset(list_t *lst, size_t offset)
 {
-	assert(("list is empty", lst->head != NULL));
+	if (lst->head == NULL) {
+		return NULL;
+	}
+
 	assert(("Offset will fall out of array", offset + 1 <= lst->cnt));
 
 	return lst->head - ((offset + 1) * lst->type_sz);
@@ -94,19 +88,6 @@ void list_set_cnt(list_t *lst, size_t cnt)
 	}
 }
 
-void list_adjust_cnt(list_t *lst, int adjust)
-{
-	if (adjust < 0) {
-		assert(("adjustment will cause overflow error",
-			(-adjust) <= lst->cnt));
-	} else if (lst->cap < lst->cnt + adjust) {
-		list_set_cap(lst, GROW_CAPACITY_AT_LEAST(lst->cnt + adjust,
-							 lst->cap));
-	}
-
-	__list_adj_head(lst, adjust);
-}
-
 void list_for_each (list_t *lst, for_each_fn func)
 {
 	for (size_t idx = 0; idx < lst->cnt; idx++) {
@@ -122,16 +103,19 @@ static void __list_init(list_t *lst)
 	lst->head = NULL;
 }
 
-static void __list_adj_head(list_t *lst, int adj)
+static void __list_inc_head(list_t *lst, size_t cnt)
 {
-	if (adj < 0) {
-		assert(("adjustment will cause overflow error",
-			(-adj) <= lst->cnt));
-	} else {
-		assert(("head will be outside of alloc",
-			lst->cnt + (size_t)adj <= lst->cap));
-	}
+	assert(("head will be outside of list alloc",
+		lst->cnt + cnt <= lst->cap));
 
-	lst->cnt += adj;
-	lst->head += lst->type_sz * adj;
+	lst->cnt += cnt;
+	lst->head += lst->type_sz * cnt;
+}
+
+static void __list_dec_head(list_t *lst, size_t cnt)
+{
+	assert(("adjustment will cause overflow error", cnt <= lst->cnt));
+
+	lst->cnt -= cnt;
+	lst->head -= lst->type_sz * cnt;
 }
