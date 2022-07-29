@@ -33,7 +33,7 @@ typedef struct object_str lox_str_t;
 typedef struct object_fn lox_fn_t;
 
 //! @brief lox base value
-typedef struct {
+typedef struct __lox_val {
 	enum value_type type;
 	union {
 		lox_bool_t boolean;

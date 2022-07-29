@@ -24,7 +24,7 @@ struct vm_call_frame {
 };
 
 //! @brief vm struct
-typedef struct {
+typedef struct __vm {
 	list_t frames;
 	struct state state;
 	list_t globals;

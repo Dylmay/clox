@@ -16,7 +16,7 @@
 #define LOOKUP_GLOBAL_DEPTH 1
 
 //! @brief lookup table for variables
-typedef struct {
+typedef struct __lookup {
 	list_t scopes;
 	uint32_t cur_idx;
 	uint32_t glbl_idx;

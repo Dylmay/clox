@@ -11,6 +11,7 @@
 
 //! @brief flags related to lox variable definitions
 typedef uint8_t var_flags_t;
+#pragma region lookup_var_flag_defines
 /**
  * @brief constant to test whether all flags are off. I.E. the var is invalid
  *
@@ -94,9 +95,10 @@ typedef uint8_t var_flags_t;
  *
  */
 #define LOOKUP_VAR_GLOBAL (1 << 3)
+#pragma endregion
 
 //! @brief lookup variable
-typedef struct {
+typedef struct __lookup_var {
 	uint32_t idx;
 	var_flags_t var_flags;
 } lookup_var_t;

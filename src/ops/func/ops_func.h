@@ -1,3 +1,9 @@
+/**
+ * @file ops_func.h
+ * @author Dylan Mayor
+ * @brief header file for functions related to VM opcodes
+ *
+ */
 #ifndef __CLOX_COMPILER_OPS_FUNC_H__
 #define __CLOX_COMPILER_OPS_FUNC_H__
 

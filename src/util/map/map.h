@@ -16,7 +16,7 @@
  * @see map_new()
  * @see map_free()
  */
-typedef struct {
+typedef struct __hashmap {
 	size_t cnt;
 	size_t tomb_cnt;
 	size_t cap;

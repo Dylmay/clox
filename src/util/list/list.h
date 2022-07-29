@@ -17,7 +17,7 @@
  * @see list_free()
  *
  */
-typedef struct list {
+typedef struct __list {
 	size_t cnt;
 	size_t cap;
 	size_t type_sz;
