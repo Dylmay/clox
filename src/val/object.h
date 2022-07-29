@@ -32,7 +32,7 @@ struct object_str {
 struct object_fn {
 	struct object obj;
 	int arity;
-	struct chunk chunk;
+	chunk_t chunk;
 	struct object_str *name;
 };
 

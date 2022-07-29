@@ -161,7 +161,7 @@ static lox_fn_t *__compiler_run(struct compiler compiler, bool is_main)
 	OP_RETURN_WRITE(compiler.fn, compiler.prsr->current.line);
 
 	if (parser_had_error(compiler.prsr)) {
-		reallocate(compiler.fn, sizeof(struct chunk), 0);
+		reallocate(compiler.fn, sizeof(chunk_t), 0);
 
 		return NULL;
 	} else {
