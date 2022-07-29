@@ -7,6 +7,7 @@
 #ifndef __CLOX_LEXER_H__
 #define __CLOX_LEXER_H__
 
+#include "util/common.h"
 #include "tokens.h"
 /**
  * @brief lox lexer struct. Created using lexer_init()
@@ -17,7 +18,7 @@
 typedef struct __lexer {
 	const char *start;
 	const char *current;
-	int line;
+	uint32_t line;
 } lexer_t;
 
 /**

@@ -41,9 +41,9 @@ static const struct parse_rule *__compiler_get_rule(enum tkn_type);
 static void __compiler_begin_scope(struct compiler *);
 static void __compiler_end_scope(struct compiler *);
 static lookup_var_t __compiler_define_var(struct compiler *, const char *,
-					  size_t, int, bool);
-static void __compiler_set_var(struct compiler *, lookup_var_t, int);
-static void __compiler_get_var(struct compiler *, lookup_var_t, int);
+					  size_t, uint32_t, bool);
+static void __compiler_set_var(struct compiler *, lookup_var_t, uint32_t);
+static void __compiler_get_var(struct compiler *, lookup_var_t, uint32_t);
 static void __parse_block(struct compiler *);
 static void __parse_expr(struct compiler *);
 static void __parse_precedence(struct compiler *, enum precedence);
@@ -211,7 +211,7 @@ static void __parse_grouping(struct compiler *compiler)
 static void __parse_unary(struct compiler *compiler)
 {
 	enum tkn_type tkn_type = compiler->prsr->previous.type;
-	int line_num = compiler->prsr->previous.line;
+	uint32_t line_num = compiler->prsr->previous.line;
 
 	// compile operand
 	__parse_precedence(compiler, PREC_UNARY);
@@ -361,7 +361,7 @@ static void __parse_var_decl(struct compiler *compiler)
 	bool is_mutable = parser_match(compiler->prsr, TKN_MUT);
 	parser_consume(compiler->prsr, TKN_ID, "Expected variable name");
 
-	int def_ln = compiler->prsr->previous.line;
+	uint32_t def_ln = compiler->prsr->previous.line;
 	const char *name = compiler->prsr->previous.start;
 	size_t len = compiler->prsr->previous.len;
 
@@ -563,7 +563,7 @@ static void __parse_for_stmt(struct compiler *compiler)
 	__compiler_begin_scope(compiler);
 	parser_consume(compiler->prsr, TKN_ID, "Expected variable name");
 
-	int def_ln = compiler->prsr->previous.line;
+	uint32_t def_ln = compiler->prsr->previous.line;
 	const char *name = compiler->prsr->previous.start;
 	size_t len = compiler->prsr->previous.len;
 
@@ -670,7 +670,7 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 			parser_consume(compiler->prsr, TKN_ID,
 				       "Expected variable name");
 
-			int def_ln = compiler->prsr->previous.line;
+			uint32_t def_ln = compiler->prsr->previous.line;
 			const char *name = compiler->prsr->previous.start;
 			size_t len = compiler->prsr->previous.len;
 
@@ -736,7 +736,7 @@ static void __compiler_end_scope(struct compiler *compiler)
 
 static lookup_var_t __compiler_define_var(struct compiler *compiler,
 					  const char *name, size_t len,
-					  int line, bool mutable)
+					  uint32_t line, bool mutable)
 {
 	lookup_var_t new_var =
 		lookup_define(&compiler->state->lookup, name, len, mutable);
@@ -751,7 +751,7 @@ static lookup_var_t __compiler_define_var(struct compiler *compiler,
 }
 
 static void __compiler_set_var(struct compiler *compiler, lookup_var_t var,
-			       int line)
+			       uint32_t line)
 {
 	if (lookup_var_is_global(var)) {
 		OP_GLOBAL_SET_WRITE(compiler->fn, var.idx,
@@ -763,7 +763,7 @@ static void __compiler_set_var(struct compiler *compiler, lookup_var_t var,
 }
 
 static void __compiler_get_var(struct compiler *compiler, lookup_var_t var,
-			       int line)
+			       uint32_t line)
 {
 	if (lookup_var_is_global(var)) {
 		OP_GLOBAL_GET_WRITE(compiler->fn, var.idx,

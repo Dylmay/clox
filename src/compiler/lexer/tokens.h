@@ -7,6 +7,8 @@
 #ifndef __CLOX_SCANNER_TOKENS_H__
 #define __CLOX_SCANNER_TOKENS_H__
 
+#include "util/common.h"
+
 //! @brief lox token types
 enum tkn_type {
 	// single char tokens
@@ -63,7 +65,7 @@ typedef struct __token {
 	enum tkn_type type;
 	const char *start;
 	size_t len;
-	int line;
+	uint32_t line;
 } token_t;
 
 #endif // __CLOX_SCANNER_TOKENS_H__

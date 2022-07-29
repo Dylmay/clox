@@ -13,8 +13,9 @@
 #include "chunk/chunk.h"
 #include "chunk/func/chunk_func.h"
 
-static inline void __extended_op(struct chunk *chunk, op_code_t short_op,
-				 op_code_t long_op, uint32_t offset, int line)
+static inline void __extended_op(chunk_t *chunk, op_code_t short_op,
+				 op_code_t long_op, uint32_t offset,
+				 uint32_t line)
 {
 	if (offset <= UINT8_MAX) {
 		chunk_write_code(chunk, short_op, line);
@@ -22,13 +23,13 @@ static inline void __extended_op(struct chunk *chunk, op_code_t short_op,
 	} else {
 		assert(("Max code offset is 256 * 24", offset < EXT_CODE_MAX));
 
-		chunk_write_code_bulk(chunk, long_op, line, &offset,
-				      EXT_CODE_SZ);
+		chunk_write_code_extended(chunk, long_op, line, &offset,
+					  EXT_CODE_SZ);
 	}
 }
 
-static inline int __jump_instr_write(struct chunk *chunk, code_t jump_code,
-				     int line)
+static inline int __jump_instr_write(chunk_t *chunk, code_t jump_code,
+				     uint32_t line)
 {
 	chunk_write_code(chunk, jump_code, line);
 	chunk_reserve_code(chunk, 2);
@@ -49,26 +50,27 @@ static inline bool op_patch_jump(lox_fn_t *fn, long offset)
 	return true;
 }
 
-static inline void OP_CONST_WRITE(lox_fn_t *fn, lox_val_t const_val, int line)
+static inline void OP_CONST_WRITE(lox_fn_t *fn, lox_val_t const_val,
+				  uint32_t line)
 {
 	uint32_t const_offset = chunk_write_const(&fn->chunk, const_val);
 	__extended_op(&fn->chunk, OP_CONSTANT, OP_CONSTANT_LONG, const_offset,
 		      line);
 }
 
-static inline void OP_CALL_WRITE(lox_fn_t *fn, uint8_t arg_cnt, int line)
+static inline void OP_CALL_WRITE(lox_fn_t *fn, uint8_t arg_cnt, uint32_t line)
 {
 	chunk_write_code(&fn->chunk, OP_CALL, line);
 	chunk_write_code(&fn->chunk, (code_t)arg_cnt, line);
 }
 
-static inline void OP_POP_COUNT_WRITE(lox_fn_t *fn, uint32_t cnt, int line)
+static inline void OP_POP_COUNT_WRITE(lox_fn_t *fn, uint32_t cnt, uint32_t line)
 {
 	chunk_write_code(&fn->chunk, OP_POP_COUNT, line);
 	chunk_write_code(&fn->chunk, (code_t)cnt, line);
 }
 
-static inline bool OP_LOOP_WRITE(lox_fn_t *fn, long loop_begin, int line)
+static inline bool OP_LOOP_WRITE(lox_fn_t *fn, long loop_begin, uint32_t line)
 {
 	long jump = loop_begin - chunk_cur_ip(&fn->chunk) - 3;
 
@@ -76,28 +78,28 @@ static inline bool OP_LOOP_WRITE(lox_fn_t *fn, long loop_begin, int line)
 		return false;
 	}
 
-	chunk_write_code_bulk(&fn->chunk, OP_JUMP, line, &jump,
-			      sizeof(int16_t));
+	chunk_write_code_extended(&fn->chunk, OP_JUMP, line, &jump,
+				  sizeof(int16_t));
 
 	return true;
 }
 
 #define FUNC_NAME_OF(op) op##_WRITE
 #define CREATE_WRITE_FUNC(instr)                                               \
-	static inline void FUNC_NAME_OF(instr)(lox_fn_t * fn, int line)        \
+	static inline void FUNC_NAME_OF(instr)(lox_fn_t * fn, uint32_t line)   \
 	{                                                                      \
 		chunk_write_code(&fn->chunk, instr, line);                     \
 	}
 
 #define CREATE_JUMP_FUNC(instr)                                                \
-	static inline int instr##_WRITE(lox_fn_t *fn, int line)                \
+	static inline int instr##_WRITE(lox_fn_t *fn, uint32_t line)           \
 	{                                                                      \
 		return __jump_instr_write(&fn->chunk, instr, line);            \
 	}
 
 #define CREATE_EXTENDED_WRITE_FUNC(short_op, long_op)                          \
 	static inline void short_op##_WRITE(lox_fn_t *fn, uint32_t glbl_idx,   \
-					    int line)                          \
+					    uint32_t line)                     \
 	{                                                                      \
 		__extended_op(&fn->chunk, short_op, long_op, glbl_idx, line);  \
 	}

@@ -59,7 +59,7 @@ void chunk_patch_code(chunk_t *chunk, size_t ip, const void *data,
  * @param line the line in which the code was defined
  * @return size_t the current ip
  */
-size_t chunk_write_code(chunk_t *chunk, code_t code, int line);
+size_t chunk_write_code(chunk_t *chunk, code_t code, uint32_t line);
 
 /**
  * @brief writes a code item to the code stack and then writes the extended data after the code
@@ -71,7 +71,7 @@ size_t chunk_write_code(chunk_t *chunk, code_t code, int line);
  * @param data_cnt the extended code data count, in number of code_t items
  * @return size_t the current ip
  */
-size_t chunk_write_code_extended(chunk_t *chunk, code_t code, int line,
+size_t chunk_write_code_extended(chunk_t *chunk, code_t code, uint32_t line,
 				 const void *restrict data, size_t data_cnt);
 
 /**

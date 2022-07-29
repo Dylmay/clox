@@ -43,7 +43,7 @@ void chunk_patch_code(chunk_t *chunk, size_t offset, const void *data,
 	memcpy(dest, data, count);
 }
 
-size_t chunk_write_code(chunk_t *chunk, code_t code, int line)
+size_t chunk_write_code(chunk_t *chunk, code_t code, uint32_t line)
 {
 	assert(("passed line can not be zero", line != 0));
 
@@ -62,7 +62,7 @@ size_t chunk_write_code(chunk_t *chunk, code_t code, int line)
 	return list_push(&chunk->code, &code);
 }
 
-size_t chunk_write_code_extended(chunk_t *chunk, code_t code, int line,
+size_t chunk_write_code_extended(chunk_t *chunk, code_t code, uint32_t line,
 				 const void *restrict data, size_t data_cnt)
 {
 	chunk_write_code(chunk, code, line);
