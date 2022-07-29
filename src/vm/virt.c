@@ -692,23 +692,11 @@ static inline int __frame_instr_offset(const struct vm_call_frame *frame)
 
 static void __vm_str_concat(vm_t *vm)
 {
-	interner_t *str_interner = &vm->state.strings;
-
 	const lox_str_t *b_str = OBJECT_AS_STRING(__vm_pop_const(vm));
 	const lox_str_t *a_str = OBJECT_AS_STRING(__vm_pop_const(vm));
 	lox_str_t *concat_str = object_str_concat(a_str, b_str);
 
-	lox_str_t *interned_str = intern_get_str(
-		str_interner, concat_str->chars, concat_str->len);
-
-	if (interned_str) {
-		object_free((struct object *)concat_str);
-	} else {
-		intern_insert(str_interner, concat_str);
-		interned_str = concat_str;
-	}
-
-	__vm_push_const(vm, VAL_CREATE_OBJ(interned_str));
+	__vm_push_const(vm, VAL_CREATE_OBJ(concat_str));
 }
 
 static void __vm_discard(vm_t *vm, uint32_t discard_cnt)

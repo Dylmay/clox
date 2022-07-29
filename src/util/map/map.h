@@ -78,17 +78,15 @@ struct map_for_each_entry {
  * @param hasher key hash function
  * @return hashmap_t the new hashmap
  */
-static inline hashmap_t map_new(size_t val_sz, hash_fn hasher)
-{
-	return (hashmap_t){
-		.cnt = 0,
-		.tomb_cnt = 0,
-		.cap = 0,
-		.data_sz = val_sz,
-		.entries = NULL,
-		.hash = hasher,
-	};
-}
+#define map_new(val_sz, hasher)                                                \
+	((hashmap_t){                                                          \
+		.cnt = 0,                                                      \
+		.tomb_cnt = 0,                                                 \
+		.cap = 0,                                                      \
+		.data_sz = val_sz,                                             \
+		.entries = NULL,                                               \
+		.hash = hasher,                                                \
+	})
 
 /**
  * @brief frees the passed values and related objects of the map.

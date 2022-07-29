@@ -333,10 +333,8 @@ static void __parse_lit(struct compiler *compiler)
 static void __parse_string(struct compiler *compiler)
 {
 	struct object_str *string =
-		intern_string(&compiler->state->strings,
-			      compiler->prsr->previous.start + 1,
-			      compiler->prsr->previous.len - 2);
-
+		object_str_new(compiler->prsr->previous.start + 1,
+			       compiler->prsr->previous.len - 2);
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_OBJ(string),
 		       compiler->prsr->previous.line);
 }
@@ -632,8 +630,7 @@ static void __parse_fn_decl(struct compiler *compiler)
 			"Variables/functions cannot be redefined.");
 	}
 
-	lox_str_t *fn_name =
-		intern_string(&compiler->state->strings, name, len);
+	lox_str_t *fn_name = object_str_new(name, len);
 	__parse_fn(compiler, fn_name);
 
 	if (!parser_had_error(compiler->prsr)) {
