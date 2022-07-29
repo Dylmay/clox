@@ -7,16 +7,6 @@ bool parser_check(const parser_t *prsr, enum tkn_type type)
 	return prsr->current.type == type;
 }
 
-bool parser_match(parser_t *prsr, enum tkn_type type)
-{
-	if (!parser_check(prsr, type)) {
-		return false;
-	}
-
-	parser_advance(prsr);
-	return true;
-}
-
 void parser_advance(parser_t *prsr)
 {
 	prsr->previous = prsr->current;
@@ -53,19 +43,18 @@ parser_t parser_new(const char *source)
 	return prsr;
 }
 
-void parser_error(parser_t *prsr, const token_t *tkn, const char *msg)
+void parser_error(parser_t *prsr, token_t tkn, const char *msg)
 {
 	if (prsr->panic_mode) {
 		return;
 	}
 
-	fprintf(stderr, "[line %d] Error", tkn->line);
+	fprintf(stderr, "[line %d] Error", tkn.line);
 
-	if (tkn->type == TKN_EOF) {
+	if (tkn.type == TKN_EOF) {
 		fprintf(stderr, " at end");
-	} else if (tkn->type != TKN_ERR) {
-		fprintf(stderr, " at '%.*s'", (unsigned int)tkn->len,
-			tkn->start);
+	} else if (tkn.type != TKN_ERR) {
+		fprintf(stderr, " at '%.*s'", (unsigned int)tkn.len, tkn.start);
 	}
 
 	fprintf(stderr, ": %s\n", msg);

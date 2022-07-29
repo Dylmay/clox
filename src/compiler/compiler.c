@@ -22,6 +22,7 @@ struct compile_unit {
 struct compiler {
 	parser_t *prsr;
 	struct state *state;
+	// struct compile_unit *comp_unit;
 	lox_fn_t *fn;
 	bool can_assign;
 };
@@ -81,7 +82,7 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_DOT] = { NULL, NULL, PREC_NONE },
 	[TKN_MINUS] = { __parse_unary, __parse_binary, PREC_TERM },
 	[TKN_PLUS] = { NULL, __parse_binary, PREC_TERM },
-	[TKN_MOD] = { NULL, __parse_binary, PREC_TERM },
+	[TKN_MOD] = { NULL, __parse_binary, PREC_FACTOR },
 	[TKN_SEMICOLON] = { NULL, NULL, PREC_NONE },
 	[TKN_SLASH] = { NULL, __parse_binary, PREC_FACTOR },
 	[TKN_STAR] = { NULL, __parse_binary, PREC_FACTOR },
@@ -153,12 +154,13 @@ static lox_fn_t *__compiler_run(struct compiler compiler, bool is_main)
 		__parse_block(&compiler);
 	}
 
-	// TODO: only push if no return was found
+	// TODO: only push if no return was found - call to return leaves this as
+	// dead code
 	OP_CONST_WRITE(compiler.fn, VAL_CREATE_NIL,
 		       compiler.prsr->current.line);
 	OP_RETURN_WRITE(compiler.fn, compiler.prsr->current.line);
 
-	if (compiler.prsr->had_err) {
+	if (parser_had_error(compiler.prsr)) {
 		reallocate(compiler.fn, sizeof(struct chunk), 0);
 
 		return NULL;
@@ -283,7 +285,7 @@ static void __parse_precedence(struct compiler *compiler, enum precedence prec)
 		__compiler_get_rule(compiler->prsr->previous.type)->prefix;
 
 	if (!prefix_rule) {
-		parser_error(compiler->prsr, &compiler->prsr->previous,
+		parser_error(compiler->prsr, compiler->prsr->previous,
 			     "Expect expression.");
 		return;
 	}
@@ -349,7 +351,7 @@ static void __parse_decl(struct compiler *compiler)
 		__parse_stmnt(compiler);
 	}
 
-	if (compiler->prsr->panic_mode) {
+	if (parser_in_panic_mode(compiler->prsr)) {
 		parser_sync(compiler->prsr);
 	}
 }
@@ -379,7 +381,7 @@ static void __parse_var_decl(struct compiler *compiler)
 
 	// if undef_var exists, set flags on object
 	// could have a list of pendings
-	if (!compiler->prsr->had_err) {
+	if (!parser_had_error(compiler->prsr)) {
 		__compiler_define_var(compiler, name, len, def_ln, is_mutable);
 	} else {
 		OP_VAR_DEFINE_WRITE(compiler->fn, 0, def_ln);
@@ -450,7 +452,7 @@ static void __parse_var(struct compiler *compiler)
 		__parse_expr(compiler);
 
 		if (!lookup_var_is_mutable(var)) {
-			parser_error(compiler->prsr, &name_tkn,
+			parser_error(compiler->prsr, name_tkn,
 				     "Variable isn't mutable");
 		}
 
@@ -634,7 +636,7 @@ static void __parse_fn_decl(struct compiler *compiler)
 		intern_string(&compiler->state->strings, name, len);
 	__parse_fn(compiler, fn_name);
 
-	if (!compiler->prsr->had_err) {
+	if (!parser_had_error(compiler->prsr)) {
 		__compiler_define_var(compiler, name, len,
 				      compiler->prsr->previous.line,
 				      is_mutable);
@@ -678,7 +680,7 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 					"Variables cannot be redefined.");
 			}
 
-			if (!compiler->prsr->had_err) {
+			if (!parser_had_error(compiler->prsr)) {
 				__compiler_define_var(&new_comp, name, len,
 						      def_ln, is_mutable);
 			}
