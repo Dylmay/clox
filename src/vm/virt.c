@@ -181,20 +181,6 @@ void vm_print_vars(vm_t *vm)
 						   LOOKUP_GLOBAL_DEPTH),
 			     (struct map_for_each_entry *)&var_prnt);
 	puts("}");
-
-	// for (int depth = 2; depth < lookup_cur_depth(&vm->state.lookup);
-	//      depth++) {
-	// 	var_prnt.depth = depth - 1;
-
-	// 	INDENT_BY(depth - 2);
-	// 	printf("Scope @%d: {", depth);
-	// 	INDENT_BY(depth - 2);
-	// 	map_entries_for_each(lookup_scope_at_depth(&vm->state.lookup,
-	// 						   depth),
-	// 			     (struct map_for_each_entry *)&var_prnt);
-	// 	INDENT_BY(depth - 2);
-	// 	puts("}");
-	// }
 #undef INDENT_BY
 }
 
