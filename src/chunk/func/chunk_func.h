@@ -28,9 +28,9 @@ void chunk_free(chunk_t *chunk);
  * @brief gets the current instruction pointer of the chunk
  *
  * @param chunk the chunk
- * @return size_t the current chunk ip
+ * @return size_t the current instruction offset
  */
-size_t chunk_cur_ip(const chunk_t *chunk);
+size_t chunk_cur_instr(const chunk_t *chunk);
 
 /**
  * @brief reserves a chunk of code so it can be modified or set later
@@ -44,11 +44,11 @@ void chunk_reserve_code(chunk_t *chunk, uint32_t count);
  * @brief patches a previous op code with the given data and count
  *
  * @param chunk the chunk to patch
- * @param ip the instruction pointer of the instruction
+ * @param offset the instruction offset
  * @param data the data to overwrite the instruction with
  * @param data_sz the number of code_t values which data holds
  */
-void chunk_patch_code(chunk_t *chunk, size_t ip, const void *data,
+void chunk_patch_code(chunk_t *chunk, size_t offset, const void *data,
 		      uint32_t data_sz);
 
 /**
@@ -87,10 +87,10 @@ size_t chunk_write_const(chunk_t *chunk, lox_val_t const_val);
  * @brief gets the code at the given ip
  *
  * @param chunk the chunk to read
- * @param ip the ip of the code
+ * @param offset the instruction offset
  * @return code_t the code at the given ip
  */
-code_t chunk_get_code(chunk_t *chunk, size_t ip);
+code_t chunk_get_code(chunk_t *chunk, size_t offset);
 
 /**
  * @brief gets the line the given instruction was defined at

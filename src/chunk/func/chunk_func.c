@@ -23,7 +23,7 @@ chunk_t chunk_new()
 	};
 }
 
-size_t chunk_cur_ip(const chunk_t *chunk)
+size_t chunk_cur_instr(const chunk_t *chunk)
 {
 	return list_size(&chunk->code);
 }

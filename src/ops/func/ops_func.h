@@ -28,18 +28,18 @@ static inline void __extended_op(chunk_t *chunk, op_code_t short_op,
 	}
 }
 
-static inline int __jump_instr_write(chunk_t *chunk, code_t jump_code,
-				     uint32_t line)
+static inline size_t __jump_instr_write(chunk_t *chunk, code_t jump_code,
+					uint32_t line)
 {
 	chunk_write_code(chunk, jump_code, line);
 	chunk_reserve_code(chunk, 2);
 
-	return (int)chunk_cur_ip(chunk) - 2;
+	return chunk_cur_instr(chunk) - 2;
 }
 
 static inline bool op_patch_jump(lox_fn_t *fn, long offset)
 {
-	long jump = chunk_cur_ip(&fn->chunk) - offset - 2;
+	size_t jump = chunk_cur_instr(&fn->chunk) - offset - 2;
 
 	if (jump > INT16_MAX || jump < INT16_MIN) {
 		return false;
@@ -72,7 +72,7 @@ static inline void OP_POP_COUNT_WRITE(lox_fn_t *fn, uint32_t cnt, uint32_t line)
 
 static inline bool OP_LOOP_WRITE(lox_fn_t *fn, long loop_begin, uint32_t line)
 {
-	long jump = loop_begin - chunk_cur_ip(&fn->chunk) - 3;
+	size_t jump = loop_begin - chunk_cur_instr(&fn->chunk) - 3;
 
 	if (jump > INT16_MAX || jump < INT16_MIN) {
 		return false;
@@ -92,7 +92,7 @@ static inline bool OP_LOOP_WRITE(lox_fn_t *fn, long loop_begin, uint32_t line)
 	}
 
 #define CREATE_JUMP_FUNC(instr)                                                \
-	static inline int instr##_WRITE(lox_fn_t *fn, uint32_t line)           \
+	static inline size_t instr##_WRITE(lox_fn_t *fn, uint32_t line)        \
 	{                                                                      \
 		return __jump_instr_write(&fn->chunk, instr, line);            \
 	}
@@ -131,19 +131,19 @@ CREATE_EXTENDED_WRITE_FUNC(OP_GLOBAL_DEFINE, OP_GLOBAL_DEFINE_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_GLOBAL_GET, OP_GLOBAL_GET_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_GLOBAL_SET, OP_GLOBAL_SET_LONG)
 
-static inline void OP_BANG_EQ_WRITE(lox_fn_t *fn, int line)
+static inline void OP_BANG_EQ_WRITE(lox_fn_t *fn, uint32_t line)
 {
 	OP_EQUAL_WRITE(fn, line);
 	OP_NOT_WRITE(fn, line);
 }
 
-static inline void OP_GREATER_EQ_WRITE(lox_fn_t *fn, int line)
+static inline void OP_GREATER_EQ_WRITE(lox_fn_t *fn, uint32_t line)
 {
 	OP_LESS_WRITE(fn, line);
 	OP_NOT_WRITE(fn, line);
 }
 
-static inline void OP_LESS_EQ_WRITE(lox_fn_t *fn, int line)
+static inline void OP_LESS_EQ_WRITE(lox_fn_t *fn, uint32_t line)
 {
 	OP_GREATER_WRITE(fn, line);
 	OP_NOT_WRITE(fn, line);

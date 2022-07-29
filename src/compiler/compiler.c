@@ -505,8 +505,8 @@ static void __parse_if_stmt(struct compiler *compiler)
 
 static void __parse_and(struct compiler *compiler)
 {
-	int end_jump = OP_JUMP_IF_FALSE_WRITE(compiler->fn,
-					      compiler->prsr->previous.line);
+	size_t end_jump = OP_JUMP_IF_FALSE_WRITE(compiler->fn,
+						 compiler->prsr->previous.line);
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
 
 	__parse_precedence(compiler, PREC_AND);
@@ -515,9 +515,9 @@ static void __parse_and(struct compiler *compiler)
 
 static void __parse_or(struct compiler *compiler)
 {
-	int else_jump = OP_JUMP_IF_FALSE_WRITE(compiler->fn,
-					       compiler->prsr->previous.line);
-	int end_jump =
+	size_t else_jump = OP_JUMP_IF_FALSE_WRITE(
+		compiler->fn, compiler->prsr->previous.line);
+	size_t end_jump =
 		OP_JUMP_WRITE(compiler->fn, compiler->prsr->previous.line);
 
 	op_patch_jump(compiler->fn, else_jump);
@@ -529,7 +529,7 @@ static void __parse_or(struct compiler *compiler)
 
 static void __parse_while_stmt(struct compiler *compiler)
 {
-	size_t loop_begin = chunk_cur_ip(&compiler->fn->chunk);
+	size_t loop_begin = chunk_cur_instr(&compiler->fn->chunk);
 	__parse_expr(compiler);
 
 	if (!parser_check(compiler->prsr, TKN_LEFT_BRACE)) {
@@ -537,8 +537,8 @@ static void __parse_while_stmt(struct compiler *compiler)
 					"Expected '{' after condition.");
 	}
 
-	int exit_jump = OP_JUMP_IF_FALSE_WRITE(compiler->fn,
-					       compiler->prsr->previous.line);
+	size_t exit_jump = OP_JUMP_IF_FALSE_WRITE(
+		compiler->fn, compiler->prsr->previous.line);
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
 
 	__parse_decl(compiler);
@@ -586,13 +586,13 @@ static void __parse_for_stmt(struct compiler *compiler)
 	//condition
 	double range_end = strtod(compiler->prsr->previous.start, NULL);
 
-	int inc_start = chunk_cur_ip(&compiler->fn->chunk);
+	size_t inc_start = chunk_cur_instr(&compiler->fn->chunk);
 	OP_VAR_GET_WRITE(compiler->fn, glbl_idx.idx, def_ln);
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_NUMBER(range_end),
 		       compiler->prsr->previous.line);
 	//LESS_EQ
 	OP_LESS_WRITE(compiler->fn, compiler->prsr->previous.line);
-	int exit_jump = OP_JUMP_IF_FALSE_WRITE(compiler->fn, def_ln);
+	size_t exit_jump = OP_JUMP_IF_FALSE_WRITE(compiler->fn, def_ln);
 	OP_POP_WRITE(compiler->fn, def_ln);
 
 	if (!parser_check(compiler->prsr, TKN_LEFT_BRACE)) {
