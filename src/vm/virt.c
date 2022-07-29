@@ -241,6 +241,9 @@ static enum vm_res __vm_run(vm_t *vm)
 #endif
 
 		switch (instr = __frame_read_byte(cur_frame)) {
+		case OP_NOP:
+			break;
+
 		case OP_CONSTANT:
 			__vm_proc_const(vm, cur_frame,
 					__frame_proc_idx(cur_frame));
