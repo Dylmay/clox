@@ -40,11 +40,10 @@ static lox_val_t __clock_native(int arg_cnt, lox_val_t *args)
 
 static lox_val_t __print_native(int arg_cnt, lox_val_t *args)
 {
-	if (!arg_cnt) {
-		return VAL_CREATE_NIL;
+	if (arg_cnt) {
+		val_print(args[0]);
 	}
 
-	val_print(args[0]);
 	puts("");
 
 	return VAL_CREATE_NIL;
