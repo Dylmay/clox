@@ -17,7 +17,7 @@ void val_print(lox_val_t val)
 		break;
 
 	case VAL_NUMBER:
-		printf("%g", VAL_AS_NUMBER(val));
+		printf("%.15g", VAL_AS_NUMBER(val));
 		break;
 	case VAL_OBJ:
 		object_print(val);
