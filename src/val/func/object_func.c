@@ -64,6 +64,15 @@ struct object_str *object_str_concat(const struct object_str *a,
 	return concat;
 }
 
+struct object_native_fn *object_native_fn_new(native_fn native_fn)
+{
+	struct object_native_fn *native =
+		ALLOCATE_OBJECT(struct object_native_fn, OBJ_NATIVE);
+	native->fn = native_fn;
+
+	return native;
+}
+
 void object_free(struct object *obj)
 {
 	switch (obj->type) {
@@ -80,6 +89,10 @@ void object_free(struct object *obj)
 		chunk_free(&fn->chunk);
 		FREE(struct object_fn, fn);
 	} break;
+
+	case OBJ_NATIVE:
+		FREE(struct object_native_fn, obj);
+		break;
 
 	default:
 		break;
@@ -102,6 +115,9 @@ void object_print(lox_val_t val)
 			printf("<fn %s>", OBJECT_AS_FN(val)->name->chars);
 		}
 	} break;
+
+	case OBJ_NATIVE:
+		printf("<native fn>");
 		break;
 
 	default:

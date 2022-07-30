@@ -49,7 +49,6 @@ enum tkn_type {
 	TKN_IF, // if
 	TKN_NIL, // nil
 	TKN_OR, // or
-	TKN_PRINT, // print
 	TKN_RETURN, // return
 	TKN_SUPER, // super
 	TKN_THIS, // this

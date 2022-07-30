@@ -11,7 +11,7 @@
 
 #include "util/common.h"
 #include "util/list/list.h"
-#include "object.h"
+#include "chunk/chunk.h"
 
 //! @brief lox value types
 enum value_type {
@@ -21,16 +21,22 @@ enum value_type {
 	VAL_OBJ,
 };
 
+//! @brief object types
+enum object_type {
+	OBJ_STRING,
+	OBJ_FN,
+	OBJ_NATIVE,
+};
+
 //! @brief lox number
 typedef double lox_num_t;
 //! @brief lox boolean
 typedef bool lox_bool_t;
-//! @brief lox base object
-typedef struct object lox_obj_t;
-//! @brief lox string object
-typedef struct object_str lox_str_t;
-//! @brief lox function object
-typedef struct object_fn lox_fn_t;
+
+//! @brief base lox object
+typedef struct object {
+	enum object_type type;
+} lox_obj_t;
 
 //! @brief lox base value
 typedef struct __lox_val {
@@ -41,5 +47,26 @@ typedef struct __lox_val {
 		lox_obj_t *obj;
 	} as;
 } lox_val_t;
+
+//! @brief lox string object
+typedef struct object_str {
+	struct object obj;
+	size_t len;
+	char chars[];
+} lox_str_t;
+
+//! @brief lox function object
+typedef struct object_fn {
+	struct object obj;
+	int arity;
+	chunk_t chunk;
+	struct object_str *name;
+} lox_fn_t;
+
+typedef lox_val_t (*native_fn)(int arg_cnt, lox_val_t *args);
+typedef struct object_native_fn {
+	struct object obj;
+	native_fn fn;
+} lox_native_t;
 
 #endif // __CLOX_UTIL_VALUE_H__

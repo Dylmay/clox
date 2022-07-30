@@ -307,11 +307,6 @@ static enum vm_res __vm_run(vm_t *vm)
 			__vm_push_const(vm, VAL_CREATE_BOOL(val_equals(a, b)));
 		} break;
 
-		case OP_PRINT:
-			val_print(__vm_pop_const(vm));
-			puts("");
-			break;
-
 		case OP_POP:
 			__vm_pop_const(vm);
 			break;
@@ -730,6 +725,21 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 
 			return __vm_call(vm, OBJECT_AS_FN(callee));
 		} break;
+
+		case OBJ_NATIVE: {
+			lox_native_t *native = OBJECT_AS_NATIVE(callee);
+
+			lox_val_t res = native->fn(
+				call_arity,
+				call_arity ? list_peek_offset(&vm->stack,
+							      call_arity - 1) :
+					     NULL);
+
+			__vm_discard(vm, call_arity + 1);
+			__vm_push_const(vm, res);
+
+			return true;
+		}
 
 		default:
 			break;

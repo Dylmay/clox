@@ -98,8 +98,6 @@ enum tkn_type keyword_traverse(const char *identifier, size_t id_len)
 			}
 		}
 		return TKN_ID;
-	case 'p':
-		return MATCH(identifier, 1, "rint", TKN_PRINT);
 	default:
 		return TKN_ID;
 	}

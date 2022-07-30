@@ -39,7 +39,8 @@ static inline size_t __jump_instr_write(chunk_t *chunk, code_t jump_code,
 
 static inline bool op_patch_jump(lox_fn_t *fn, long offset)
 {
-	size_t jump = chunk_cur_instr(&fn->chunk) - offset - 2;
+	// TODO: fix typing and jump instruction to not waste space
+	long jump = chunk_cur_instr(&fn->chunk) - offset - 2;
 
 	if (jump > INT16_MAX || jump < INT16_MIN) {
 		return false;
@@ -120,7 +121,6 @@ CREATE_WRITE_FUNC(OP_RETURN)
 CREATE_WRITE_FUNC(OP_EQUAL)
 CREATE_WRITE_FUNC(OP_GREATER)
 CREATE_WRITE_FUNC(OP_LESS)
-CREATE_WRITE_FUNC(OP_PRINT)
 CREATE_WRITE_FUNC(OP_POP)
 CREATE_WRITE_FUNC(OP_MOD)
 

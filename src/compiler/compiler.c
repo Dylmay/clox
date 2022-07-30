@@ -9,6 +9,9 @@
 #include "val/func/val_func.h"
 #include "val/func/object_func.h"
 
+#include "compiler/import.h"
+#include "api/sys.h"
+
 #if defined(DEBUG_PRINT_CODE) | defined(DEBUG_BENCH)
 #include "debug/debug.h"
 #endif
@@ -57,7 +60,6 @@ static void __parse_decl(struct compiler *);
 static void __parse_var_decl(struct compiler *);
 static void __parse_stmnt(struct compiler *);
 static void __parse_expr_stmt(struct compiler *);
-static void __parse_print(struct compiler *);
 static void __parse_var(struct compiler *);
 static void __parse_if_stmt(struct compiler *);
 static void __parse_while_stmt(struct compiler *);
@@ -70,6 +72,7 @@ static void __parse_call(struct compiler *);
 static void __parse_return_stmt(struct compiler *);
 static uint8_t __parse_arglist(struct compiler *);
 static bool __compiler_has_defined(struct compiler *, const char *, size_t);
+static void __compiler_import(struct compiler *, struct import_list);
 /* Forwards */
 
 static struct parse_rule PARSE_RULES[] = {
@@ -108,7 +111,6 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_IF] = { NULL, NULL, PREC_NONE },
 	[TKN_NIL] = { __parse_lit, NULL, PREC_NONE },
 	[TKN_OR] = { NULL, __parse_or, PREC_OR },
-	[TKN_PRINT] = { __parse_print, NULL, PREC_NONE },
 	[TKN_RETURN] = { NULL, NULL, PREC_NONE },
 	[TKN_SUPER] = { NULL, NULL, PREC_NONE },
 	[TKN_THIS] = { NULL, NULL, PREC_NONE },
@@ -147,6 +149,8 @@ static lox_fn_t *__compiler_run(struct compiler compiler, bool is_main)
 #endif
 
 	if (is_main) {
+		__compiler_import(&compiler, sys_get_import_list());
+
 		while (!parser_match(compiler.prsr, TKN_EOF)) {
 			__parse_decl(&compiler);
 		}
@@ -157,8 +161,8 @@ static lox_fn_t *__compiler_run(struct compiler compiler, bool is_main)
 	// TODO: only push if no return was found - call to return leaves this as
 	// dead code
 	OP_CONST_WRITE(compiler.fn, VAL_CREATE_NIL,
-		       compiler.prsr->current.line);
-	OP_RETURN_WRITE(compiler.fn, compiler.prsr->current.line);
+		       compiler.prsr->previous.line);
+	OP_RETURN_WRITE(compiler.fn, compiler.prsr->previous.line);
 
 	if (parser_had_error(compiler.prsr)) {
 		reallocate(compiler.fn, sizeof(chunk_t), 0);
@@ -388,9 +392,7 @@ static void __parse_var_decl(struct compiler *compiler)
 
 static void __parse_stmnt(struct compiler *compiler)
 {
-	if (parser_match(compiler->prsr, TKN_PRINT)) {
-		__parse_print(compiler);
-	} else if (parser_match(compiler->prsr, TKN_IF)) {
+	if (parser_match(compiler->prsr, TKN_IF)) {
 		__parse_if_stmt(compiler);
 	} else if (parser_match(compiler->prsr, TKN_RETURN)) {
 		__parse_return_stmt(compiler);
@@ -424,14 +426,6 @@ static void __parse_expr_stmt(struct compiler *compiler)
 	parser_consume(compiler->prsr, TKN_SEMICOLON,
 		       "Expected ';' after expression.");
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
-}
-
-static void __parse_print(struct compiler *compiler)
-{
-	__parse_expr(compiler);
-	parser_consume(compiler->prsr, TKN_SEMICOLON,
-		       "Expected ';' after value.");
-	OP_PRINT_WRITE(compiler->fn, compiler->prsr->previous.line);
 }
 
 static void __parse_var(struct compiler *compiler)
@@ -471,13 +465,13 @@ static void __parse_if_stmt(struct compiler *compiler)
 					"Expected '{' or 'if' after else.");
 	}
 
-	int if_jump = OP_JUMP_IF_FALSE_WRITE(compiler->fn,
-					     compiler->prsr->previous.line);
+	size_t if_jump = OP_JUMP_IF_FALSE_WRITE(compiler->fn,
+						compiler->prsr->previous.line);
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
 
 	__parse_decl(compiler);
 
-	int else_jump =
+	size_t else_jump =
 		OP_JUMP_WRITE(compiler->fn, compiler->prsr->previous.line);
 
 	if (!op_patch_jump(compiler->fn, if_jump)) {
@@ -714,7 +708,7 @@ static void __parse_return_stmt(struct compiler *compiler)
 		parser_consume(compiler->prsr, TKN_SEMICOLON,
 			       "Expected ';' after return value.");
 	}
-	OP_RETURN_WRITE(compiler->fn, compiler->prsr->current.line);
+	OP_RETURN_WRITE(compiler->fn, compiler->prsr->previous.line);
 }
 
 static void __compiler_begin_scope(struct compiler *compiler)
@@ -726,7 +720,7 @@ static void __compiler_end_scope(struct compiler *compiler)
 {
 	OP_POP_COUNT_WRITE(compiler->fn,
 			   map_size(lookup_cur_scope(&compiler->state->lookup)),
-			   compiler->prsr->current.line);
+			   compiler->prsr->previous.line);
 
 	lookup_end_scope(&compiler->state->lookup);
 }
@@ -791,4 +785,24 @@ static uint8_t __parse_arglist(struct compiler *compiler)
 		       "Expected ')' after argument list");
 
 	return arg_cnt;
+}
+
+static void __compiler_import(struct compiler *compiler,
+			      struct import_list imports)
+{
+	for (size_t i = 0; i < imports.import_cnt; i++) {
+		struct native_import native_fn = imports.import_arr[i];
+
+		uint32_t line = compiler->prsr->previous.line ?
+					compiler->prsr->previous.line :
+					1;
+
+		OP_CONST_WRITE(
+			compiler->fn,
+			VAL_CREATE_OBJ(object_native_fn_new(native_fn.fn)),
+			line);
+
+		__compiler_define_var(compiler, native_fn.fn_name,
+				      native_fn.name_sz, line, false);
+	}
 }
