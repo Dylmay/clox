@@ -59,6 +59,14 @@ static inline void OP_CONST_WRITE(lox_fn_t *fn, lox_val_t const_val,
 		      line);
 }
 
+static inline void OP_CLOSURE_WRITE(lox_fn_t *fn, lox_val_t const_val,
+				    uint32_t line)
+{
+	uint32_t const_offset = chunk_write_const(&fn->chunk, const_val);
+	__extended_op(&fn->chunk, OP_CLOSURE, OP_CLOSURE_LONG, const_offset,
+		      line);
+}
+
 static inline void OP_CALL_WRITE(lox_fn_t *fn, uint8_t arg_cnt, uint32_t line)
 {
 	chunk_write_code(&fn->chunk, OP_CALL, line);

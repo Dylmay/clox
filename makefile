@@ -28,7 +28,6 @@ bench:
 	make -C src/ CFLAGS="-Wall -Wno-unused-value -O3" CC=$(CC) DEFINES=$(BENCH_DEFINES)
 
 rel:
-	make -C src/ clean
 	make -C src/ CFLAGS="-Wall -Wno-unused-value -O3" CC=$(CC) DEFINES=$(REL_DEFINES)
 
 MKDIR_P ?= mkdir -p

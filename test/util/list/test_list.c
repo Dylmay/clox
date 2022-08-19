@@ -33,13 +33,15 @@ void list_test_new()
 void list_test_push()
 {
 	list_t lst = list_of_type(struct value);
-	struct value val = (struct value){ .val = 1,
-					   .len = sizeof("Hello world!!") + 1,
-					   .str = "Hello world!!" };
+	struct value val = {
+		.val = 1,
+		.len = sizeof("Hello world!!") + 1,
+		.str = "Hello world!!",
+	};
 
 	list_push(&lst, &val);
 	assert(("Count has not increased", lst.cnt == 1));
-	const struct value *retval = (struct value *)list_peek(&lst);
+	const struct value *retval = list_peek(&lst);
 
 	assert(("Strings do not match",
 		strncmp(retval->str, "Hello world!!", retval->len) == 0));
@@ -50,12 +52,14 @@ void list_test_push()
 void list_test_pop()
 {
 	list_t lst = list_of_type(struct value);
-	struct value val = (struct value){ .val = 1,
-					   .len = sizeof("Hello world!!") + 1,
-					   .str = "Hello world!!" };
+	struct value val = {
+		.val = 1,
+		.len = sizeof("Hello world!!") + 1,
+		.str = "Hello world!!",
+	};
 
 	list_push(&lst, &val);
-	const struct value *retval = (struct value *)list_pop(&lst);
+	const struct value *retval = list_pop(&lst);
 
 	assert(("Strings do not match",
 		strncmp(retval->str, "Hello world!!", retval->len) == 0));
@@ -68,9 +72,7 @@ void list_test_pop()
 void list_test_reset()
 {
 	list_t lst = list_of_type(struct value);
-	struct value val = (struct value){
-		.val = 1,
-	};
+	struct value val = { .val = 1 };
 	list_push(&lst, &val);
 	list_push(&lst, &val);
 	list_push(&lst, &val);
@@ -85,9 +87,7 @@ void list_test_reset()
 void list_test_peek_offset()
 {
 	list_t lst = list_of_type(struct value);
-	struct value val = (struct value){
-		.val = 1,
-	};
+	struct value val = { .val = 1 };
 
 	list_push(&lst, &val);
 	val.val = 2;
@@ -109,33 +109,9 @@ void list_test_write_to_bulk()
 	list_t lst = list_of_type(struct value);
 
 	struct value val_arr[] = {
-		{
-			.val = 1,
-		},
-		{
-			.val = 2,
-		},
-		{
-			.val = 3,
-		},
-		{
-			.val = 4,
-		},
-		{
-			.val = 5,
-		},
-		{
-			.val = 6,
-		},
-		{
-			.val = 7,
-		},
-		{
-			.val = 8,
-		},
-		{
-			.val = 9,
-		},
+		{ .val = 1 }, { .val = 2 }, { .val = 3 },
+		{ .val = 4 }, { .val = 5 }, { .val = 6 },
+		{ .val = 7 }, { .val = 8 }, { .val = 9 },
 	};
 
 	list_write_bulk(&lst, val_arr, sizeof(val_arr) / sizeof(struct value));

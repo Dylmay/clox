@@ -4,6 +4,7 @@
  * @brief header file for generic arraylist implementation
  *
  */
+// TODO: move in to macro list
 #ifndef __CLOX_UTIL_LIST_H__
 #define __CLOX_UTIL_LIST_H__
 

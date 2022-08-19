@@ -48,7 +48,7 @@ static lox_val_t *__vm_get_var(vm_t *vm, uint32_t glbl);
 static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val);
 static void __vm_set_main(vm_t *vm, lox_fn_t *main);
 static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t arity);
-static bool __vm_call(vm_t *vm, lox_fn_t *fn);
+static bool __vm_call(vm_t *vm, lox_closure_t *closure);
 
 static void __vm_proc_const(vm_t *vm, struct vm_call_frame *frame,
 			    uint32_t idx);
@@ -177,7 +177,7 @@ void vm_print_vars(vm_t *vm)
 	};
 
 	puts("Globals: {");
-	map_entries_for_each(lookup_scope_at_depth(&vm->state.lookup,
+	map_entries_for_each(lookup_scope_at_depth(&vm->state.globals,
 						   LOOKUP_GLOBAL_DEPTH),
 			     (struct map_for_each_entry *)&var_prnt);
 	puts("}");
@@ -218,7 +218,7 @@ static enum vm_res __vm_run(vm_t *vm)
 #ifdef DEBUG_TRACE_EXECUTION
 		printf("\t\t");
 		vm_print_stack(vm);
-		disassem_inst(&cur_frame->fn->chunk,
+		disassem_inst(&cur_frame->closure->fn->chunk,
 			      __frame_instr_offset(cur_frame));
 #endif // DEBUG_TRACE_EXECUTION
 #ifdef DEBUG_BENCH
@@ -239,6 +239,34 @@ static enum vm_res __vm_run(vm_t *vm)
 			__vm_proc_const(vm, cur_frame,
 					__frame_proc_idx_ext(cur_frame));
 			break;
+
+		case OP_CLOSURE: {
+			lox_val_t fn =
+				chunk_get_const(&cur_frame->closure->fn->chunk,
+						__frame_proc_idx(cur_frame));
+
+			assert(("closure object is not a function",
+				OBJECT_IS_FN(fn)));
+
+			lox_closure_t *closure =
+				object_closure_new(OBJECT_AS_FN(fn));
+
+			__vm_push_const(vm, VAL_CREATE_OBJ(closure));
+		} break;
+
+		case OP_CLOSURE_LONG: {
+			lox_val_t fn = chunk_get_const(
+				&cur_frame->closure->fn->chunk,
+				__frame_proc_idx_ext(cur_frame));
+
+			assert(("closure object is not a function",
+				OBJECT_IS_FN(fn)));
+
+			lox_closure_t *closure =
+				object_closure_new(OBJECT_AS_FN(fn));
+
+			__vm_push_const(vm, VAL_CREATE_OBJ(closure));
+		} break;
 
 		case OP_NIL:
 			__vm_push_const(vm, VAL_CREATE_NIL);
@@ -566,9 +594,10 @@ static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val)
 static void __vm_set_main(vm_t *vm, lox_fn_t *main)
 {
 	lox_val_t main_obj = VAL_CREATE_OBJ(main);
+	lox_closure_t *main_closure = object_closure_new(main);
 
 	struct vm_call_frame main_frame = {
-		.fn = main,
+		.closure = main_closure,
 		.ip = main->chunk.code.data,
 		.stack_snapshot = STACK_RESERVED_COUNT,
 	};
@@ -610,7 +639,7 @@ static int16_t __frame_proc_jump_offset(struct vm_call_frame *frame)
 static void __vm_proc_const(vm_t *vm, struct vm_call_frame *frame, uint32_t idx)
 {
 	__frame_assert_inst_ptr_valid(frame);
-	__vm_push_const(vm, chunk_get_const(&frame->fn->chunk, idx));
+	__vm_push_const(vm, chunk_get_const(&frame->closure->fn->chunk, idx));
 }
 
 static void __vm_proc_negate_in_place(vm_t *vm)
@@ -654,13 +683,14 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 
 	for (int i = list_size(&vm->frames) - 1; i >= 0; i--) {
 		struct vm_call_frame *cur_frame = list_get(&vm->frames, i);
-		lox_fn_t *fn = cur_frame->fn;
+		lox_closure_t *closure = cur_frame->closure;
 
 		size_t offset = ((size_t)__frame_instr_offset(cur_frame)) - 1;
-		int line = chunk_get_line(&fn->chunk, offset);
+		int line = chunk_get_line(&closure->fn->chunk, offset);
 
 		fprintf(stderr, "[line %d] in %s()\n", line,
-			fn->name ? fn->name->chars : "script");
+			closure->fn->name ? closure->fn->name->chars :
+					    "script");
 	}
 
 	list_reset(&vm->stack);
@@ -670,9 +700,9 @@ static inline void
 __frame_assert_inst_ptr_valid(const struct vm_call_frame *frame)
 {
 	assert(("Instruction pointer has passed code end",
-		frame->ip < frame->fn->chunk.code.data +
-				    (frame->fn->chunk.code.cnt *
-				     frame->fn->chunk.code.type_sz)));
+		frame->ip < frame->closure->fn->chunk.code.data +
+				    (frame->closure->fn->chunk.code.cnt *
+				     frame->closure->fn->chunk.code.type_sz)));
 }
 
 static inline char __frame_read_byte(struct vm_call_frame *frame)
@@ -682,7 +712,7 @@ static inline char __frame_read_byte(struct vm_call_frame *frame)
 
 static inline int __frame_instr_offset(const struct vm_call_frame *frame)
 {
-	return (int)(frame->ip - frame->fn->chunk.code.data);
+	return (int)(frame->ip - frame->closure->fn->chunk.code.data);
 }
 
 static void __vm_str_concat(vm_t *vm)
@@ -703,15 +733,17 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 {
 	if (VAL_IS_OBJ(callee)) {
 		switch (OBJECT_TYPE(callee)) {
-		case OBJ_FN: {
-			lox_fn_t *fn = OBJECT_AS_FN(callee);
+		case OBJ_CLOSURE: {
+			lox_closure_t *closure = OBJECT_AS_CLOSURE(callee);
 
-			if (fn->arity != call_arity) {
+			if (closure->fn->arity != call_arity) {
 				__vm_runtime_error(
 					vm,
 					"Too %s arguments to function call, expected %d, have %d",
-					fn->arity > call_arity ? "few" : "many",
-					fn->arity, call_arity);
+					closure->fn->arity > call_arity ?
+						"few" :
+						"many",
+					closure->fn->arity, call_arity);
 				return false;
 			}
 
@@ -723,7 +755,7 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 				return false;
 			}
 
-			return __vm_call(vm, OBJECT_AS_FN(callee));
+			return __vm_call(vm, closure);
 		} break;
 
 		case OBJ_NATIVE: {
@@ -750,12 +782,12 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 	return false;
 }
 
-static bool __vm_call(vm_t *vm, lox_fn_t *fn)
+static bool __vm_call(vm_t *vm, lox_closure_t *closure)
 {
 	struct vm_call_frame frame = {
-		.fn = fn,
-		.ip = fn->chunk.code.data,
-		.stack_snapshot = list_size(&vm->stack) - fn->arity,
+		.closure = closure,
+		.ip = closure->fn->chunk.code.data,
+		.stack_snapshot = list_size(&vm->stack) - closure->fn->arity,
 	};
 	list_push(&vm->frames, &frame);
 

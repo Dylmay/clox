@@ -26,6 +26,7 @@ enum object_type {
 	OBJ_STRING,
 	OBJ_FN,
 	OBJ_NATIVE,
+	OBJ_CLOSURE,
 };
 
 //! @brief lox number
@@ -68,5 +69,10 @@ typedef struct object_native_fn {
 	struct object obj;
 	native_fn fn;
 } lox_native_t;
+
+typedef struct object_closure {
+	struct object obj;
+	lox_fn_t *fn;
+} lox_closure_t;
 
 #endif // __CLOX_UTIL_VALUE_H__

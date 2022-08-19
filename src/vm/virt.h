@@ -17,7 +17,7 @@
 
 //! @brief call frame for lox functions
 struct vm_call_frame {
-	lox_fn_t *fn;
+	lox_closure_t *closure;
 	uint8_t *ip;
 	size_t stack_snapshot;
 };

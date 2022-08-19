@@ -18,6 +18,8 @@
 
 struct compile_unit {
 	lox_fn_t *fn;
+	lookup_t lookup;
+	//list_t scope_lst; // TODO: convert lookup in to hashmaps and let the compiler handle adding/removing/selecting vars
 	bool can_assign;
 };
 
@@ -638,7 +640,6 @@ static void __parse_fn_decl(struct compiler *compiler)
 	}
 }
 
-// NOTE: currently scopes args and internals separately
 static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 {
 	uint8_t arity = 0;
@@ -685,8 +686,8 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 	__compiler_end_scope(&new_comp);
 
 	lox_fn_t *comp_res = new_comp.fn;
-	OP_CONST_WRITE(compiler->fn, VAL_CREATE_OBJ(comp_res),
-		       compiler->prsr->previous.line);
+	OP_CLOSURE_WRITE(compiler->fn, VAL_CREATE_OBJ(comp_res),
+			 compiler->prsr->previous.line);
 }
 
 static void __parse_call(struct compiler *compiler)

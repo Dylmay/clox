@@ -29,6 +29,7 @@ static struct object_str_matcher __create_matcher(const char *chars,
 static struct object_str *__create_object_str(const char *, size_t);
 static struct object *__allocate_object(size_t, enum object_type);
 static struct object_str *__intern_string(const char *chars, size_t len);
+static void __print_function(struct object_fn *fn);
 
 static hashset_t interner = hashset_new((hash_fn)&obj_str_gen_hash);
 
@@ -73,6 +74,16 @@ struct object_native_fn *object_native_fn_new(native_fn native_fn)
 	return native;
 }
 
+struct object_closure *object_closure_new(struct object_fn *fn)
+{
+	struct object_closure *closure =
+		ALLOCATE_OBJECT(struct object_closure, OBJ_CLOSURE);
+
+	closure->fn = fn;
+
+	return closure;
+}
+
 void object_free(struct object *obj)
 {
 	switch (obj->type) {
@@ -94,6 +105,10 @@ void object_free(struct object *obj)
 		FREE(struct object_native_fn, obj);
 		break;
 
+	case OBJ_CLOSURE:
+		FREE(struct object_closure, obj);
+		break;
+
 	default:
 		break;
 	}
@@ -106,23 +121,30 @@ void object_print(lox_val_t val)
 		printf("%s", OBJECT_AS_CSTRING(val));
 		break;
 
-	case OBJ_FN: {
-		struct object_fn *fn = OBJECT_AS_FN(val);
-
-		if (fn->name == NULL) {
-			printf("<script>");
-		} else {
-			printf("<fn %s>", OBJECT_AS_FN(val)->name->chars);
-		}
-	} break;
+	case OBJ_FN:
+		__print_function(OBJECT_AS_FN(val));
+		break;
 
 	case OBJ_NATIVE:
 		printf("<native fn>");
 		break;
 
+	case OBJ_CLOSURE:
+		__print_function(OBJECT_AS_CLOSURE(val)->fn);
+		break;
+
 	default:
 		assert(("Unknown object type", 0));
 		break;
+	}
+}
+
+static void __print_function(struct object_fn *fn)
+{
+	if (fn->name == NULL) {
+		printf("<script>");
+	} else {
+		printf("<fn %s>", fn->name->chars);
 	}
 }
 

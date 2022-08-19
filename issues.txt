@@ -1,12 +1,8 @@
-current issues:
-need a way to reserve globals & vars
-unable to modify a var after it has been created (correct behaviour, needs more boilerplate to allow certain ops)
-separation of globals & vars needs to be integrated in to the lookup, else vars only with compiler position manipulation
-  likely slower, causes issues with how scopes are defined. when a function (with no known implementation) is prepared to be called, every item in the current scope would need to be incremented as to make room for the (likely) undefined global call.
-
-    solutions:
-      full separation of globals and variables
-        no difference to implementation
-
-      vm interprets fn scopes differently, allowing functions to be zero indexed
-        likely slower
+current outstanding:
+usage of string_util is sparse and debatably confusing
+decide how to handle the interner (be better to be an internal lox string impl detail)
+clear lookup and assert it only has one scope (global) on vm start
+improve return behaviour (detect dead code, don't construct code afterwards, no implicit null retcode)
+implement unit testing
+improve os x / win timer
+clean up/update win solution

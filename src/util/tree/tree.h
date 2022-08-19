@@ -5,7 +5,7 @@
 
 #define tree_of_type(data_type) (tree_new(sizeof(data_type)))
 
-typedef struct {
+typedef struct __tree {
 	tree_entry_t *root;
 } tree_t;
 

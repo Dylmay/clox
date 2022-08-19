@@ -59,6 +59,17 @@
 #define OBJECT_IS_NATIVE(obj) (object_is_type(obj, OBJ_NATIVE))
 
 /**
+ * @brief Checks whether the passed lox value is a closure
+ *
+ * @see lox_fn_t
+ *
+ * @return true lox_val_t is an object and is a closure
+ * @return false lox_val_t is not an object and is not a closure
+ *
+ */
+#define OBJECT_IS_CLOSURE(obj) (object_is_type(obj, OBJ_CLOSURE))
+
+/**
  * @brief returns the the passed lox value as a lox string. Undefined behaviour if the value is not a lox object and is not lox string
  *
  * @see lox_str_t
@@ -92,6 +103,18 @@
  *
  */
 #define OBJECT_AS_NATIVE(obj) (((struct object_native_fn *)VAL_AS_OBJ(obj)))
+
+/**
+ * @brief returns the passed lox value as a lox closure. Undefined behaviour if the value is not a lox object and is not a lox closure
+ *
+ * @see lox_fn_t
+ *
+ * @param obj the lox value to get as a lox closure
+ *
+ * @return struct object_closure * lox closure
+ *
+ */
+#define OBJECT_AS_CLOSURE(obj) (((struct object_closure *)VAL_AS_OBJ(obj)))
 
 /**
  * @brief returns the passed lox value as a lox string and gets the c string (asciiz) associated with it.
@@ -167,6 +190,14 @@ hash_t obj_str_gen_hash(const struct object_str *str);
  * @return struct object_native_fn* the wrapped function
  */
 struct object_native_fn *object_native_fn_new(native_fn native_fn);
+
+/**
+ * @brief creates a new closure over the given function
+ *
+ * @param fn the function to wrap
+ * @return struct object_closure* the new object closure
+ */
+struct object_closure *object_closure_new(struct object_fn *fn);
 
 /**
  * @brief whether the two passed objects are equal

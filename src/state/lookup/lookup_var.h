@@ -9,9 +9,9 @@
 
 #include "util/common.h"
 
+#pragma region lookup_var_flags
 //! @brief flags related to lox variable definitions
 typedef uint8_t var_flags_t;
-#pragma region lookup_var_flag_defines
 /**
  * @brief constant to test whether all flags are off. I.E. the var is invalid
  *

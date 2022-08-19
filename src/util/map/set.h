@@ -4,8 +4,8 @@
  * @brief header file for hashset implementation
  *
  */
-#ifndef __CLOX_UTIL_hashset_H__
-#define __CLOX_UTIL_hashset_H__
+#ifndef __CLOX_UTIL_HASHSET_H__
+#define __CLOX_UTIL_HASHSET_H__
 
 #include "map.h"
 
@@ -96,4 +96,4 @@ struct hashset_for_each {
  */
 void hashset_for_each(hashset_t *set, struct hashset_for_each *for_each);
 
-#endif // __CLOX_UTIL_hashset_H__
+#endif // __CLOX_UTIL_HASHSET_H__

@@ -17,14 +17,14 @@
  * @see state_free()
  */
 struct state {
-	lookup_t lookup;
+	lookup_t globals;
 };
 
 //! @brief Construct a
 static inline struct state state_new()
 {
 	return (struct state){
-		.lookup = lookup_new(),
+		.globals = lookup_new(),
 	};
 }
 
@@ -35,7 +35,7 @@ static inline struct state state_new()
  */
 static inline void state_free(struct state *state)
 {
-	lookup_free(&state->lookup);
+	lookup_free(&state->globals);
 }
 
 #endif // __CLOX_CHUNK_STATE_H__

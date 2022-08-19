@@ -48,3 +48,8 @@ static lox_val_t __print_native(int arg_cnt, lox_val_t *args)
 
 	return VAL_CREATE_NIL;
 }
+
+static lox_val_t __read_input(int arg_cnt, lox_val_t *args)
+{
+	// TODO: look at getchar funcs for creating an input reader with no limit
+}
