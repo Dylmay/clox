@@ -216,4 +216,12 @@ bool object_equals(const struct object *a, const struct object *b);
  */
 void object_print(lox_val_t val);
 
+/**
+ * @brief returns a string representation of the object
+ *
+ * @param val the object to convert
+ * @return lox_val_t the string object
+ */
+lox_val_t object_to_string(lox_val_t val);
+
 #endif // __CLOX_OBJECT_FUNC_H__

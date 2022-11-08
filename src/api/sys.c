@@ -8,6 +8,7 @@
 
 static lox_val_t __clock_native(int arg_cnt, lox_val_t *args);
 static lox_val_t __print_native(int arg_cnt, lox_val_t *args);
+static lox_val_t __to_str(int arg_cnt, lox_val_t *args);
 
 #define CREATE_FUNC_DEF(func_name, func_def)                                   \
 	{                                                                      \
@@ -18,6 +19,7 @@ static lox_val_t __print_native(int arg_cnt, lox_val_t *args);
 static struct native_import imports[] = {
 	CREATE_FUNC_DEF("clock", __clock_native),
 	CREATE_FUNC_DEF("print", __print_native),
+	CREATE_FUNC_DEF("str", __to_str),
 };
 
 #undef CREATE_FUNC_DEF
@@ -49,7 +51,11 @@ static lox_val_t __print_native(int arg_cnt, lox_val_t *args)
 	return VAL_CREATE_NIL;
 }
 
-static lox_val_t __read_input(int arg_cnt, lox_val_t *args)
+static lox_val_t __to_str(int arg_cnt, lox_val_t *args)
 {
-	// TODO: look at getchar funcs for creating an input reader with no limit
+	if (arg_cnt) {
+		return val_to_string(args[0]);
+	} else {
+		return VAL_CREATE_OBJ(object_str_new("", 0));
+	}
 }

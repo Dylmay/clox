@@ -155,4 +155,11 @@ void val_print(lox_val_t val);
  */
 bool val_equals(lox_val_t a, lox_val_t b);
 
+/**
+ * @brief converts the passed value to a string representation
+ * @param val the value to convert
+ * @return the string representation of the value
+ */
+lox_val_t val_to_string(lox_val_t val);
+
 #endif // __CLOX_VAL_FUNC_H__

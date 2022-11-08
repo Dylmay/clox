@@ -148,6 +148,43 @@ static void __print_function(struct object_fn *fn)
 	}
 }
 
+lox_val_t object_to_string(lox_val_t val)
+{
+	switch (OBJECT_TYPE(val)) {
+	case OBJ_STRING:
+		return val;
+
+	case OBJ_FN: {
+		struct object_fn *fn = OBJECT_AS_FN(val);
+
+		if (fn->name == NULL) {
+			return VAL_CREATE_OBJ(object_str_new(
+				"<script>", sizeof("<script>") - 1));
+		} else {
+			size_t len = (sizeof("<fn >") - 1) + fn->name->len;
+			char *concat_str = reallocate(NULL, 0, len);
+			snprintf(concat_str, len, "<fn %s>", fn->name->chars);
+			struct object_str *interned_str =
+				object_str_new(concat_str, len);
+			reallocate(concat_str, len, 0);
+
+			return VAL_CREATE_OBJ(interned_str);
+		}
+	} break;
+
+	case OBJ_NATIVE:
+		return VAL_CREATE_OBJ(object_str_new(
+			"<native fn>", sizeof("<native fn>") - 1));
+		break;
+
+	default:
+		assert(("Unknown object type", 0));
+		return VAL_CREATE_OBJ(
+			object_str_new("<unknown>", sizeof("<unknown>") - 1));
+		break;
+	}
+}
+
 bool object_equals(const struct object *a, const struct object *b)
 {
 	if (a->type != b->type) {
