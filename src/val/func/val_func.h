@@ -40,6 +40,16 @@
 #define VAL_CREATE_NUMBER(value)                                               \
 	((lox_val_t){ VAL_NUMBER, { .number = value } })
 /**
+ * @brief creates a new error
+ *
+ * @param object the error object
+ *
+ * @return lox_val_t error value
+ *
+ */
+#define VAL_CREATE_ERR(object)                                                 \
+	((lox_val_t){ VAL_ERR, { .obj = (lox_obj_t *)object } })
+/**
  * @brief creates a new lox object value
  *
  * @see lox_obj_t
@@ -128,6 +138,17 @@
  *
  */
 #define VAL_IS_OBJ(value) ((value).type == VAL_OBJ)
+
+/**
+ * @brief checks whether the given value is a lox error
+ *
+ * @param value the lox value to check
+ *
+ * @return true the lox value is a lox error
+ * @return false the lox value is not a lox error
+ *
+ */
+#define VAL_IS_ERR(value) ((value).type == VAL_ERR)
 
 /**
  * @brief whether the passed value is falsey

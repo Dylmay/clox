@@ -767,6 +767,12 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 							      call_arity - 1) :
 					     NULL);
 
+			if (VAL_IS_ERR(res)) {
+				lox_val_t str = val_to_string(res);
+
+				__vm_runtime_error(vm, OBJECT_AS_CSTRING(str));
+			}
+
 			__vm_discard(vm, call_arity + 1);
 			__vm_push_const(vm, res);
 

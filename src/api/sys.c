@@ -9,6 +9,7 @@
 static lox_val_t __clock_native(int arg_cnt, lox_val_t *args);
 static lox_val_t __print_native(int arg_cnt, lox_val_t *args);
 static lox_val_t __to_str(int arg_cnt, lox_val_t *args);
+static lox_val_t __assert(int arg_cnt, lox_val_t *args);
 
 #define CREATE_FUNC_DEF(func_name, func_def)                                   \
 	{                                                                      \
@@ -20,6 +21,7 @@ static struct native_import imports[] = {
 	CREATE_FUNC_DEF("clock", __clock_native),
 	CREATE_FUNC_DEF("print", __print_native),
 	CREATE_FUNC_DEF("str", __to_str),
+	CREATE_FUNC_DEF("assert", __assert),
 };
 
 #undef CREATE_FUNC_DEF
@@ -58,4 +60,20 @@ static lox_val_t __to_str(int arg_cnt, lox_val_t *args)
 	} else {
 		return VAL_CREATE_OBJ(object_str_new("", 0));
 	}
+}
+
+static lox_val_t __assert(int arg_cnt, lox_val_t *args)
+{
+	if (!arg_cnt || val_is_falsey(args[0])) {
+		if (arg_cnt > 1) {
+			lox_val_t err_msg = __to_str(1, &args[1]);
+			err_msg.type = VAL_ERR;
+			return err_msg;
+		}
+
+		return VAL_CREATE_ERR(object_str_new(
+			"Assert Error", sizeof("Assert Error") - 1));
+	}
+
+	return VAL_CREATE_NIL;
 }

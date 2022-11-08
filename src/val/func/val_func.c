@@ -54,9 +54,12 @@ lox_val_t val_to_string(lox_val_t val)
 		return num_str;
 	}
 	case VAL_OBJ:
+	case VAL_ERR:
 		return object_to_string(val);
 	default:
 		assert(("Unknown val type on val print", 0));
+		return VAL_CREATE_OBJ(
+			object_str_new("unknown", sizeof("unknown") - 1));
 		break;
 	}
 }

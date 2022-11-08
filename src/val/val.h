@@ -19,6 +19,7 @@ enum value_type {
 	VAL_BOOL,
 	VAL_NUMBER,
 	VAL_OBJ,
+	VAL_ERR,
 };
 
 //! @brief object types
