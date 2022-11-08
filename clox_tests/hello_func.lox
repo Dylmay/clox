@@ -1,0 +1,12 @@
+fn hello() {
+  print "Hello");
+}
+
+fn world() {
+  print("world");
+}
+
+print("Function Test:");
+world();
+hello();
+print("fin");

@@ -1,0 +1,7 @@
+fn recFn(curVal) {
+  print(curVal);
+
+  recFn(curVal + 1);
+}
+
+recFn(1);

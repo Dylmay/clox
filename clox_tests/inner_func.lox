@@ -1,0 +1,14 @@
+fn greeting() {
+  fn newline() {
+    print();
+  }
+
+  let first = "Dylan";
+  let last = "Mayor";
+
+  print("Hello!: " + first + " " + last);
+  newline();
+  newline();
+}
+
+greeting();

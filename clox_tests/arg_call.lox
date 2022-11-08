@@ -1,0 +1,8 @@
+fn hi(name, mut value) {
+  print("Hello " + name);
+  value = value + "...";
+
+  return value;
+}
+
+print(hi("a", "b"));
