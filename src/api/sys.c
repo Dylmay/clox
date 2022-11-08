@@ -9,18 +9,18 @@
 static lox_val_t __clock_native(int arg_cnt, lox_val_t *args);
 static lox_val_t __print_native(int arg_cnt, lox_val_t *args);
 
-static struct native_import imports[] = {
-	{
-		.fn_name = "clock",
-		.name_sz = sizeof("clock") - 1,
-		.fn = &__clock_native,
-	},
-	{
-		.fn_name = "print",
-		.name_sz = sizeof("print") - 1,
-		.fn = &__print_native,
+#define CREATE_FUNC_DEF(func_name, func_def)                                   \
+	{                                                                      \
+		.fn_name = func_name, .name_sz = sizeof(func_name) - 1,        \
+		.fn = &func_def,                                               \
 	}
+
+static struct native_import imports[] = {
+	CREATE_FUNC_DEF("clock", __clock_native),
+	CREATE_FUNC_DEF("print", __print_native),
 };
+
+#undef CREATE_FUNC_DEF
 
 static struct import_list import_list = {
 	.import_name = "sys",
