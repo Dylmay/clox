@@ -18,18 +18,18 @@ static inline void __extended_op(chunk_t *chunk, op_code_t short_op,
 				 uint32_t line)
 {
 	if (offset <= UINT8_MAX) {
-		chunk_write_code(chunk, short_op, line);
+		chunk_write_code(chunk, (code_t)short_op, line);
 		chunk_write_code(chunk, (code_t)offset, line);
 	} else {
 		assert(("Max code offset is 256 * 24", offset < EXT_CODE_MAX));
 
-		chunk_write_code_extended(chunk, long_op, line, &offset,
+		chunk_write_code_extended(chunk, (code_t)long_op, line, &offset,
 					  EXT_CODE_SZ);
 	}
 }
 
-static inline size_t __jump_instr_write(chunk_t *chunk, code_t jump_code,
-					uint32_t line)
+static inline long __jump_instr_write(chunk_t *chunk, code_t jump_code,
+				      uint32_t line)
 {
 	chunk_write_code(chunk, jump_code, line);
 	chunk_reserve_code(chunk, 2);
@@ -39,7 +39,6 @@ static inline size_t __jump_instr_write(chunk_t *chunk, code_t jump_code,
 
 static inline bool op_patch_jump(lox_fn_t *fn, long offset)
 {
-	// TODO: fix typing and jump instruction to not waste space
 	long jump = chunk_cur_instr(&fn->chunk) - offset - 2;
 
 	if (jump > INT16_MAX || jump < INT16_MIN) {
@@ -54,7 +53,8 @@ static inline bool op_patch_jump(lox_fn_t *fn, long offset)
 static inline void OP_CONST_WRITE(lox_fn_t *fn, lox_val_t const_val,
 				  uint32_t line)
 {
-	uint32_t const_offset = chunk_write_const(&fn->chunk, const_val);
+	uint32_t const_offset =
+		(uint32_t)chunk_write_const(&fn->chunk, const_val);
 	__extended_op(&fn->chunk, OP_CONSTANT, OP_CONSTANT_LONG, const_offset,
 		      line);
 }
@@ -81,7 +81,7 @@ static inline void OP_POP_COUNT_WRITE(lox_fn_t *fn, uint32_t cnt, uint32_t line)
 
 static inline bool OP_LOOP_WRITE(lox_fn_t *fn, long loop_begin, uint32_t line)
 {
-	size_t jump = loop_begin - chunk_cur_instr(&fn->chunk) - 3;
+	long jump = loop_begin - chunk_cur_instr(&fn->chunk) - 3;
 
 	if (jump > INT16_MAX || jump < INT16_MIN) {
 		return false;
