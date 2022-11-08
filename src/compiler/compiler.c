@@ -433,11 +433,11 @@ static void __parse_expr_stmt(struct compiler *compiler)
 static void __parse_var(struct compiler *compiler)
 {
 	token_t name_tkn = compiler->prsr->previous;
-	lookup_var_t var = lookup_find_name(&compiler->state->lookup,
+	lookup_var_t var = lookup_find_name(&compiler->state->globals,
 					    name_tkn.start, name_tkn.len);
 
 	if (!lookup_var_is_declared(var)) {
-		var = lookup_declare(&compiler->state->lookup,
+		var = lookup_declare(&compiler->state->globals,
 				     LOOKUP_GLOBAL_DEPTH, name_tkn.start,
 				     name_tkn.len, false);
 	}
@@ -714,16 +714,17 @@ static void __parse_return_stmt(struct compiler *compiler)
 
 static void __compiler_begin_scope(struct compiler *compiler)
 {
-	lookup_begin_scope(&compiler->state->lookup);
+	lookup_begin_scope(&compiler->state->globals);
 }
 
 static void __compiler_end_scope(struct compiler *compiler)
 {
-	OP_POP_COUNT_WRITE(compiler->fn,
-			   map_size(lookup_cur_scope(&compiler->state->lookup)),
-			   compiler->prsr->previous.line);
+	OP_POP_COUNT_WRITE(
+		compiler->fn,
+		map_size(lookup_cur_scope(&compiler->state->globals)),
+		compiler->prsr->previous.line);
 
-	lookup_end_scope(&compiler->state->lookup);
+	lookup_end_scope(&compiler->state->globals);
 }
 
 static lookup_var_t __compiler_define_var(struct compiler *compiler,
@@ -731,7 +732,7 @@ static lookup_var_t __compiler_define_var(struct compiler *compiler,
 					  uint32_t line, bool mutable)
 {
 	lookup_var_t new_var =
-		lookup_define(&compiler->state->lookup, name, len, mutable);
+		lookup_define(&compiler->state->globals, name, len, mutable);
 
 	if (lookup_var_is_global(new_var)) {
 		OP_GLOBAL_DEFINE_WRITE(compiler->fn, new_var.idx, line);
@@ -769,7 +770,7 @@ static void __compiler_get_var(struct compiler *compiler, lookup_var_t var,
 static bool __compiler_has_defined(struct compiler *compiler, const char *name,
 				   size_t len)
 {
-	return lookup_scope_has_name(&compiler->state->lookup, name, len);
+	return lookup_scope_has_name(&compiler->state->globals, name, len);
 }
 
 static uint8_t __parse_arglist(struct compiler *compiler)
