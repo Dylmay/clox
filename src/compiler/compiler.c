@@ -8,6 +8,7 @@
 #include "chunk/func/chunk_func.h"
 #include "val/func/val_func.h"
 #include "val/func/object_func.h"
+#include "util/dtoa.h"
 
 #include "compiler/import.h"
 #include "api/sys.h"
@@ -566,7 +567,7 @@ static void __parse_for_stmt(struct compiler *compiler)
 					 "Variable has already been defined.");
 	}
 
-	parser_consume(compiler->prsr, TKN_IN, "Expected 'in'.");
+	parser_consume(compiler->prsr, TKN_IN, "Expected 'in'");
 	parser_consume(compiler->prsr, TKN_NUM, "Expected range start");
 	// write start of range
 	double range_start = strtod(compiler->prsr->previous.start, NULL);

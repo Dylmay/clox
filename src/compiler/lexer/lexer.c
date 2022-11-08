@@ -17,6 +17,7 @@ static token_t __lexer_id_token(lexer_t *lexer);
 static token_t __lexer_num_token(lexer_t *lexer);
 
 #define CHAR_IS_DIGIT(chara) ((chara) >= '0' && (chara) <= '9')
+#define CHAR_IS_UNDERSCORE(chara) (chara == '_')
 
 #define CHAR_IS_ALPHA(chara)                                                   \
 	((chara >= 'a' && chara <= 'z') || (chara >= 'A' && chara <= 'Z') ||   \
@@ -210,15 +211,18 @@ static token_t __lexer_str_token(lexer_t *lexer)
 
 static token_t __lexer_num_token(lexer_t *lexer)
 {
-	while (CHAR_IS_DIGIT(__lexer_peek(lexer))) {
+	while (CHAR_IS_DIGIT(__lexer_peek(lexer)) ||
+	       CHAR_IS_UNDERSCORE(__lexer_peek(lexer))) {
 		__lexer_advance(lexer);
 	}
 
-	if (__lexer_peek(lexer) == '.' && CHAR_IS_DIGIT(__lexer_peek(lexer))) {
+	if (__lexer_peek(lexer) == '.' &&
+	    CHAR_IS_DIGIT(__lexer_peek_next(lexer))) {
 		__lexer_advance(lexer);
 	}
 
-	while (CHAR_IS_DIGIT(__lexer_peek(lexer))) {
+	while (CHAR_IS_DIGIT(__lexer_peek(lexer)) ||
+	       CHAR_IS_UNDERSCORE(__lexer_peek(lexer))) {
 		__lexer_advance(lexer);
 	}
 

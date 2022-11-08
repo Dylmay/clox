@@ -14,4 +14,6 @@
 //! @brief maximum number of call frames
 #define CALL_FRAMES_MAX 999
 
+#define IEEE_8087
+
 #endif // __CLOX_UTIL_COMMON_H__
