@@ -4,3 +4,4 @@ build/
 vgcore*
 .vs/
 *.vcxproj.user
+__pycache__/
