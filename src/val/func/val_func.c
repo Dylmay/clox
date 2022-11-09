@@ -73,6 +73,8 @@ bool val_is_falsey(lox_val_t val)
 		return true;
 	case VAL_BOOL:
 		return !VAL_AS_BOOL(val);
+	case VAL_OBJ:
+		return false;
 	default:
 		assert(("Unknown value type (val_is_falsey)", 0));
 		return false;
