@@ -7,22 +7,31 @@ from argparse import ArgumentParser
 from functools import reduce
 from typing import List
 
-from pydantic.dataclasses import dataclass
 from pydantic import ValidationError
+from pydantic.dataclasses import dataclass
 from test_runner.interpreter import Interpreter
 from test_runner.recordings import Recordings
 from test_runner.test import Test
-from test_runner.util import bold, green, indent, italic, red, yellow, JSONSchemaError
+from test_runner.util import (JSONSchemaError, bold, green, indent, italic,
+                              red, yellow)
 
 
-def run_test(
+def __get_tests(test_path: str) -> List[Test]:
+    # ignore placeholder files
+    if os.path.getsize(test_path) == 0:
+        return []
+
+    with open(test_path, "r", encoding="UTF-8") as test_info:
+        try:
+            return [Test(**t) for t in json.load(test_info)]
+        except (TypeError, ValidationError) as exc:
+            raise JSONSchemaError(f"{test_path} failed to validate. {exc}") from exc
+
+
+def record_tests(
     clox_path: str, directory: str, test_file: str, use_valgrind: bool
 ) -> Recordings:
-    with open(f"{directory}/{test_file}", "r", encoding="UTF-8") as test_info:
-        try:
-            tests = [Test(**t) for t in json.load(test_info)]
-        except (TypeError, ValidationError) as exc:
-            raise JSONSchemaError(f"{directory}/{test_file} failed to validate: {exc}")
+    tests = __get_tests(f"{directory}/{test_file}")
 
     interpreter = Interpreter(
         interpreter_path=clox_path,
@@ -31,51 +40,32 @@ def run_test(
     )
     recordings = Recordings(directory)
 
-    print(bold(directory))
-    for (idx, test) in enumerate(tests):
-        res = test.run(interpreter)
+    if len(tests) > 0:
+        print(bold(directory))
+        for (idx, test) in enumerate(tests):
+            res = test.run(interpreter)
 
-        idx_str = f"[{idx + 1}/{len(tests)}]"
+            idx_str = f"[{idx + 1}/{len(tests)}]"
 
-        if res.success:
-            success_msg = green("Passed")
-        else:
-            success_msg = red("Failed")
+            if res.success:
+                success_msg = green("Passed")
+            else:
+                success_msg = red("Failed")
 
-        name = bold(test.name)
-        desc = italic(test.description)
+            name = bold(test.name)
+            desc = italic(test.description)
 
-        print(indent(f"{idx_str}({success_msg}) {name}: {desc}", 2))
-        recordings.record_test_result(test, res)
+            print(indent(f"{idx_str}({success_msg}) {name}: {desc}", 2))
+            recordings.record_test_result(test, res)
 
-    print(
-        italic(
-            f"{recordings.passed_test_count()} out of {recordings.total_test_count()} tests passed"
+        print(
+            italic(
+                f"{recordings.passed_test_count()} out of"
+                + f"{recordings.total_test_count()} tests passed"
+            )
         )
-    )
 
     return recordings
-
-
-def __run_test_helper(
-    clox_path: str,
-    directory: str,
-    test_file: str,
-    use_valgrind: bool,
-    tests: List[Recordings],
-):
-    try:
-        test = run_test(clox_path, directory, test_file, use_valgrind)
-        tests.append(test)
-    except FileNotFoundError:
-        print(yellow("[warning]") + f" no {test_file} found within {directory}. Ignoring folder.")
-    except JSONSchemaError as exc:
-        print(f"{yellow('[warning]')} {exc}. Ignoring folder.")
-
-    for (_, subdirs, _) in os.walk(directory):
-        for subdir in subdirs:
-            sub_directory = f"{directory}/{subdir}".replace("//", "/")
-            __run_test_helper(clox_path, sub_directory, test_file, use_valgrind, tests)
 
 
 def run_clox_tests(
@@ -83,7 +73,17 @@ def run_clox_tests(
 ) -> List[Recordings]:
     test_list: List[Recordings] = []
 
-    __run_test_helper(clox_path, directory, test_file, use_valgrind, test_list)
+    for (cur_folder, _, _) in os.walk(directory):
+        try:
+            test = record_tests(clox_path, cur_folder, test_file, use_valgrind)
+            test_list.append(test)
+        except FileNotFoundError:
+            print(
+                yellow("[warning]")
+                + f" no {test_file} found within {directory}. Ignoring folder."
+            )
+        except JSONSchemaError as exc:
+            print(f"{yellow('[warning]')} {exc}. Ignoring folder.")
 
     return test_list
 
@@ -156,7 +156,7 @@ if __name__ == "__main__":
         )
     else:
         results = [
-            run_test(
+            record_tests(
                 args.clox_interpreter, args.test_directory, args.tests, args.valgrind
             )
         ]
