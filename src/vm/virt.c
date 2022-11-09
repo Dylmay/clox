@@ -13,7 +13,6 @@
 #include "compiler/compiler.h"
 #include "util/map/hash_util.h"
 #include "util/string/string_util.h"
-#include "util/list/list_iterator.h"
 
 #if defined(DEBUG_PRINT_CODE) | defined(DEBUG_BENCH)
 #include "debug/debug.h"

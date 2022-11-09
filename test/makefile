@@ -21,6 +21,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS)) $(addprefix -I,$(PROG_INC_DIRS))
 
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP
 CFLAGS = -Wall -Wno-unused-value -g
+LDFLAGS=-lm
 
 
 $(EXEC_DIR)/$(TARGET_EXEC): $(OBJS) $(PROG_OBJS)

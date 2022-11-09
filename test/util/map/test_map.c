@@ -2,6 +2,7 @@
 
 #include "debug/timer/timer.h"
 
+#include "util/list/list.h"
 #include "util/map/map.h"
 #include <stdlib.h>
 #include <stdio.h>
@@ -11,7 +12,7 @@ struct value {
 	int val;
 };
 
-struct val_matcher {
+struct val_map_matcher {
 	struct key_matcher matcher;
 	int match_val;
 };
@@ -28,7 +29,7 @@ void map_test_all()
 	map_test_insert();
 	map_test_remove();
 	map_test_get();
-	map_test_find();
+	map_test_find_by_key();
 }
 
 void map_bench_all()
@@ -36,7 +37,7 @@ void map_bench_all()
 	map_bench_insert();
 	map_bench_remove();
 	map_bench_get();
-	map_bench_find();
+	map_bench_find_by_key();
 	map_bench_traffic();
 }
 
@@ -248,12 +249,12 @@ void map_test_get()
 bool match_on_num(const void *entry, struct key_matcher *matcher)
 {
 	const struct value *val = (struct value *)entry;
-	const struct val_matcher *val_m = (struct val_matcher *)matcher;
+	const struct val_map_matcher *val_m = (struct val_map_matcher *)matcher;
 
 	return val->val == val_m->match_val;
 }
 
-void map_test_find()
+void map_test_find_by_key()
 {
 	hashmap_t map = map_of_type(struct value, &hash_val);
 	struct value *vals = malloc(sizeof(struct value) * ITEM_CNT);
@@ -266,7 +267,7 @@ void map_test_find()
 	}
 
 	for (size_t i = 0; i < ITEM_CNT; i++) {
-		struct val_matcher matcher = (struct val_matcher) {
+		struct val_map_matcher matcher = (struct val_map_matcher) {
 			.matcher = {
 				.hash = hash_val(&(vals[i])),
 				.is_match = &match_on_num,
@@ -274,12 +275,12 @@ void map_test_find()
 			.match_val = i,
 		};
 
-		const struct value *val =
-			map_find(&map, (struct key_matcher *)&matcher);
+		const struct map_entry val =
+			map_find_by_key(&map, (struct key_matcher *)&matcher);
 
-		assert(("Unable to find value", val != NULL));
+		assert(("Unable to find value", val.value != NULL));
 		assert(("Retrieved value does not match",
-			vals[i].val == val->val));
+			vals[i].val == *(int *)val.value));
 	}
 
 	list_t chosen_rands = list_of_type(int);
@@ -328,7 +329,7 @@ void map_test_find()
 			}
 		}
 
-		struct val_matcher matcher = (struct val_matcher) {
+		struct val_map_matcher matcher = (struct val_map_matcher) {
 			.matcher = {
 				.hash = hash_val(&(vals[rand_val])),
 				.is_match = &match_on_num,
@@ -336,12 +337,12 @@ void map_test_find()
 			.match_val = rand_val,
 		};
 
-		const struct value *val =
-			map_find(&map, (struct key_matcher *)&matcher);
+		const struct map_entry val =
+			map_find_by_key(&map, (struct key_matcher *)&matcher);
 
-		assert(("Unable to find value", val != NULL));
+		assert(("Unable to find value", val.value != NULL));
 		assert(("Retrieved value does not match",
-			vals[rand_val].val == val->val));
+			vals[rand_val].val == *(int *)val.value));
 	}
 
 	list_free(&chosen_rands);
@@ -606,7 +607,7 @@ struct timespec __map_test_find()
 
 	size_t rand_val = rand() % ITEM_CNT;
 
-	struct val_matcher matcher = (struct val_matcher) {
+	struct val_map_matcher matcher = (struct val_map_matcher) {
 		.matcher = {
 			.hash = hash_val(&values[rand_val]),
 			.is_match = &match_on_num,
@@ -615,7 +616,7 @@ struct timespec __map_test_find()
 	};
 
 	timer_start(&timer);
-	map_find(&map, (struct key_matcher *)&matcher);
+	map_find_by_key(&map, (struct key_matcher *)&matcher);
 	timer = timer_end(timer);
 
 	map_free(&map);
@@ -624,7 +625,7 @@ struct timespec __map_test_find()
 	return timer;
 }
 
-void map_bench_find()
+void map_bench_find_by_key()
 {
 	struct timespec avg_time = __map_test_find();
 

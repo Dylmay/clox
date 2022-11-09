@@ -8,7 +8,7 @@ void map_test_new();
 void map_test_insert();
 void map_test_remove();
 void map_test_get();
-void map_test_find();
+void map_test_find_by_key();
 
 #define BENCHMARK_ITERATIONS 100
 
@@ -17,6 +17,6 @@ void map_bench_insert();
 void map_bench_traffic();
 void map_bench_remove();
 void map_bench_get();
-void map_bench_find();
+void map_bench_find_by_key();
 
 #endif // __TEST_UTIL_MAP_H__
