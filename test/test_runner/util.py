@@ -22,3 +22,9 @@ def red(output: str) -> str:
 
 def green(output: str) -> str:
     return fg.green + output + fg.rs
+
+def yellow(output: str) -> str:
+    return fg.yellow + output + fg.rs
+
+class JSONSchemaError(Exception):
+    pass

@@ -8,17 +8,21 @@ from functools import reduce
 from typing import List
 
 from pydantic.dataclasses import dataclass
+from pydantic import ValidationError
 from test_runner.interpreter import Interpreter
 from test_runner.recordings import Recordings
 from test_runner.test import Test
-from test_runner.util import bold, green, indent, italic, red
+from test_runner.util import bold, green, indent, italic, red, yellow, JSONSchemaError
 
 
 def run_test(
     clox_path: str, directory: str, test_file: str, use_valgrind: bool
 ) -> Recordings:
     with open(f"{directory}/{test_file}", "r", encoding="UTF-8") as test_info:
-        tests = [Test(**t) for t in json.load(test_info)]
+        try:
+            tests = [Test(**t) for t in json.load(test_info)]
+        except (TypeError, ValidationError) as exc:
+            raise JSONSchemaError(f"{directory}/{test_file} failed to validate: {exc}")
 
     interpreter = Interpreter(
         interpreter_path=clox_path,
@@ -60,7 +64,14 @@ def __run_test_helper(
     use_valgrind: bool,
     tests: List[Recordings],
 ):
-    tests.append(run_test(clox_path, directory, test_file, use_valgrind))
+    try:
+        test = run_test(clox_path, directory, test_file, use_valgrind)
+        tests.append(test)
+    except FileNotFoundError:
+        print(yellow("[warning]") + f" no {test_file} found within {directory}. Ignoring folder.")
+    except JSONSchemaError as exc:
+        print(f"{yellow('[warning]')} {exc}. Ignoring folder.")
+
     for (_, subdirs, _) in os.walk(directory):
         for subdir in subdirs:
             sub_directory = f"{directory}/{subdir}".replace("//", "/")
