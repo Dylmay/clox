@@ -1,0 +1,42 @@
+fn assert_never(msg) {
+    assert(false, msg);
+}
+
+let truthy_string = "" or false;
+let truthy_number = 1 or false;
+let truthy_true = true or false;
+
+if truthy_string {
+    print("string coerced to true");
+} else {
+    assert_never("strings should be truthy");
+}
+
+if truthy_number {
+    print("number coerced to true");
+} else {
+    assert_never("number should be truthy");
+}
+
+if truthy_true {
+    print("true is true");
+} else {
+    assert_never("true should be truthy");
+}
+
+let falsey_number = 0 or false;
+let falsey_true = false or false;
+
+if falsey_number {
+    assert_never("number should be falsey");
+} else {
+    print("number is false");
+}
+
+if falsey_true {
+    assert_never("false should be falsey");
+} else {
+    print("false is false");
+}
+
+

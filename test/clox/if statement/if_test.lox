@@ -1,0 +1,15 @@
+fn assert_never(msg) {
+  assert(false, msg);
+}
+
+if true {
+  print("true is true");
+} else {
+  assert_never("true must be true");
+}
+
+if false {
+  assert_never("False should branch");
+} else {
+  print("false is not true");
+}

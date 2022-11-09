@@ -1,0 +1,5 @@
+let non_mutable_value = "non-mutable";
+
+print(non_mutable_value);
+
+non_mutable_value = "can't mutate";

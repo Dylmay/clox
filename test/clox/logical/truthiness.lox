@@ -1,0 +1,54 @@
+fn assert_never(msg) {
+    assert(false, msg);
+}
+
+// Strings
+if "" {
+    print("string is truthy");
+} else {
+    assert_never("string should be truthy");
+}
+
+// numbers
+if 1 {
+    print("1 is truthy");
+} else {
+    assert_never("1 should be truthy");
+}
+
+if 0 {
+    assert_never("0 should be falsey");
+} else {
+    print("0 is truthy");
+}
+
+// nil
+if nil {
+    assert_never("nil should be falsey");
+} else {
+    print("nil is falsey");
+}
+
+
+// vars
+let no_val;
+if no_val {
+    assert_never("un-init value should be falsey");
+} else {
+    print("un-init value is falsey");
+}
+
+let val = 10;
+if val {
+    print("init number val is truthy");
+} else {
+    assert_never("init number should be truthy");
+}
+
+// functions
+fn truthy_fn() {}
+if truthy_fn {
+    print("function is truthy");
+} else {
+    assert_never("function should be truthy");
+}

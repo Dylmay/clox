@@ -1,0 +1,16 @@
+fn assert_never_is_called(msg) {
+    assert(false, msg);
+
+    return true;
+}
+
+fn should_be_called(msg) {
+    print(msg);
+    return true;
+}
+
+true or assert_never_is_called("Should not be called");
+true or true or false or assert_never_is_called("Should not be called");
+false or should_be_called("Called 1/2");
+false or false or should_be_called("Called 2/2");
+

@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Assert Test",
+    "description": "Expect Assert() to fail on a false value",
+    "reason": "To check the assert() functions correctly",
+    "file": "assert_test.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 5,
+      "has_return_code": 70
+    }
+  },
+  {
+    "name": "Print Test",
+    "description": "Expect print() to print to stdout",
+    "reason": "To check print() correctly handles printing of all values",
+    "file": "print_test.lox",
+    "expect": {
+      "to_output": ["Hello World", "nil", 123, "true", "false", "<fn fn_to_print>"]
+    }
+  },
+  {
+    "name": "Str Test",
+    "description": "Expect str() to convert items to string",
+    "reason": "To check print() correctly handles printing of all values",
+    "file": "print_test.lox",
+    "expect": {
+      "to_output": ["Hello World", "nil", 123, "true", "false", "<fn fn_to_print>"]
+    }
+  },
+  {
+    "name": "Clock Test",
+    "description": "Expect clock() to return a number representing the current unix time",
+    "reason": "To check clock() correctly returns a number",
+    "file": "clock_test.lox",
+    "expect": {}
+  }
+]

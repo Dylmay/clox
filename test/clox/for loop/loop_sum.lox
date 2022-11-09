@@ -1,0 +1,6 @@
+let mut sum = 0;
+
+for i in 1..1_000_000 {
+    sum = sum + i;
+}
+print(sum);

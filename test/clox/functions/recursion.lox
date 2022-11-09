@@ -6,6 +6,4 @@ fn fib(n) {
     return fib(n - 2) + fib(n - 1);
 }
 
-let start = clock();
 print(fib(20));
-print(clock() - start);

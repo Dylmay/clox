@@ -1,0 +1,8 @@
+let mut count = 0;
+for i in 1..1_000_000 {
+    count = count + i;
+    i = 9_9999_999;
+}
+
+// count should be the sum of the loop
+assert(count != 1);

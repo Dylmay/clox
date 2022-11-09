@@ -1,0 +1,18 @@
+fn fn_to_print() {}
+let empty_val;
+
+fn print_using_str(item) {
+    let to_str = str(item);
+
+    print(to_str);
+}
+
+print_using_str("Hello World");
+print_using_str(nil);
+print_using_str(123);
+print_using_str(true);
+print_using_str(false);
+print_using_str();
+print_using_str(fn_to_print);
+print_using_str(empty_val);
+

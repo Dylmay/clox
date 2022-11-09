@@ -1,0 +1,31 @@
+[
+  {
+    "name": "Global Variable Test",
+    "description": "Expect defined variables to correctly hold the set strings",
+    "reason": "To check variable can hold values correctly in global",
+    "file": "global_variable.lox",
+    "expect": {
+      "to_output": ["Hello World!!!", "Not set", "Hello there Dylan Mayor. Age 20"]
+    }
+  },
+  {
+    "name": "Non-Mutable Test",
+    "description": "Expect values defined with 'let' are not mutable ",
+    "reason": "To check that variables defined without 'mut' are not mutated",
+    "file": "non_mutable.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 65,
+      "on_line": 5
+    }
+  },
+  {
+    "name": "Mutable Test",
+    "description": "Expect values defined with 'let mut' can be mutated",
+    "reason": "To check that variables defined as mutable can be modified",
+    "file": "mutable.lox",
+    "expect": {
+      "to_output": [123, 456]
+    }
+  }
+]

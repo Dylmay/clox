@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Comment test",
+    "description": "Expect comments to be ignored",
+    "reason": "To check comments are not executed by the interpreter",
+    "file": "comments.lox",
+    "expect": { }
+  },
+  {
+    "name": "Unterminated Comment test",
+    "description": "Expect unterminated block comments to be a parser error",
+    "reason": "To check unterminated comments are reported as a lexer error",
+    "file": "comment_unterminated.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 65,
+      "on_line": 3
+    }
+  }
+]

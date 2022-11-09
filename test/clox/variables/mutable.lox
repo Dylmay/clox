@@ -1,0 +1,7 @@
+let mut mutable_value = 123;
+
+print(mutable_value);
+
+mutable_value = 456;
+
+print(mutable_value);

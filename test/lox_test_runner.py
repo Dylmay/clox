@@ -52,15 +52,18 @@ def record_tests(
             else:
                 success_msg = red("Failed")
 
-            name = bold(test.name)
-            desc = italic(test.description)
-
-            print(indent(f"{idx_str}({success_msg}) {name}: {desc}", 2))
+            print(
+                indent(
+                    f"{idx_str}({success_msg})"
+                    + f" {bold(test.name)}: {italic(test.description)}",
+                    2,
+                )
+            )
             recordings.record_test_result(test, res)
 
         print(
             italic(
-                f"{recordings.passed_test_count()} out of"
+                f"{recordings.passed_test_count()} out of "
                 + f"{recordings.total_test_count()} tests passed"
             )
         )

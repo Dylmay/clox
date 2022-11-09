@@ -1,0 +1,44 @@
+[
+  {
+    "name": "For loop test",
+    "description": "Expect loops to iterate through the entire range",
+    "reason": "To check loops iterate correctly through a range",
+    "file": "loop_sum.lox",
+    "expect": {
+      "to_output": [499999500000]
+    }
+  },
+  {
+    "name": "For loop requires iterator test",
+    "description": "Expect the for loop to check for the syntax for i in x..y",
+    "reason": "To check loops require a range",
+    "file": "loop_requires_iter.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 1,
+      "has_return_code": 65
+    }
+  },
+  {
+    "name": "For loop requires iterator test",
+    "description": "Expect the for loop to only accept numbers within the iterator",
+    "reason": "To check loops require a numbered range",
+    "file": "loop_number_iter.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 1,
+      "has_return_code": 65
+    }
+  },
+  {
+    "name": "For loop immutable test",
+    "description": "Expect the for loop variable to be immutable",
+    "reason": "To check the loop variable is immutable",
+    "file": "loop_immutable_iter.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 1,
+      "has_return_code":65
+    }
+  }
+]

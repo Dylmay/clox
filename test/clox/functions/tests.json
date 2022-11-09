@@ -1,0 +1,67 @@
+[
+  {
+    "name": "Arg Call Test",
+    "description": "Expect functions to be callable with multiple arguments",
+    "reason": "To check arg func calls continue to work",
+    "file": "arg_call.lox",
+    "expect": {
+      "to_output": ["Hello a", "b..."]
+    }
+  },
+  {
+    "name": "Closure Test",
+    "description": "Expect closures to print the most recent value within their scope",
+    "reason": "Closures should be able to get context from the function/scope they were created in",
+    "file": "closure_test.lox",
+    "expect": {
+      "to_output": ["outer"]
+    }
+  },
+  {
+    "name": "Recursion Test",
+    "description": "Expect 6765 to be returned from calling fib(20) recursively",
+    "reason": "To check functions are able to be called recursively",
+    "file": "recursion.lox",
+    "expect": {
+      "to_output": [6765]
+    }
+  },
+  {
+    "name": "Free Order Test",
+    "description": "Expect first() to be able to call second() before it is defined",
+    "reason": "To check functions are lazily evaluated",
+    "file": "free_order.lox",
+    "expect": {
+      "to_output": [7, 3]
+    }
+  },
+  {
+    "name": "Local Function Test",
+    "description": "Expect functions are able to be defined within other functions or scopes",
+    "reason": "To check functions work correctly when not defined globally",
+    "file": "scoped_func.lox",
+    "expect": {
+      "to_output": [12345, "Scoped function Result"]
+    }
+  },
+  {
+    "name": "Global Function Test",
+    "description": "Expect defined functions to correctly output the set strings",
+    "reason": "To check functions work correctly",
+    "file": "global_func.lox",
+    "expect": {
+      "to_output": ["Function Test:", "Hello", "world", "fin"]
+    }
+  },
+  {
+    "name": "Max Recursion Test",
+    "description": "Expect recursion is limited to limit stack overflow",
+    "reason": "To check recursion is limited",
+    "file": "rec_max.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 70,
+      "on_line": 7
+    }
+  }
+]

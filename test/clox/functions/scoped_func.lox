@@ -1,0 +1,21 @@
+fn printWord(word) {
+    print(word);
+}
+
+fn itemToStr(item) {
+    fn toStr(item) {
+        str(item);
+    }
+
+    return to_str(item);
+}
+
+print(itemToStr(12345))
+
+{
+    fn scopedFn(value) {
+        print(value);
+    }
+
+    scopedFn("Scoped function Result");
+}

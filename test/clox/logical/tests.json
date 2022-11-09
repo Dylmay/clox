@@ -1,0 +1,79 @@
+[
+  {
+    "name": "Logical and coercion test",
+    "description": "Expect and statement to coerce values to truthy",
+    "reason": "To check 'and' will make values truthy",
+    "file": "and_truthiness.lox",
+    "expect": {
+      "to_output": [
+        "string coerced to true",
+        "number coerced to true",
+        "true is true",
+        "number is false",
+        "false is false"
+      ]
+    }
+  },
+  {
+    "name": "Logical and short-circuit test",
+    "description": "Expect and to short-circuit on the first falsey value",
+    "reason": "To check and will not carry out actions after the first falsey value",
+    "file": "and_short_circuit.lox",
+    "expect": {
+      "to_output": ["Called 1/2", "Called 2/2"]
+    }
+  },
+  {
+    "name": "Logical and requires right-hand argument",
+    "description": "Expect 'and' to be invalid if there isn't a right-hand argument",
+    "reason": "To check that the state of 'and' is verified before being interpreted",
+    "file": "and_right_hand_arg.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 1,
+      "has_return_code": 65
+    }
+  },
+  {
+    "name": "Logical and requires left-hand argument",
+    "description": "Expect 'and' to be invalid if there isn't a left-hand argument",
+    "reason": "To check that the state of 'and' is verified before being interpreted",
+    "file": "and_left_hand_arg.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 1,
+      "has_return_code": 65
+    }
+  },
+  {
+    "name": "Logical or coercion test",
+    "description": "Expect or statement to coerce values to truthy",
+    "reason": "To check or will make values falsey",
+    "file": "or_truthiness.lox",
+    "expect": {
+      "to_output": [
+        "string coerced to true",
+        "number coerced to true",
+        "true is true",
+        "number is false",
+        "false is false"
+      ]
+    }
+  },
+  {
+    "name": "Truthiness test",
+    "description": "Expect values to be correctly interpreted as truthy or falsey",
+    "reason": "To check values are converted to boolean correctly",
+    "file": "truthiness.lox",
+    "expect": { }
+  },
+  {
+    "name": "Logical or short-circuit test",
+    "description": "Expect or to short-circuit on the first truthy value",
+    "reason": "To check 'or' will not carry out actions after the first truthy value",
+    "file": "or_short_circuit.lox",
+    "expect": {
+      "to_output": ["Called 1/2", "Called 2/2"]
+    }
+  }
+]

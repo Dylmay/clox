@@ -1,0 +1,15 @@
+// Expect single line comments to be ignored by the interpreter
+// assert(false, "Comments should never be executed");
+/*
+    Expect multi line comments to be ignored by the interpreter
+    assert(false, "Comments should never be executed");
+*/
+/*//inner comment// */
+/**/
+/**doc comment */
+/****/
+/***/
+/*
+*/
+///* inner comment */
+//

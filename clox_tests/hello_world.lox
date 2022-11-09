@@ -1,8 +1,0 @@
-print "Hello World!!!";
-let greeting = "Hello there";
-let name = "Dylan";
-let mut full_name;
-full_name = name + " " + "Mayor";
-
-print(greeting + " " + name);
-print(greeting + " " + full_name);

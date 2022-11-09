@@ -1,0 +1,14 @@
+print("Hello World!!!");
+
+let greeting = "Hello there";
+let first_name = "Dylan";
+let last_name = "Mayor";
+let age = 20;
+
+let mut info = "Not set";
+
+print(info);
+
+info = first_name + " " + last_name + ". Age " + str(age);
+
+print(greeting + " " + info);

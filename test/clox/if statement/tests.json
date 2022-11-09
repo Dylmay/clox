@@ -1,0 +1,11 @@
+[
+  {
+    "name": "If Test",
+    "description": "Expect if statement to correctly jump based on truthiness",
+    "reason": "To check if statements work as expected",
+    "file": "if_test.lox",
+    "expect": {
+      "to_output": ["true is true", "false is not true"]
+    }
+  }
+]
