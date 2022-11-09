@@ -7,10 +7,19 @@
 #include "vm/virt.h"
 #include "util/string/string_util.h"
 
+enum exit_code {
+	EXIT_OK = 0,
+	EXIT_HELP = 64,
+	EXIT_FILE_ERROR = 74,
+	EXIT_COMPILE_ERROR = 65,
+	EXIT_RUNTIME_ERROR = 70,
+};
+
 static void __run_repl(vm_t *vm);
 static void __run_file(vm_t *vm, const char *path);
 static char *__read_file(const char *path);
 static void __proc_cmd(const char *cmd, const size_t cmd_sz, vm_t *vm);
+static void __program_quit(enum exit_code);
 
 int main(int argc, const char *argv[])
 {
@@ -22,7 +31,7 @@ int main(int argc, const char *argv[])
 		__run_file(&virt, argv[1]);
 	} else {
 		fprintf(stderr, "Usage: clox[path]\n");
-		exit(64);
+		__program_quit(EXIT_HELP);
 	}
 
 	vm_free(&virt);
@@ -72,7 +81,12 @@ static void __run_repl(vm_t *vm)
 				putchar('.');
 			}
 		} else {
-			vm_interpret(vm, string_get_cstring(source));
+			enum vm_res result =
+				vm_interpret(vm, string_get_cstring(source));
+
+			if (result == INTERPRET_RUNTIME_ERROR) {
+				__program_quit(EXIT_RUNTIME_ERROR);
+			}
 
 			string_free(source);
 			source = NULL;
@@ -86,10 +100,11 @@ static void __run_repl(vm_t *vm)
 static void __proc_cmd(const char *cmd, const size_t cmd_sz, vm_t *vm)
 {
 	assert(("No VM passed", vm));
+	assert(("No cmd passed", cmd));
 
 	if (strncmp(cmd, "exit\n", cmd_sz) == 0) {
 		puts("Exiting");
-		exit(0);
+		__program_quit(EXIT_OK);
 	} else if (strncmp(cmd, "vars\n", cmd_sz) == 0) {
 		vm_print_vars(vm);
 	} else {
@@ -105,11 +120,11 @@ static void __run_file(vm_t *vm, const char *path)
 	enum vm_res result = vm_interpret(vm, src);
 
 	if (result == INTERPRET_COMPILE_ERROR) {
-		exit(65);
+		__program_quit(EXIT_COMPILE_ERROR);
 	}
 
 	if (result == INTERPRET_RUNTIME_ERROR) {
-		exit(70);
+		__program_quit(EXIT_RUNTIME_ERROR);
 	}
 
 	free(src);
@@ -121,7 +136,7 @@ static char *__read_file(const char *path)
 
 	if (file == NULL) {
 		fprintf(stderr, "Could not open file \"%s\".\n", path);
-		exit(74);
+		__program_quit(EXIT_FILE_ERROR);
 	}
 
 	fseek(file, 0L, SEEK_END);
@@ -140,4 +155,9 @@ static char *__read_file(const char *path)
 	fclose(file);
 
 	return file_buf;
+}
+
+static void __program_quit(enum exit_code code)
+{
+	exit(code);
 }
