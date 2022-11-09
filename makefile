@@ -1,5 +1,6 @@
 CC = clang
 BUILD_ROOT = build/
+UNOP_DEFINES = ""
 DBG_DEFINES = "-DDEBUG_TRACE_EXECUTION -DDEBUG_PRINT_CODE -DDEBUG_BENCH"
 BENCH_DEFINES = "-DNDEBUG -DDEBUG_BENCH"
 REL_DEFINES = "-DNDEBUG"
@@ -23,6 +24,9 @@ test: $(BUILD_DIR)/$(TARGET_EXEC)
 
 dbg:
 	make -C src/ CC=$(CC) DEFINES=$(DBG_DEFINES)
+
+unoptimized:
+	make -C src/ CC=$(CC) DEFINES=$(UNOP_DEFINES)
 
 bench:
 	make -C src/ CFLAGS="-Wall -Wno-unused-value -O3" CC=$(CC) DEFINES=$(BENCH_DEFINES)
