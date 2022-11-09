@@ -1,17 +1,20 @@
 #!/usr/bin/python
 
 import json
+import os
 import sys
 from argparse import ArgumentParser
+from functools import reduce
+from typing import List
 
 from pydantic.dataclasses import dataclass
-from sty import ef, fg, rs
 from test_runner.interpreter import Interpreter
 from test_runner.recordings import Recordings
 from test_runner.test import Test
+from test_runner.util import bold, green, indent, italic, red
 
 
-def run_clox_tests(
+def run_test(
     clox_path: str, directory: str, test_file: str, use_valgrind: bool
 ) -> Recordings:
     with open(f"{directory}/{test_file}", "r", encoding="UTF-8") as test_info:
@@ -22,25 +25,56 @@ def run_clox_tests(
         directory=directory,
         use_valgrind=use_valgrind,
     )
-    recordings = Recordings()
+    recordings = Recordings(directory)
 
+    print(bold(directory))
     for (idx, test) in enumerate(tests):
         res = test.run(interpreter)
 
         idx_str = f"[{idx + 1}/{len(tests)}]"
 
         if res.success:
-            success_msg = fg.green + "Passed" + fg.rs
+            success_msg = green("Passed")
         else:
-            success_msg = fg.red + "Failed" + fg.rs
+            success_msg = red("Failed")
 
-        name = ef.bold + test.name + rs.dim_bold
-        desc = ef.italic + test.description + rs.italic
+        name = bold(test.name)
+        desc = italic(test.description)
 
-        print(f"{idx_str}({success_msg}) {name}: {desc}")
+        print(indent(f"{idx_str}({success_msg}) {name}: {desc}", 2))
         recordings.record_test_result(test, res)
 
+    print(
+        italic(
+            f"{recordings.passed_test_count()} out of {recordings.total_test_count()} tests passed"
+        )
+    )
+
     return recordings
+
+
+def __run_test_helper(
+    clox_path: str,
+    directory: str,
+    test_file: str,
+    use_valgrind: bool,
+    tests: List[Recordings],
+):
+    tests.append(run_test(clox_path, directory, test_file, use_valgrind))
+    for (_, subdirs, _) in os.walk(directory):
+        for subdir in subdirs:
+            sub_directory = f"{directory}/{subdir}".replace("//", "/")
+            __run_test_helper(clox_path, sub_directory, test_file, use_valgrind, tests)
+
+
+def run_clox_tests(
+    clox_path: str, directory: str, test_file: str, use_valgrind: bool
+) -> List[Recordings]:
+    test_list: List[Recordings] = []
+
+    __run_test_helper(clox_path, directory, test_file, use_valgrind, test_list)
+
+    return test_list
 
 
 @dataclass
@@ -51,6 +85,7 @@ class TestRunnerArgs:
     valgrind: bool
     fail_info: bool
     verbose: bool
+    recursive: bool
 
 
 def parse_main_args() -> TestRunnerArgs:
@@ -81,6 +116,12 @@ def parse_main_args() -> TestRunnerArgs:
     parser.add_argument(
         "-v", "--verbose", action="store_true", help="Output all test information"
     )
+    parser.add_argument(
+        "-r",
+        "--recursive",
+        action="store_true",
+        help="Recursively look through directories for tests",
+    )
 
     parser_args = parser.parse_args()
 
@@ -91,24 +132,32 @@ def parse_main_args() -> TestRunnerArgs:
         valgrind=parser_args.valgrind,
         fail_info=parser_args.fail_info,
         verbose=parser_args.verbose,
+        recursive=parser_args.recursive,
     )
 
 
 if __name__ == "__main__":
     args = parse_main_args()
 
-    results = run_clox_tests(
-        args.clox_interpreter, args.test_directory, args.tests, args.valgrind
-    )
+    if args.recursive:
+        results = run_clox_tests(
+            args.clox_interpreter, args.test_directory, args.tests, args.valgrind
+        )
+    else:
+        results = [
+            run_test(
+                args.clox_interpreter, args.test_directory, args.tests, args.valgrind
+            )
+        ]
 
-    print(
-        ef.bold
-        + f"{results.passed_test_count()} out of {results.total_test_count()} tests passed"
-        + rs.dim_bold
-    )
+    total_tests = reduce(lambda t, r: t + r.total_test_count(), results, 0)
+    passed_tests = reduce(lambda t, r: t + r.passed_test_count(), results, 0)
+    print(bold(f"Total: {passed_tests} out of {total_tests} tests passed"))
 
-    if not results.all_passed():
-        if args.fail_info:
-            results.print_failed_test_info()
+    if args.fail_info:
+        for result in results:
+            if not result.all_passed():
+                result.print_failed_test_info(indent_by=2)
 
+    if total_tests != passed_tests:
         sys.exit(1)
