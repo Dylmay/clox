@@ -56,6 +56,7 @@ enum tkn_type {
 	TKN_WHILE, // while
 	TKN_LET, // let
 	TKN_ERR, // UNKNOWN
+	TKN_COMMENT, // single or block comment
 	TKN_EOF // END OF FILE
 };
 

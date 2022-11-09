@@ -14,10 +14,15 @@ void parser_advance(parser_t *prsr)
 	while (true) {
 		prsr->current = lexer_next_token(&prsr->lexer);
 
-		if (prsr->current.type != TKN_ERR)
-			break;
+		if (prsr->current.type == TKN_COMMENT) {
+			continue;
+		}
 
-		parser_error_at_current(prsr, prsr->current.start);
+		if (prsr->current.type == TKN_ERR) {
+			parser_error_at_current(prsr, prsr->current.start);
+		} else {
+			break;
+		}
 	}
 }
 

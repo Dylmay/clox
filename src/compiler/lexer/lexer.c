@@ -11,7 +11,8 @@ static bool __lexer_match_char(lexer_t *lexer, char expected);
 static void __lexer_skip_space(lexer_t *lexer);
 static char __lexer_peek(const lexer_t *lexer);
 static char __lexer_peek_next(const lexer_t *lexer);
-static bool __lexer_consume_comment(lexer_t *lexer);
+static token_t __lexer_line_comment(lexer_t *lexer);
+static token_t __lexer_block_comment(lexer_t *lexer);
 static token_t __lexer_str_token(lexer_t *lexer);
 static token_t __lexer_id_token(lexer_t *lexer);
 static token_t __lexer_num_token(lexer_t *lexer);
@@ -88,6 +89,11 @@ token_t lexer_next_token(lexer_t *lexer)
 	case '+':
 		return TOKEN(lexer, TKN_PLUS);
 	case '/':
+		if (__lexer_peek(lexer) == '/') {
+			return __lexer_line_comment(lexer);
+		} else if (__lexer_peek(lexer) == '*') {
+			return __lexer_block_comment(lexer);
+		}
 		return TOKEN(lexer, TKN_SLASH);
 	case '*':
 		return TOKEN(lexer, TKN_STAR);
@@ -158,11 +164,6 @@ static void __lexer_skip_space(lexer_t *lexer)
 		case '\t':
 			__lexer_advance(lexer);
 			break;
-		case '/':
-			if (!__lexer_consume_comment(lexer)) {
-				return;
-			}
-			break;
 
 		default:
 			return;
@@ -180,16 +181,42 @@ static char __lexer_peek_next(const lexer_t *lexer)
 	return __lexer_at_end(lexer) ? '\0' : lexer->current[1];
 }
 
-static bool __lexer_consume_comment(lexer_t *lexer)
+static token_t __lexer_line_comment(lexer_t *lexer)
 {
-	if (__lexer_peek_next(lexer) == '/') {
-		while (__lexer_peek(lexer) != '\n' && !__lexer_at_end(lexer)) {
-			__lexer_advance(lexer);
-		}
-		return true;
-	} else {
-		return false;
+	while (!__lexer_at_end(lexer) && __lexer_peek(lexer) != '\n') {
+		__lexer_advance(lexer);
 	}
+
+	return TOKEN(lexer, TKN_COMMENT);
+}
+
+static token_t __lexer_block_comment(lexer_t *lexer)
+{
+	// advance past initial /*
+	__lexer_advance(lexer);
+	__lexer_advance(lexer);
+
+#define NOT_COMMENT_ESCAPE(lexer)                                              \
+	(__lexer_peek(lexer) != '*' || __lexer_peek_next(lexer) != '/')
+
+	while (!__lexer_at_end(lexer) && NOT_COMMENT_ESCAPE(lexer)) {
+		if (__lexer_peek(lexer) == '\n') {
+			lexer->line++;
+		}
+
+		__lexer_advance(lexer);
+	}
+#undef IS_BLOCK_ESCAPE
+
+	if (__lexer_at_end(lexer)) {
+		return ERROR(lexer, "Unterminated /* comment");
+	} else {
+		// bump up lexer to finish processing the comment
+		__lexer_advance(lexer);
+		__lexer_advance(lexer);
+	}
+
+	return TOKEN(lexer, TKN_COMMENT);
 }
 
 static token_t __lexer_str_token(lexer_t *lexer)
