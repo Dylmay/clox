@@ -110,7 +110,7 @@ hash_t string_gen_hash(const struct string *str)
 char string_char_at(const struct string *str, size_t offset)
 {
 	assert(("string cannot be null", str));
-	assert(("offset cannot be larger than len", offset >= str->len));
+	assert(("offset cannot be larger than len", offset < str->len));
 
 	return str->c_str[offset];
 }

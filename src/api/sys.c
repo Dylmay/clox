@@ -11,7 +11,7 @@ static lox_val_t __clock_native(int arg_cnt, lox_val_t *args);
 static lox_val_t __print_native(int arg_cnt, lox_val_t *args);
 static lox_val_t __to_str(int arg_cnt, lox_val_t *args);
 static lox_val_t __assert(int arg_cnt, lox_val_t *args);
-static lox_val_t __input(int arg_cnt, lox_val_t *args);
+static lox_val_t __read(int arg_cnt, lox_val_t *args);
 
 #define CREATE_FUNC_DEF(func_name, func_def)                                   \
 	{                                                                      \
@@ -24,7 +24,7 @@ static struct native_import imports[] = {
 	CREATE_FUNC_DEF("print", __print_native),
 	CREATE_FUNC_DEF("str", __to_str),
 	CREATE_FUNC_DEF("assert", __assert),
-	CREATE_FUNC_DEF("input", __input),
+	CREATE_FUNC_DEF("read", __read),
 };
 
 #undef CREATE_FUNC_DEF
@@ -84,11 +84,8 @@ static lox_val_t __assert(int arg_cnt, lox_val_t *args)
 	return VAL_CREATE_NIL;
 }
 
-static lox_val_t __input(int arg_cnt, lox_val_t *args)
+static lox_val_t __read(int arg_cnt, lox_val_t *args)
 {
-	// while no newline
-	// write to buffer, BUF_SZ len
-	// on read of BUF_SZ, recall
 	char buf[INPUT_BUF_SZ];
 	struct string *read_input = NULL;
 
@@ -96,9 +93,9 @@ static lox_val_t __input(int arg_cnt, lox_val_t *args)
 		val_print(args[0]);
 	}
 
-	char last_char = '\0';
+	char last_char = '\n';
 	do {
-		char *ret_str = fgets(buf, sizeof(buf), stdin);
+		const char *ret_str = fgets(buf, sizeof(buf), stdin);
 
 		if (!ret_str) {
 			return VAL_CREATE_ERR(
@@ -107,13 +104,13 @@ static lox_val_t __input(int arg_cnt, lox_val_t *args)
 		}
 
 		read_input = string_c_append(read_input, buf, sizeof(buf));
+		size_t char_pos = string_get_len(read_input) - 1;
 
-		last_char =
-			string_char_at(read_input, string_get_len(read_input));
+		last_char = string_char_at(read_input, char_pos);
 
-	} while (last_char != '\n' && last_char != '\0');
+	} while (last_char != '\n');
 
-	char *read_cstring = string_get_cstring(read_input);
+	const char *read_cstring = string_get_cstring(read_input);
 	size_t read_len = string_get_len(read_input) - 1;
 
 	lox_val_t str_obj =
