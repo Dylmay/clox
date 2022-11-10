@@ -221,10 +221,18 @@ static token_t __lexer_block_comment(lexer_t *lexer)
 
 static token_t __lexer_str_token(lexer_t *lexer)
 {
+	// while char != " and char is not escaped and lexer is not at end
 	while (__lexer_peek(lexer) != '"' && !__lexer_at_end(lexer)) {
 		if (__lexer_peek(lexer) == '\n') {
 			lexer->line++;
 		}
+
+		// skip escaped strings
+		if (__lexer_peek(lexer) == '\\' &&
+		    __lexer_peek_next(lexer) == '"') {
+			__lexer_advance(lexer);
+		}
+
 		__lexer_advance(lexer);
 	}
 
