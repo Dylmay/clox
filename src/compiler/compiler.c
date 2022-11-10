@@ -345,10 +345,10 @@ static void __parse_lit(struct compiler *compiler)
 
 static void __parse_string(struct compiler *compiler)
 {
-	size_t unescaped_len =
-		__compiler_unescape_string(compiler,
-					   compiler->prsr->previous.start + 1,
-					   compiler->prsr->previous.len - 2);
+	// see warning for __compiler_unescape_string()
+	size_t unescaped_len = __compiler_unescape_string(
+		compiler, (char *)compiler->prsr->previous.start + 1,
+		compiler->prsr->previous.len - 2);
 
 	struct object_str *string = object_str_new(
 		compiler->prsr->previous.start + 1, unescaped_len);
@@ -820,6 +820,12 @@ static void __compiler_import(struct compiler *compiler,
 	}
 }
 
+// NOTE: string unescaping is destructive
+// (saves creating a buffer for a known, valid string)
+// if the escaped character is invalid, an error is reported so the
+// string should not be present in the vm at runtime
+// NOTE: also does not update the string token length so
+// the string token will be out-of-sync for any escaped character strings
 static size_t __compiler_unescape_string(struct compiler *compiler, char *chars,
 					 size_t len)
 {
