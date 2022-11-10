@@ -1,0 +1,17 @@
+let valid_name = true;
+let va123_name = true;
+let _12345 = true;
+let validName = true;
+let ValidName = true;
+let __valid_name = true;
+let valid1234 = true;
+let
+    valid_name_on_newline = true;
+
+assert(valid_name);
+assert(_12345);
+assert(validName);
+assert(ValidName);
+assert(__valid_name);
+assert(valid1234);
+assert(valid_name_on_newline);

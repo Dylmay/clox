@@ -1,6 +1,6 @@
 [
   {
-    "name": "Global Variable Test",
+    "name": "Global variable test",
     "description": "Expect defined variables to correctly hold the set strings",
     "reason": "To check variable can hold values correctly in global",
     "file": "global_variable.lox",
@@ -9,7 +9,7 @@
     }
   },
   {
-    "name": "Non-Mutable Test",
+    "name": "Non-Mutable test",
     "description": "Expect values defined with 'let' are not mutable ",
     "reason": "To check that variables defined without 'mut' are not mutated",
     "file": "non_mutable.lox",
@@ -20,12 +20,62 @@
     }
   },
   {
-    "name": "Mutable Test",
+    "name": "Mutable test",
     "description": "Expect values defined with 'let mut' can be mutated",
     "reason": "To check that variables defined as mutable can be modified",
     "file": "mutable.lox",
     "expect": {
       "to_output": [123, 456]
+    }
+  },
+  {
+    "name": "Valid names test",
+    "description": "Expect names to be valid",
+    "file": "valid_names.lox",
+    "expect": { }
+  },
+  {
+    "name": "No string name test",
+    "description": "Expect names defined as a string to be invalid",
+    "file": "no_str_name.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 65,
+      "on_line": 1,
+      "to_error": ["Expected variable name"]
+    }
+  },
+  {
+    "name": "No other name test",
+    "description": "Expect names with other characters to be invalid",
+    "file": "no_other_name.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 65,
+      "on_line": 1,
+      "to_error": ["Expected variable name"]
+    }
+  },
+  {
+    "name": "No integer name test",
+    "description": "Expect names defined as a digit first to be invalid",
+    "file": "no_integer_name.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 65,
+      "on_line": 1,
+      "to_error": ["Expected variable name"]
+    }
+  },
+  {
+    "name": "No dot test",
+    "description": "Expect names to not contain a dot",
+    "file": "no_dot_name.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 65,
+      "on_line": 1,
+      "to_error": ["Expected ';' after variable declaration"]
     }
   }
 ]
