@@ -29,7 +29,7 @@ class TestResultBuilder:
     def should_return(self, retcode: int) -> "TestResultBuilder":
         if self.__retcode != retcode:
             self.failed(
-                f"Return code ({retcode}) does not match expected ({self.__retcode})"
+                f"Return code ({self.__retcode}) does not match expected ({retcode})"
             )
         return self
 
@@ -46,7 +46,12 @@ class TestResultBuilder:
 
     def should_output(self, expected: str) -> "TestResultBuilder":
         if expected not in self.__stdout:
-            self.failed(f'output did not contain "{expected}"')
+            self.failed(f'stdout did not contain "{expected}"')
+        return self
+
+    def should_error(self, expected: str) ->  "TestResultBuilder":
+        if expected not in self.__stderr:
+            self.failed(f'stderr did not contain "{expected}"')
         return self
 
     def should_pass(self) -> "TestResultBuilder":

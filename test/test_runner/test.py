@@ -15,7 +15,7 @@ class Expectation:
     # Output in stdout
     to_output: Optional[List[str]] = None
     # Output in stderr
-    to_err: Optional[List[str]] = None
+    to_error: Optional[List[str]] = None
     no_leaks: Optional[bool] = None
 
 
@@ -23,9 +23,9 @@ class Expectation:
 class Test:
     name: str
     description: str
-    reason: str
     file: str
     expect: Expectation
+    reason: Optional[str] = None
 
     def run(self, interpreter: Interpreter) -> TestResult:
         result = interpreter.execute(self.file, self.expect.no_leaks or False)
@@ -50,5 +50,9 @@ class Test:
         if self.expect.to_output is not None:
             for expected in self.expect.to_output:
                 result_builder.should_output(expected)
+
+        if self.expect.to_error is not None:
+            for expected in self.expect.to_error:
+                result_builder.should_error(expected)
 
         return result_builder.build()
