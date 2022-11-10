@@ -1,0 +1,18 @@
+[
+  {
+    "name": "While loop test",
+    "description": "while loops should function correctly based on a truthy value",
+    "file": "while_loop.lox",
+    "expect": {}
+  },
+  {
+    "name": "While no condition test",
+    "description": "Expect an error to be given if a while loop is defined with no truthy value",
+    "file": "while_no_condition.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 65,
+      "on_line": 1
+    }
+  }
+]

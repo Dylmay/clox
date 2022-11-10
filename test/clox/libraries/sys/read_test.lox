@@ -1,0 +1,6 @@
+let mut input = "";
+
+while input != "q" {
+    input = read("input q to quit: ");
+    print(input);
+}

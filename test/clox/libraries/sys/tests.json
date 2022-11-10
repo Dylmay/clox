@@ -34,5 +34,18 @@
     "reason": "To check clock() correctly returns a number",
     "file": "clock_test.lox",
     "expect": {}
+  },
+  {
+    "name": "Read Test",
+    "description": "Expect read() to read an unlimited number of characters and break on newlines",
+    "reason": "To check read() works as expected ",
+    "file": "read_test.lox",
+    "to_stdin": "a string\nan extra long string that is longer than 256 characters, i.e. longer than a single read() pass.abcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijk\nq\n",
+    "expect": {
+      "to_output": [
+        "a string",
+        "an extra long string that is longer than 256 characters, i.e. longer than a single read() pass.abcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijk"
+      ]
+    }
   }
 ]
