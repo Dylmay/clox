@@ -16,7 +16,8 @@
  * REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  *
- * Modified by Dylan Mayor. strtod() now ignores underscores held within the number string
+ * Modified by Dylan Mayor. strtod() now ignores underscores held
+ * within the number string
  *
  ***************************************************************/
 

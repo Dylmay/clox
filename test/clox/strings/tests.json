@@ -23,5 +23,11 @@
       "has_return_code": 65,
       "to_error": ["Unterminated string"]
     }
+  },
+  {
+    "name": "Can concat strings",
+    "description": "Will correctly concat strings together",
+    "file": "can_concat_string.lox",
+    "expect": {}
   }
 ]

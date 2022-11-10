@@ -33,12 +33,10 @@ assert(10.456 <= 20.789, "10.456 <= 20.789");
 // >
 assert(20 > 10, "20 > 10");
 assert(20.789 > 10.456, "20.789 > 10.456");
-// assert("def" > "abc", "abc > def"); // not implemented
 assert(10.1 > 10, "10 > 10.1");
 
 // >=
 assert(20 >= 10, "20 >= 10");
 assert(20 >= 20, "20 >= 20");
 assert(10.456 >= 10.456, "10.456 >= 10.456");
-// assert("def" > "abc", "abc > def"); // not implemented
 assert(10.1 > 10, "10 > 10.1");

@@ -1,0 +1,16 @@
+let mut rem = 1 mod 10;
+
+assert(rem == 1);
+
+rem = 3 mod 2;
+assert(rem == 1);
+
+rem = 2 mod 2;
+assert(rem == 0);
+
+rem = 1.23 mod 2;
+assert(rem == 1.23);
+
+rem = 2.23 mod 2;
+// deal with rounding error
+assert(str(rem) == "0.23");

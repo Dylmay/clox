@@ -52,5 +52,11 @@
       "on_line": 1,
       "has_return_code": 65
     }
+  },
+  {
+    "name": "Numbers use mod correctly",
+    "description": "Expect the modulo operator to work on numbers",
+    "file": "number_mod.lox",
+    "expect": {}
   }
 ]

@@ -1,0 +1,5 @@
+let mut concat_string = "concatted";
+
+concat_string = concat_string + " " + "string";
+
+assert(concat_string == "concatted string");
