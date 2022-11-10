@@ -25,14 +25,17 @@ class Test:
     description: str
     file: str
     expect: Expectation
+    to_stdin: Optional[str] = None
     reason: Optional[str] = None
 
     def run(self, interpreter: Interpreter) -> TestResult:
-        result = interpreter.execute(self.file, self.expect.no_leaks or False)
+        result = interpreter.execute(
+            self.file, self.expect.no_leaks or False, self.to_stdin or ""
+        )
 
         result_builder = TestResultBuilder(
-            stdout=result.stdout.decode("UTF-8"),
-            stderr=result.stderr.decode("UTF-8"),
+            stdout=result.stdout,
+            stderr=result.stderr,
             retcode=result.returncode,
         )
 

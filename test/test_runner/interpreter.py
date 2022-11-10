@@ -11,8 +11,11 @@ class Interpreter:
     use_valgrind: bool
 
     def execute(
-        self, test_file: str, force_valgrind: bool = False
-    ) -> CompletedProcess[bytes]:
+        self,
+        test_file: str,
+        force_valgrind: bool = False,
+        to_stdin: str = "",
+    ) -> CompletedProcess[str]:
         cmd = [self.interpreter_path, f"{self.directory}/{test_file}"]
 
         if self.use_valgrind or force_valgrind:
@@ -28,4 +31,6 @@ class Interpreter:
             cmd,
             capture_output=True,
             check=False,
+            input=to_stdin,
+            text=True,
         )

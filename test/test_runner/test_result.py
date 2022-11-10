@@ -49,7 +49,7 @@ class TestResultBuilder:
             self.failed(f'stdout did not contain "{expected}"')
         return self
 
-    def should_error(self, expected: str) ->  "TestResultBuilder":
+    def should_error(self, expected: str) -> "TestResultBuilder":
         if expected not in self.__stderr:
             self.failed(f'stderr did not contain "{expected}"')
         return self
