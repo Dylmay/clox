@@ -1,0 +1,9 @@
+// assert number values can be passed between vars
+let value = 10;
+let mut new_value = value;
+
+assert(value == new_value, "Values should be able to be passed between vars");
+
+// assert numbers are pass by value
+new_value = 123;
+assert(value != new_value, "Values should not share references to numbers");

@@ -1,0 +1,56 @@
+[
+  {
+    "name": "Number pass by value test",
+    "description": "Expect numbers to be passed by value",
+    "file": "number_pass_by_val.lox",
+    "expect": { }
+  },
+  {
+    "name": "Number creation test",
+    "description": "Expect numbers created with underscores to be parsed as valid nums",
+    "file": "number_creation.lox",
+    "expect": { }
+  },
+  {
+    "name": "Number underscore cannot be first",
+    "description": "Expect numbers with underscores as the first character to be treated as variable names",
+    "file": "number_underscore_front_check.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 1,
+      "has_return_code": 70,
+      "to_error": ["undefined global"]
+    }
+  },
+  {
+    "name": "Numbers cannot be variable names",
+    "description": "Expect numbers to not be able to be redefined or used as variable names",
+    "file": "number_is_constant.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 1,
+      "has_return_code": 65,
+      "to_error": ["Expected variable name"]
+    }
+  },
+  {
+    "name": "Number underscores should not come after the decimal point",
+    "description": "Expect numbers to be invalid if no number is after the decimal point",
+    "file": "number_underscore_a_decimal_check.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 1,
+      "has_return_code": 65
+    }
+  },
+  {
+    "name": "Numbers can only contain integers, '.', or '_'",
+    "description": "Expect values to be rejected if it is a mix of numbers and characters",
+    "file": "number_invalid.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 1,
+      "has_return_code": 65
+    }
+  }
+]
