@@ -29,7 +29,7 @@ static struct native_import imports[] = {
 
 #undef CREATE_FUNC_DEF
 
-#define FILE_READ_ERR_MSG "File Read Error"
+#define FILE_READ_ERR_MSG "Read Error"
 #define ASSERT_ERR_MSG "Assert Error"
 
 static struct import_list import_list = {
