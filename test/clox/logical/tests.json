@@ -75,5 +75,11 @@
     "expect": {
       "to_output": ["Called 1/2", "Called 2/2"]
     }
+  },
+  {
+    "name": "Logical equality test",
+    "description": "Expect logical equality to work as intended",
+    "file": "equality_comparison.lox",
+    "expect": { }
   }
 ]

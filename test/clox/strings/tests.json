@@ -1,0 +1,27 @@
+[
+  {
+    "name": "String define test",
+    "description": "Can define a string",
+    "file": "can_define_strings.lox",
+    "expect": {}
+  },
+  {
+    "name": "String escape test",
+    "description": "Can escape a string",
+    "file": "can_escape_strings.lox",
+    "expect": {
+      "to_output": ["this is a \"string\""]
+    }
+  },
+  {
+    "name": "Invalid escape test",
+    "description": "Will correctly find invalid escaped strings",
+    "file": "error_on_escaped_string.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 2,
+      "has_return_code": 65,
+      "to_error": ["Unterminated string"]
+    }
+  }
+]

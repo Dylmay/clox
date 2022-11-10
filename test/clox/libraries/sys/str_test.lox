@@ -7,6 +7,14 @@ fn print_using_str(item) {
     print(to_str);
 }
 
+assert(str(true) == "true");
+assert(str(false) == "false");
+assert(str(nil) == "nil");
+assert(str(123_456) == "123456");
+assert(str("hello world") == "hello world");
+assert(str("\"string\"" == "\"string\""));
+assert(str() == "");
+
 print_using_str("Hello World");
 print_using_str(nil);
 print_using_str(123);

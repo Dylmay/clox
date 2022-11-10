@@ -1,0 +1,6 @@
+let mut escaped_string = "this is a 'string'";
+escaped_string = "this is a \"string\"";
+
+print(escaped_string);
+
+let valid_escapes = "\a\b\f\n\r\t\v\\\"";

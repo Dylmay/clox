@@ -1,0 +1,17 @@
+fn func() { }
+fn other_func() { }
+
+assert(true == true, "true == true");
+assert("string" == "string", "string == string");
+assert(123 == 123, "123 == 123");
+assert(func == func, "func == func");
+
+assert(true != false, "true != false");
+assert("string" != "empty", "string != empty");
+assert(123 != 456, "123 != 456");
+assert(func != other_func, "func != other_func");
+
+assert(true != "string", "true != string");
+assert(true != func, "true != func");
+assert("string" != func, "string != func");
+assert("func" != func, "func != func");
