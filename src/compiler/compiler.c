@@ -87,7 +87,7 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_COMMA] = { NULL, NULL, PREC_NONE },
 	[TKN_DOT] = { NULL, NULL, PREC_NONE },
 	[TKN_MINUS] = { __parse_unary, __parse_binary, PREC_TERM },
-	[TKN_PLUS] = { NULL, __parse_binary, PREC_TERM },
+	[TKN_PLUS] = { __parse_unary, __parse_binary, PREC_TERM },
 	[TKN_MOD] = { NULL, __parse_binary, PREC_FACTOR },
 	[TKN_SEMICOLON] = { NULL, NULL, PREC_NONE },
 	[TKN_SLASH] = { NULL, __parse_binary, PREC_FACTOR },
@@ -230,6 +230,10 @@ static void __parse_unary(struct compiler *compiler)
 
 	case TKN_BANG:
 		OP_NOT_WRITE(compiler->fn, line_num);
+		break;
+
+	case TKN_PLUS:
+		// TODO: add handling for plus token
 		break;
 
 	default:
