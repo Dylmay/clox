@@ -193,10 +193,13 @@ bool object_equals(const struct object *a, const struct object *b)
 
 	switch (a->type) {
 	case OBJ_STRING:
+	case OBJ_FN:
+	case OBJ_CLOSURE:
+	case OBJ_NATIVE:
 		return a == b;
 	default:
 		assert(("Unknown object comparison type", 0));
-		return false;
+		return a == b;
 	}
 }
 
