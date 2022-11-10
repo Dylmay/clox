@@ -9,6 +9,8 @@
 
 #include "compiler/import.h"
 
+#define INPUT_BUF_SZ 10
+
 /**
  * @brief gets the import list delivered by the sys api
  *
