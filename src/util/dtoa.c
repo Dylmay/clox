@@ -16,6 +16,8 @@
  * REPRESENTATION OR WARRANTY OF ANY KIND CONCERNING THE MERCHANTABILITY
  * OF THIS SOFTWARE OR ITS FITNESS FOR ANY PARTICULAR PURPOSE.
  *
+ * Modified by Dylan Mayor. strtod() now ignores underscores held within the number string
+ *
  ***************************************************************/
 
 /* Please send bug reports to David M. Gay (dmg at acm dot org,
@@ -3473,13 +3475,16 @@ break2:
 	nd = nf = 0;
 #ifdef USE_BF96
 	yz = 0;
-	for (; ((c = *s) >= '0' && c <= '9') || c == '_'; nd++, s++) {
+	for (; ((c = *s) >= '0' && c <= '9') || c == '_'; s++) {
 		if (c == '_') {
-			nd--;
 			continue;
 		}
-		if (nd < 19)
+
+		if (nd < 19) {
 			yz = 10 * yz + c - '0';
+		}
+
+		nd++;
 	}
 #else
 	y = z = 0;
@@ -3529,8 +3534,12 @@ break2:
 			}
 			goto dig_done;
 		}
-		for (; c >= '0' && c <= '9'; c = *++s) {
+		for (; (c >= '0' && c <= '9') || c == '_'; c = *++s) {
 		have_dig:
+			if (c == '_') {
+				continue;
+			}
+
 			nz++;
 			if (c -= '0') {
 				nf += nz;
