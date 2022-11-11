@@ -17,6 +17,10 @@
 		sizeof(struct object_str) + (sizeof(char) * (str_sz + 1)),     \
 		OBJ_STRING))
 
+#define NATIVE_FN_STR "<native fn>"
+#define UNKNOWN_STR "<unknown>"
+#define SCRIPT_STR "<script>"
+
 struct object_str_matcher {
 	struct key_matcher m;
 	const char *chars;
@@ -126,7 +130,7 @@ void object_print(lox_val_t val)
 		break;
 
 	case OBJ_NATIVE:
-		printf("<native fn>");
+		printf(NATIVE_FN_STR);
 		break;
 
 	case OBJ_CLOSURE:
@@ -142,7 +146,7 @@ void object_print(lox_val_t val)
 static void __print_function(struct object_fn *fn)
 {
 	if (fn->name == NULL) {
-		printf("<script>");
+		printf(SCRIPT_STR);
 	} else {
 		printf("<fn %s>", fn->name->chars);
 	}
@@ -159,7 +163,7 @@ lox_val_t object_to_string(lox_val_t val)
 
 		if (fn->name == NULL) {
 			return VAL_CREATE_OBJ(object_str_new(
-				"<script>", sizeof("<script>") - 1));
+				SCRIPT_STR, sizeof(SCRIPT_STR) - 1));
 		} else {
 			size_t len = (sizeof("<fn >") - 1) + fn->name->len;
 			char *concat_str = reallocate(NULL, 0, len);
@@ -174,13 +178,13 @@ lox_val_t object_to_string(lox_val_t val)
 
 	case OBJ_NATIVE:
 		return VAL_CREATE_OBJ(object_str_new(
-			"<native fn>", sizeof("<native fn>") - 1));
+			NATIVE_FN_STR, sizeof(NATIVE_FN_STR) - 1));
 		break;
 
 	default:
 		assert(("Unknown object type", 0));
 		return VAL_CREATE_OBJ(
-			object_str_new("<unknown>", sizeof("<unknown>") - 1));
+			object_str_new(UNKNOWN_STR, sizeof(UNKNOWN_STR) - 1));
 		break;
 	}
 }
