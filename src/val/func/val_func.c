@@ -42,8 +42,8 @@ lox_val_t val_to_string(lox_val_t val)
 	case VAL_NIL:
 		return VAL_CREATE_OBJ(object_str_new("nil", sizeof("nil") - 1));
 	case VAL_NUMBER: {
-#define BUF_LEN sizeof(char) * 16
-		char buf[BUF_LEN] = { 0 };
+#define BUF_LEN sizeof(char) * 32
+		char buf[BUF_LEN];
 
 		snprintf(buf, BUF_LEN, "%.15g", val.as.number);
 
