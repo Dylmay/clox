@@ -83,7 +83,7 @@ def run_clox_tests(
         except FileNotFoundError:
             print(
                 yellow("[warning]")
-                + f" no {test_file} found within {directory}. Ignoring folder."
+                + f" no {test_file} found within {cur_folder}. Ignoring folder."
             )
         except JSONSchemaError as exc:
             print(f"{yellow('[warning]')} {exc}. Ignoring folder.")
