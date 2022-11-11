@@ -10,7 +10,7 @@ fn itemToStr(item) {
     return to_str(item);
 }
 
-print(itemToStr(12345))
+print(itemToStr(12345));
 
 {
     fn scopedFn(value) {

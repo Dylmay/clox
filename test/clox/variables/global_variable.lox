@@ -12,3 +12,6 @@ print(info);
 info = first_name + " " + last_name + ". Age " + str(age);
 
 print(greeting + " " + info);
+
+let info_change = info = "";
+assert(info_change == info, "both values should be equal");
