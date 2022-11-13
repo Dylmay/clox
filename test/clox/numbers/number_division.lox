@@ -1,0 +1,33 @@
+let mut num_var = 20 / 10;
+assert(num_var == 2, "num_var must equal 2");
+
+num_var = 20 / 20;
+assert(num_var == 1, "num_var must equal 1");
+
+num_var = 10 / 20;
+assert(num_var == 0.5, "num_var must equal 0.5");
+
+num_var = 4.56 / 1.23;
+assert(round(num_var, 5) == 3.70732, "num_var must equal 3.70732");
+
+num_var = 0 / 0;
+assert(str(num_var) == "-nan", "num_var must equal -nan");
+
+num_var = -0 / -0;
+assert(str(num_var) == "-nan", "num_var must equal -nan");
+
+num_var = 1 / 0;
+assert(str(num_var) == "inf", "num_var must equal inf");
+
+num_var = -1 / 0;
+assert(str(num_var) == "-inf", "num_var must equal -inf");
+
+num_var = 0 / 1;
+assert(str(num_var) == "0", "num_var must equal 0");
+
+let other_num = num_var = 579;
+num_var = num_var / other_num;
+assert(num_var == 1, "num_var must equal 1 (1/2)");
+
+num_var = other_num / other_num;
+assert(num_var == 1, "num_var must equal 1 (2/2)");

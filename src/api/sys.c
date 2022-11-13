@@ -157,7 +157,7 @@ static lox_val_t __round_val(int arg_cnt, lox_val_t *args)
 						1));
 			}
 
-			round_amt = rounded_val;
+			round_amt = (int)rounded_val;
 		}
 
 		if (round_amt == 0) {
@@ -187,8 +187,6 @@ static lox_val_t __round_double(double value, int round_to)
 	if ((buf_end - buf) + 9 > SMALL_BUF_LEN) {
 		temp_buf_sz = (buf_end - buf) + 8;
 		temp_buf = reallocate(NULL, 0, temp_buf_sz);
-
-		// TODO: check for alloc issues
 	}
 
 	snprintf(temp_buf, temp_buf_sz, "%s0%se%d", (sign ? "-" : ""), buf,
@@ -221,9 +219,9 @@ static lox_val_t __to_num(int arg_cnt, lox_val_t *args)
 		if (OBJECT_IS_STRING(arg)) {
 			const lox_str_t *string = OBJECT_AS_STRING(arg);
 
-			if (string->len > 0) {
-				return VAL_CREATE_NUMBER(
-					strtod(string->chars, NULL));
+			if (string_get_len(string) > 0) {
+				return VAL_CREATE_NUMBER(strtod(
+					string_get_cstring(string), NULL));
 			}
 		}
 	}

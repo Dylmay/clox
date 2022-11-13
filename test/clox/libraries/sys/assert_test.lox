@@ -1,3 +1,6 @@
+if !assert {
+    return -1;
+}
 // should pass
 assert(true);
 assert(10 == 10);

@@ -2,6 +2,7 @@
  * @file list.h
  * @author Dylan Mayor
  * @brief header file for generic arraylist implementation
+ * TODO: swap to #define implementation
  *
  */
 // TODO: move in to macro list

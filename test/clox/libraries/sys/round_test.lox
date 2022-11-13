@@ -1,0 +1,24 @@
+if !round {
+    assert(false, "round should be available globally");
+}
+
+fn assert_round_to(num_to_round, round_amt, expected) {
+    let rounded_num = round(num(num_to_round), num(round_amt));
+    let msg = "Rounded num should equal " + str(expected) + " but is actually " + str(rounded_num);
+
+    assert(rounded_num == num(expected), msg);
+}
+
+let mut num_to_round = 1.1223492478289427482842743;
+assert_round_to(num_to_round, 2, 1.12);
+assert_round_to(num_to_round, 10, 1.1223492478);
+
+num_to_round = 10101.23981234578345789234;
+assert_round_to(num_to_round, 0, 10101);
+assert_round_to(num_to_round, 2, 10101.24);
+
+num_to_round = 123456;
+assert(round(num_to_round) == num_to_round, "A single argument should round to the nearest full number");
+
+num_to_round = 123456.78;
+assert_round_to(num_to_round, 0, 123457);

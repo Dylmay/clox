@@ -1,0 +1,33 @@
+let mut num_var = 20 - 10;
+assert(num_var == 10, "num_var must equal 10");
+
+num_var = 20 - 20;
+assert(num_var == 0, "num_var must equal 0");
+
+num_var = 4.56 - 1.23;
+assert(round(num_var, 2) == 3.33, "num_var must equal 3.33");
+
+num_var = 0 - 0;
+assert(num_var == 0, "num_var must equal 0");
+
+num_var = 1 - 0;
+assert(num_var == 1, "num_var must equal 1");
+
+num_var = 0 - 1;
+assert(num_var == -1, "num_var must equal -1");
+
+num_var = 1 - 2 - 3 - 4 - 5;
+assert(num_var == -13, "num_var must equal -13");
+
+num_var = -123;
+assert(num_var == -123, "num_var must equal -123");
+
+num_var = 123 - +456;
+assert(num_var == -333, "num_var must equal -333");
+
+let other_num = num_var = 579;
+num_var = num_var - other_num;
+assert(num_var == 0, "num_var must equal 0 (1/2)");
+
+num_var = other_num - other_num;
+assert(num_var == 0, "num_var must equal 0 (2/2)");

@@ -1,3 +1,7 @@
+if !clock {
+    assert(false, "clock should be imported globally");
+}
+
 let val = clock();
 
 print(val);

@@ -1,3 +1,7 @@
+if !print {
+    assert(false, "print should be imported globally");
+}
+
 fn fn_to_print() {}
 let empty_val;
 

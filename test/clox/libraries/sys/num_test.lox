@@ -1,0 +1,25 @@
+if !num {
+    assert(false, "Num should be imported globally");
+}
+
+let mut num_item = num("10");
+
+assert(num_item == 10, "num_item should equal 10");
+
+num_item = num("1e+4");
+assert(num_item == 10_000, "num_item should equal 1000");
+
+num_item = num("1e-4");
+assert(num_item == 0.0001, "num_item should equal 0.0001");
+
+num_item = num("-1");
+assert(num_item == -1, "num_item should equal -1");
+
+num_item = num(10);
+assert(num_item == 10, "num_item should equal the same amount");
+
+let mut invalid_num = num("a10");
+assert(invalid_num == "-nan", "invalid_num should return NaN but returned " + str(invalid_num));
+
+invalid_num = num("abcdefgh");
+assert(str(invalid_num) == "-nan", "invalid_num should return NaN");

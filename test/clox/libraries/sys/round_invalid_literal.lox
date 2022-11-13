@@ -1,0 +1,3 @@
+fn non_roundable_fn() {}
+
+round(non_roundable_fn);

@@ -6,7 +6,7 @@
     "file": "assert_test.lox",
     "expect": {
       "to_fail": true,
-      "on_line": 5,
+      "on_line": 8,
       "has_return_code": 70
     }
   },
@@ -38,7 +38,7 @@
   {
     "name": "Read Test",
     "description": "Expect read() to read an unlimited number of characters and break on newlines",
-    "reason": "To check read() works as expected ",
+    "reason": "To check read() works as expected",
     "file": "read_test.lox",
     "to_stdin": "a string\nan extra long string that is longer than 256 characters, i.e. longer than a single read() pass.abcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijk\nq\n",
     "expect": {
@@ -46,6 +46,32 @@
         "a string",
         "an extra long string that is longer than 256 characters, i.e. longer than a single read() pass.abcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijkabcdefghijk"
       ]
+    }
+  },
+  {
+    "name": "Num Test",
+    "description": "Expect num() to convert strings in to numbers",
+    "reason": "To check num() works as expected",
+    "file": "num_test.lox",
+    "expect": {}
+  },
+  {
+    "name": "Round Test",
+    "description": "Expect round() to round numbers to the given number of decimal points",
+    "reason": "To check round() works as expected",
+    "file": "round_test.lox",
+    "expect": {}
+  },
+  {
+    "name": "Round invalid literal test",
+    "description": "Expect round() to only accept numbers",
+    "reason": "To check round() works as expected",
+    "file": "round_invalid_literal.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 70,
+      "on_line": 3,
+      "to_error": ["Argument is not a number"]
     }
   }
 ]

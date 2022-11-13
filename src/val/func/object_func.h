@@ -31,7 +31,7 @@
  * @param obj lox_val_t struct
  *
  * @return true lox_val_t is an object and is a string
- * @return false lox_val_t is not an object and is not an object string
+ * @return false lox_val_t is not an object or is not an object string
  *
  */
 #define OBJECT_IS_STRING(obj) (object_is_type(obj, OBJ_STRING))
@@ -42,7 +42,7 @@
  * @see lox_fn_t
  *
  * @return true lox_val_t is an object and is a function
- * @return false lox_val_t is not an object and is not a function
+ * @return false lox_val_t is not an object or is not a function
  *
  */
 #define OBJECT_IS_FN(obj) (object_is_type(obj, OBJ_FN))
@@ -53,7 +53,7 @@
  * @see lox_fn_t
  *
  * @return true lox_val_t is an object and is a native function
- * @return false lox_val_t is not an object and is not a native function
+ * @return false lox_val_t is not an object or is not a native function
  *
  */
 #define OBJECT_IS_NATIVE(obj) (object_is_type(obj, OBJ_NATIVE))
@@ -64,7 +64,7 @@
  * @see lox_fn_t
  *
  * @return true lox_val_t is an object and is a closure
- * @return false lox_val_t is not an object and is not a closure
+ * @return false lox_val_t is not an object or is not a closure
  *
  */
 #define OBJECT_IS_CLOSURE(obj) (object_is_type(obj, OBJ_CLOSURE))

@@ -58,5 +58,29 @@
     "description": "Expect the modulo operator to work on numbers",
     "file": "number_mod.lox",
     "expect": {}
+  },
+  {
+    "name": "Numbers must allow addition",
+    "description": "Expect the + operator to work on numbers",
+    "file": "number_addition.lox",
+    "expect": {}
+  },
+  {
+    "name": "Numbers must allow subtraction",
+    "description": "Expect the - operator to work on numbers",
+    "file": "number_subtraction.lox",
+    "expect": {}
+  },
+  {
+     "name": "Numbers must allow division",
+    "description": "Expect the / operator to work on numbers",
+    "file": "number_division.lox",
+    "expect": {}
+  },
+  {
+    "name": "Numbers must allow multiplication",
+    "description": "Expect the * operator to work on numbers",
+    "file": "number_multiplication.lox",
+    "expect": {}
   }
 ]
