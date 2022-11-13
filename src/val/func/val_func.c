@@ -33,16 +33,14 @@ lox_val_t val_to_string(lox_val_t val)
 	switch (val.type) {
 	case VAL_BOOL:
 		if (VAL_AS_BOOL(val)) {
-			return VAL_CREATE_OBJ(
-				object_str_new("true", sizeof("true") - 1));
+			return VAL_CREATE_OBJ(LITERAL_OBJECT_STRING("true"));
 		} else {
-			return VAL_CREATE_OBJ(
-				object_str_new("false", sizeof("false") - 1));
+			return VAL_CREATE_OBJ(LITERAL_OBJECT_STRING("false"));
 		}
 	case VAL_NIL:
-		return VAL_CREATE_OBJ(object_str_new("nil", sizeof("nil") - 1));
+		return VAL_CREATE_OBJ(LITERAL_OBJECT_STRING("nil"));
 	case VAL_NUMBER: {
-#define BUF_LEN sizeof(char) * 32
+#define BUF_LEN 100
 		char buf[BUF_LEN];
 
 		snprintf(buf, BUF_LEN, "%.15g", val.as.number);
@@ -50,16 +48,15 @@ lox_val_t val_to_string(lox_val_t val)
 		lox_val_t num_str =
 			VAL_CREATE_OBJ(object_str_new(buf, strlen(buf)));
 
-#undef BUF_LEN
 		return num_str;
+#undef BUF_LEN
 	}
 	case VAL_OBJ:
 	case VAL_ERR:
 		return object_to_string(val);
 	default:
 		assert(("Unknown val type on val print", 0));
-		return VAL_CREATE_OBJ(
-			object_str_new("unknown", sizeof("unknown") - 1));
+		return VAL_CREATE_OBJ(LITERAL_OBJECT_STRING("unknown"));
 		break;
 	}
 }

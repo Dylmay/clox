@@ -130,6 +130,15 @@
 #define OBJECT_AS_CSTRING(obj) (((struct object_str *)VAL_AS_OBJ(obj))->chars)
 
 /**
+ * @brief creates a new object string for a given literal. i.e. "string"
+ *
+ * @param obj the literal string
+ *
+ * @return struct object_str* the created literal string
+ */
+#define LITERAL_OBJECT_STRING(str) (object_str_new(str, sizeof(str) - 1))
+
+/**
  * @brief returns whether the passed value is a given object type
  *
  * @param value the value to check

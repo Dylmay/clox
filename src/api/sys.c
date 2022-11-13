@@ -9,6 +9,7 @@
 #include "val/func/object_func.h"
 #include "util/string/string_util.h"
 
+/* Natives */
 static lox_val_t __clock_native(int arg_cnt, lox_val_t *args);
 static lox_val_t __print_native(int arg_cnt, lox_val_t *args);
 static lox_val_t __to_str(int arg_cnt, lox_val_t *args);
@@ -16,7 +17,9 @@ static lox_val_t __to_num(int arg_cnt, lox_val_t *args);
 static lox_val_t __assert(int arg_cnt, lox_val_t *args);
 static lox_val_t __read(int arg_cnt, lox_val_t *args);
 static lox_val_t __round_val(int arg_cnt, lox_val_t *args);
+/* Helpers */
 static lox_val_t __round_double(double value, int round_to);
+static lox_val_t __str_to_num(const lox_str_t *str);
 
 #define CREATE_FUNC_DEF(func_name, func_def)                                   \
 	{                                                                      \
@@ -36,8 +39,6 @@ static struct native_import imports[] = {
 
 #undef CREATE_FUNC_DEF
 
-#define FILE_READ_ERR_MSG "Read Error"
-#define ASSERT_ERR_MSG "Assert Error"
 #define NAN_ERR_MSG "Argument is not a number"
 
 static struct import_list import_list = {
@@ -72,7 +73,7 @@ static lox_val_t __to_str(int arg_cnt, lox_val_t *args)
 	if (arg_cnt) {
 		return val_to_string(args[0]);
 	} else {
-		return VAL_CREATE_OBJ(object_str_new("", 0));
+		return VAL_CREATE_OBJ(LITERAL_OBJECT_STRING(""));
 	}
 }
 
@@ -85,8 +86,7 @@ static lox_val_t __assert(int arg_cnt, lox_val_t *args)
 			return err_msg;
 		}
 
-		return VAL_CREATE_ERR(object_str_new(
-			ASSERT_ERR_MSG, sizeof(ASSERT_ERR_MSG) - 1));
+		return VAL_CREATE_ERR(LITERAL_OBJECT_STRING("Assert Error"));
 	}
 
 	return VAL_CREATE_NIL;
@@ -107,8 +107,7 @@ static lox_val_t __read(int arg_cnt, lox_val_t *args)
 
 		if (!ret_str) {
 			return VAL_CREATE_ERR(
-				object_str_new(FILE_READ_ERR_MSG,
-					       sizeof(FILE_READ_ERR_MSG) - 1));
+				LITERAL_OBJECT_STRING("Read Error"));
 		}
 
 		read_input = string_c_append(read_input, buf, sizeof(buf));
@@ -136,25 +135,23 @@ static lox_val_t __round_val(int arg_cnt, lox_val_t *args)
 		int round_amt = 0;
 
 		if (!VAL_IS_NUMBER(val_to_round)) {
-			return VAL_CREATE_ERR(object_str_new(
-				NAN_ERR_MSG, sizeof(NAN_ERR_MSG) - 1));
+			return VAL_CREATE_ERR(
+				LITERAL_OBJECT_STRING(NAN_ERR_MSG));
 		}
 
 		if (arg_cnt > 1) {
 			lox_val_t round_val = args[1];
 
 			if (!VAL_IS_NUMBER(round_val)) {
-				return VAL_CREATE_ERR(object_str_new(
-					NAN_ERR_MSG, sizeof(NAN_ERR_MSG) - 1));
+				return VAL_CREATE_ERR(
+					LITERAL_OBJECT_STRING(NAN_ERR_MSG));
 			}
 
 			double rounded_val = floor(VAL_AS_NUMBER(round_val));
 
 			if (rounded_val < 0) {
-				return VAL_CREATE_ERR(object_str_new(
-					"round amount cannot be negative",
-					sizeof("round amount cannot be negative") -
-						1));
+				return VAL_CREATE_ERR(LITERAL_OBJECT_STRING(
+					"round amount cannot be negative"));
 			}
 
 			round_amt = (int)rounded_val;
@@ -169,8 +166,29 @@ static lox_val_t __round_val(int arg_cnt, lox_val_t *args)
 	}
 
 	return VAL_CREATE_ERR(
-		object_str_new("round() requires a number",
-			       sizeof("round() requires a number") - 1));
+		LITERAL_OBJECT_STRING("round() requires a number"));
+}
+
+static lox_val_t __to_num(int arg_cnt, lox_val_t *args)
+{
+	if (arg_cnt) {
+		lox_val_t arg = args[0];
+
+		if (VAL_IS_BOOL(arg)) {
+			return VAL_CREATE_NUMBER(VAL_AS_BOOL(arg) ? 1 : 0);
+		}
+
+		if (VAL_IS_NUMBER(arg)) {
+			return arg;
+		}
+
+		if (OBJECT_IS_STRING(arg)) {
+			return __str_to_num(OBJECT_AS_STRING(arg));
+		}
+	}
+
+	return VAL_CREATE_ERR(
+		LITERAL_OBJECT_STRING("invalid literal for num()"));
 }
 
 static lox_val_t __round_double(double value, int round_to)
@@ -203,30 +221,16 @@ static lox_val_t __round_double(double value, int round_to)
 #undef SMALL_BUF_LEN
 }
 
-static lox_val_t __to_num(int arg_cnt, lox_val_t *args)
+static lox_val_t __str_to_num(const lox_str_t *str)
 {
-	if (arg_cnt) {
-		lox_val_t arg = args[0];
+	char *read_end = NULL;
+	double val = strtod(str->chars, &read_end);
+	size_t counted_chars = read_end - str->chars;
 
-		if (VAL_IS_BOOL(arg)) {
-			return VAL_CREATE_NUMBER(VAL_AS_BOOL(arg) ? 1 : 0);
-		}
-
-		if (VAL_IS_NUMBER(arg)) {
-			return arg;
-		}
-
-		if (OBJECT_IS_STRING(arg)) {
-			const lox_str_t *string = OBJECT_AS_STRING(arg);
-
-			if (string_get_len(string) > 0) {
-				return VAL_CREATE_NUMBER(strtod(
-					string_get_cstring(string), NULL));
-			}
-		}
+	// check to stop mixed strings returning partial numbers
+	if (counted_chars != str->len && val != INFINITY) {
+		val = NAN;
 	}
 
-	return VAL_CREATE_ERR(
-		object_str_new("invalid literal for num()",
-			       sizeof("invalid literal for num()") - 1));
+	return VAL_CREATE_NUMBER(val);
 }

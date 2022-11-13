@@ -199,7 +199,7 @@ static enum vm_res __vm_run(vm_t *vm)
 	do {                                                                   \
 		if (!VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 0))) ||           \
 		    !VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 1)))) {           \
-			__vm_runtime_error(vm, "Operands must be numbers.");   \
+			__vm_runtime_error(vm, "Operand types must match");    \
 			return INTERPRET_RUNTIME_ERROR;                        \
 		}                                                              \
 		lox_num_t b = __vm_pop_const(vm).as.number;                    \
@@ -287,9 +287,8 @@ static enum vm_res __vm_run(vm_t *vm)
 				   VAL_IS_NUMBER(__vm_peek_const(vm, 1))) {
 				NUMERICAL_OP(vm, +);
 			} else {
-				__vm_runtime_error(
-					vm,
-					"Operands must be two numbers or two strings.");
+				__vm_runtime_error(vm,
+						   "Operand types must match");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 			break;
@@ -298,7 +297,7 @@ static enum vm_res __vm_run(vm_t *vm)
 			if (!VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 0))) ||
 			    !VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 1)))) {
 				__vm_runtime_error(vm,
-						   "Operands must be numbers.");
+						   "Operand types must match");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
