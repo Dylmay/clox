@@ -12,7 +12,7 @@ void *reallocate(void *pointer, size_t old_sz, size_t new_sz)
 	void *result = realloc(pointer, new_sz);
 
 	if (result == NULL)
-		exit(1);
+		exit(100);
 
 	return result;
 }

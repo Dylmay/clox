@@ -14,14 +14,14 @@ void parser_advance(parser_t *prsr)
 	while (true) {
 		prsr->current = lexer_next_token(&prsr->lexer);
 
-		if (prsr->current.type == TKN_COMMENT) {
+		switch (prsr->current.type) {
+		case TKN_COMMENT:
 			continue;
-		}
-
-		if (prsr->current.type == TKN_ERR) {
+		case TKN_ERR:
 			parser_error_at_current(prsr, prsr->current.start);
-		} else {
 			break;
+		default:
+			return;
 		}
 	}
 }
@@ -30,10 +30,9 @@ void parser_consume(parser_t *prsr, enum tkn_type tkn, const char *err_msg)
 {
 	if (prsr->current.type == tkn) {
 		parser_advance(prsr);
-		return;
+	} else {
+		parser_error_at_current(prsr, err_msg);
 	}
-
-	parser_error_at_current(prsr, err_msg);
 }
 
 parser_t parser_new(const char *source)

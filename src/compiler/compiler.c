@@ -670,6 +670,7 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 			arity++;
 
 			bool is_mutable = parser_match(compiler->prsr, TKN_MUT);
+
 			parser_consume(compiler->prsr, TKN_ID,
 				       "Expected variable name");
 
@@ -693,10 +694,13 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 	parser_consume(new_comp.prsr, TKN_RIGHT_PAREN,
 		       "Expected ')' after function params.");
 	parser_consume(new_comp.prsr, TKN_LEFT_BRACE, "Expected block start.");
-	__compiler_run(new_comp, false);
-	__compiler_end_scope(&new_comp);
+	lox_fn_t *comp_res = __compiler_run(new_comp, false);
 
-	lox_fn_t *comp_res = new_comp.fn;
+	if (comp_res == NULL || parser_had_error(new_comp.prsr)) {
+		return;
+	}
+
+	__compiler_end_scope(&new_comp);
 	OP_CLOSURE_WRITE(compiler->fn, VAL_CREATE_OBJ(comp_res),
 			 compiler->prsr->previous.line);
 }
