@@ -82,5 +82,40 @@
     "description": "Expect the * operator to work on numbers",
     "file": "number_multiplication.lox",
     "expect": {}
+  },
+  {
+    "name": "No mixed types in addition test",
+    "description": "Expect addition between different types to fail",
+    "file": "no_mixed_additions.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 1,
+      "has_return_code": 70,
+      "to_error": ["Operand types must match"]
+    }
+  },
+  {
+    "name": "No mixed types in subtraction test",
+    "description": "Expect subtraction between different types to fail",
+    "file": "no_mixed_subtractions.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 1,
+      "has_return_code": 70,
+      "to_error": ["Operand types must match"]
+    }
+  },
+  {
+    "name": "Parens affect precedence",
+    "description": "Expect parentheses to affect the precedence of values",
+    "file": "parens.lox",
+    "expect": { }
+  },
+  {
+    "name": "Precedence test",
+    "description": "Expect there to be a consistent precedence for equations",
+    "reason": "To test the value precedence is equal to (mod, *, /) -> (+, -) ",
+    "file": "precedence.lox",
+    "expect": { }
   }
 ]

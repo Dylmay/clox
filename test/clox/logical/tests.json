@@ -81,5 +81,17 @@
     "description": "Expect logical equality to work as intended",
     "file": "equality_comparison.lox",
     "expect": { }
+  },
+  {
+    "name": "Unary test",
+    "description": "Expect the unary operator to invert booleans",
+    "file": "unary.lox",
+    "expect": { }
+  },
+  {
+    "name": "Parens precedence test",
+    "description": "Expect the parentheses to modify the precedence of operations",
+    "file": "parens.lox",
+    "expect": { }
   }
 ]

@@ -1,0 +1,13 @@
+fn empty_function() {}
+let mut variable = false;
+
+assert(!false == true, "!false should be true");
+assert(!true == false, "!true should be false");
+assert(!10 == false, "!10 should be false");
+assert(!0 == true, "!0 should be true");
+assert(!empty_function == false, "!empty_function should be false");
+assert(!"" == false, "!\"\" should be false");
+assert(!nil == true, "!nil should be true");
+assert(!variable == true, "!variable should be true");
+variable = true;
+assert(!variable == false, "!variable should be false");

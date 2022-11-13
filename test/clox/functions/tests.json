@@ -63,5 +63,70 @@
       "has_return_code": 70,
       "on_line": 7
     }
+  },
+  {
+    "name": "Return value test",
+    "description": "Expect functions to be able to return values using the 'return' keyword",
+    "reason": "To check functions return as expected",
+    "file": "return.lox",
+    "expect": {}
+  },
+  {
+    "name": "Immutable args test",
+    "description": "Expect args not marked with 'mut' to not allow assignment or modification",
+    "file": "immutable_args.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 2,
+      "has_return_code": 65,
+      "to_error": ["Variable isn't mutable"]
+    }
+  },
+  {
+    "name": "Mutable args test",
+    "description": "Expect args marked with 'mut' to allow assignment and modification",
+    "file": "mutable_args.lox",
+    "expect": { }
+  },
+  {
+    "name": "Too many args test",
+    "description": "Expect number of args to be checked before a function is called",
+    "reason": "To check too many args being passed to a function results in an error",
+    "file": "too_many_args.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 5,
+      "has_return_code": 70,
+      "to_error": ["expected 1, have 5"]
+    }
+  },
+  {
+    "name": "Too few args test",
+    "description": "Expect number of args to be checked before a function is called",
+    "reason": "To check too few args being passed to a function results in an error",
+    "file": "too_few_args.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 4,
+      "has_return_code": 70,
+      "to_error": ["expected 7, have 1"]
+    }
+  },
+  {
+    "name": "Max arg count test",
+    "description": "Expect number of args to be limited to 255",
+    "file": "max_arglist.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 65,
+      "on_line": 257,
+      "to_error": ["Can't have more than 255 parameters"]
+    }
+  },
+  {
+    "name": "Trailing comma test",
+    "description": "Allow commas to be trailing for functions calls and defines",
+    "file": "trailing_comma.lox",
+    "expect": { }
   }
 ]

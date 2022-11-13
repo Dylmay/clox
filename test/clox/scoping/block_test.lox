@@ -1,0 +1,32 @@
+// Test variable scoping
+let scoped_var = "scoped var";
+{
+    let scoped_var = "inner scoped var";
+
+    assert(scoped_var == "inner scoped var", "Inner scope should be used (1/2");
+}
+
+// Test function scoping
+fn scoped_fn() {
+    return "scoped fn";
+}
+
+{
+    fn scoped_fn() {
+        return "inner scoped fn";
+    }
+
+    assert(scoped_fn() == "inner scoped fn", "Inner scope should be used (2/2");
+}
+
+// Test outer scoping
+let mut inner_val;
+{
+    inner_val = "inner val";
+}
+assert(inner_val == "inner val", "Inner scope should write to outer var");
+
+{
+    let internal_scope = "inner scoped val";
+}
+assert(internal_scope != "inner scoped val", "Internal scope should not be visible");

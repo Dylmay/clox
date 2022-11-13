@@ -1,0 +1,3 @@
+assert(true or false and false == true, "true or false and false should be true");
+assert((true or false) and false == false, "(true or false) and false should be false");
+assert(true or (false and false) == true, "true or (false and false) should be true");

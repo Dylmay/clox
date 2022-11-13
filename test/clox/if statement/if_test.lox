@@ -25,3 +25,12 @@ if (false) {
 } else {
   print("false is not true. Parens are ignored");
 }
+
+if true {
+} else {
+  assert_never("empty if statements should still work correctly (true)");
+}
+
+if false {
+   assert_never("empty if statements should still work correctly (false)");
+} else {}

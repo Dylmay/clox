@@ -1,0 +1,5 @@
+fn one_arg(arg) {
+    return arg;
+}
+
+assert(one_arg(1, 2, 3, 4, 5) != 1, "Too many args should stop a function from being called");

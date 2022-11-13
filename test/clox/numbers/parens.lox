@@ -1,0 +1,12 @@
+let mut val = 10 * 10 + 1;
+assert(val == 101, "expected '10 * 10 + 1' to equal 101 but equals " + str(val));
+val = 10 * (10 + 1);
+assert(val == 110, "expected '10 * (10 + 1)' to equal 110 but equals " + str(val));
+val = (10 * 10) + 1;
+assert(val == 101, "expected '(10 * 10) + 1' to equal 110 but equals " + str(val));
+val = 10 * (10 / 5 mod 20) - 32 + 232;
+assert(val == 220, "expected '10 * (10 / 5 mod 20) - 32 + 232' to equal 220 but equals " + str(val));
+val = 10 * 10 / 5 mod (20 - 32) + 232;
+assert(val == 240, "expected '10 * 10 / 5 mod (20 - 32) + 232' to equal 240 but equals " + str(val));
+val = 10 * 10 / 5 mod (20 - 32 + 232);
+assert(val == 20, "expected '10 * 10 / 5 mod (20 - 32 + 232)' to equal 20 but equals " + str(val));

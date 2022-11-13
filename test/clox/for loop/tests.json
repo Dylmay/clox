@@ -20,14 +20,26 @@
     }
   },
   {
-    "name": "For loop requires iterator test",
-    "description": "Expect the for loop to only accept numbers within the iterator",
-    "reason": "To check loops require a numbered range",
-    "file": "loop_number_iter.lox",
+    "name": "For loop can use itertype",
+    "description": "Expect the for loop to accept any object with an itertype",
+    "reason": "To check loops can be defined for more than just integers",
+    "file": "loop_any_iter.lox",
     "expect": {
-      "to_fail": true,
-      "on_line": 1,
-      "has_return_code": 65
+      "to_output": ["itera", "iterb", "iterc"]
+    }
+  },
+  {
+    "name": "For loops require integer values",
+    "description": "Expect for loops to only accept integer values and not decimals",
+    "file": "integer_vals.lox",
+    "expect": {}
+  },
+  {
+    "name": "For loop can use variable",
+    "description": "Expect the for loop to be able to use a variable",
+    "file": "for_loop_vars.lox",
+    "expect": {
+      "to_output": ["itera", "iterb", "iterc"]
     }
   },
   {
@@ -37,8 +49,9 @@
     "file": "loop_immutable_iter.lox",
     "expect": {
       "to_fail": true,
-      "on_line": 1,
-      "has_return_code":65
+      "on_line": 4,
+      "has_return_code":65,
+      "to_error": ["Variable isn't mutable"]
     }
   }
 ]

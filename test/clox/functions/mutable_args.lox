@@ -1,0 +1,7 @@
+fn mutable_args(mut arg) {
+    arg = 123;
+
+    return arg;
+}
+
+assert(mutable_args(456) == 123, "args should be mutable");

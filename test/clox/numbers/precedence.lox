@@ -1,0 +1,10 @@
+let mut val = 10 * 10 / 5 mod 20 - 32 + 232;
+assert(val == 200, "Expected val to equal 200 but equals " + str(val));
+val = -10 * +10 / +5 mod +20 - 32 + 232;
+assert(val == 200, "Expected val to equal 200 but equals " + str(val));
+val = -10 + +10 * +5 / +20 mod 32 - 232;
+assert(val == -239.5, "Expected val to equal -239.5 but equals " + str(val));
+val = -10 - +10 + +5 * +20 / 32 mod 232;
+assert(val == -16.875, "Expected val to equal -16.875 but equals " + str(val));
+val = -10 mod +10 - +5 + +20 * 32 / 232;
+assert(round(val, 3) == -2.241, "Expected val to equal -2.241 but equals " + str(val));

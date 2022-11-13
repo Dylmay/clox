@@ -1,0 +1,13 @@
+[
+  {
+    "name": "Scoping block test",
+    "description": "Expect blocks to scope defined items",
+    "file": "block_test.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 32,
+      "has_return_code": 70,
+      "to_error": ["undefined global"]
+    }
+  }
+]

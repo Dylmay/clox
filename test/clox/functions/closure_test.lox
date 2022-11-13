@@ -1,7 +1,7 @@
 let x = "global";
 
 fn outer() {
-    let x = "outer";
+    let x = "outer string";
 
     fn inner() {
         print(x);

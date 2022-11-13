@@ -1,5 +1,9 @@
+let unset_value;
+
 let non_mutable_value = "non-mutable";
 
+unset_value = "value is now set";
 print(non_mutable_value);
+print(unset_value);
 
 non_mutable_value = "can't mutate";

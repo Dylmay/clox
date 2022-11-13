@@ -1,0 +1,9 @@
+fn trailing_comma(
+    a,
+    b,
+    c,
+) {
+    return true;
+}
+
+assert(trailing_comma(1, 2, 3,) == true, "Comma can be trailing");

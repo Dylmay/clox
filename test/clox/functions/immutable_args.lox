@@ -1,0 +1,8 @@
+fn immutable_args(val) {
+    val = 123;
+
+    return val;
+}
+
+// TODO: memory issue
+immutable_args(567);

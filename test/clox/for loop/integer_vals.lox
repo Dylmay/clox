@@ -1,0 +1,9 @@
+let start = 0;
+let end = 100;
+
+let mut total = 0;
+for i in start..end {
+    total = total + i;
+}
+
+assert(total == 100, "Total should equal 100 but equals " + str(total));

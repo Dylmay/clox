@@ -8,9 +8,11 @@ let positive_num = +123;
 
 let non_underscored_num =  12345.67890;
 let underscored_num = 1___2_3___45_.6_78_9_;
+let padded_num = 0000000000000000123;
 
 assert(num_var == num_with_underscores, "Underscores should be ignored when parsing the number");
 assert(decimal_num == decimal_num_with_underscores, "Underscores should be ignored when parsing the decimal number");
 assert(non_underscored_num == underscored_num, "Underscores should be ignored even when there is many");
 assert(negative_num < 0, "Numbers with a '-' should be treated as negative unary");
 assert(positive_num > 0, "Numbers with a '+' should be treated as positive unary");
+assert(padded_num == 123, "left-hand zeros should not affect the number value and are valid");

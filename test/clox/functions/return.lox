@@ -1,0 +1,29 @@
+fn return_num() {
+    return 1_234;
+}
+
+fn return_str() {
+    return "string";
+}
+
+fn return_bool() {
+    return true;
+}
+
+fn return_nil() {
+    return nil;
+}
+
+// TODO: fix so it is a valid statement
+fn return_none() {
+    return;
+}
+
+fn empty_fn() { }
+
+assert(return_num() == 1_234, "return_num() should return a number");
+assert(return_str() == "string", "return_str() should return a string");
+assert(return_bool() == true, "return_bool() should return a bool");
+assert(return_nil() == nil, "return_nil() should return a nil value");
+assert(return_none() == nil, "functions should implicitly return nil (1/2)");
+assert(empty_fn() == nil, "functions should implicitly return nil (2/2)");
