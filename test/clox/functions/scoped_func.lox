@@ -4,13 +4,24 @@ fn printWord(word) {
 
 fn itemToStr(item) {
     fn toStr(item) {
-        str(item);
+        return str(item);
     }
 
-    return to_str(item);
+    return toStr(item);
 }
 
 print(itemToStr(12345));
+
+
+fn otherToStr(a) {
+    fn toStr(b) {
+        return str(b);
+    }
+
+    return toStr(a);
+}
+
+print(otherToStr(67890));
 
 {
     fn scopedFn(value) {

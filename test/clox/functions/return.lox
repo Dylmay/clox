@@ -1,3 +1,7 @@
+fn return_fn() {
+    return str;
+}
+
 fn return_num() {
     return 1_234;
 }
@@ -27,3 +31,5 @@ assert(return_bool() == true, "return_bool() should return a bool");
 assert(return_nil() == nil, "return_nil() should return a nil value");
 assert(return_none() == nil, "functions should implicitly return nil (1/2)");
 assert(empty_fn() == nil, "functions should implicitly return nil (2/2)");
+assert(return_fn() == str, "functions should be able to return other functions. Returned " + str(return_fn()));
+assert(return_fn()(10) == "10", "return_fn should be useable");

@@ -6,3 +6,9 @@ fn hi(name, mut value) {
 }
 
 print(hi("a", "b"));
+
+fn call_passed_function(function, item) {
+  return function(item);
+}
+
+assert(call_passed_function(str, 12345) == "12345", "function wasn't called on the passed item");

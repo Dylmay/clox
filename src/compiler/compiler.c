@@ -724,7 +724,7 @@ static void __parse_return_stmt(struct compiler *compiler)
 		parser_consume(compiler->prsr, TKN_SEMICOLON,
 			       "Expected ';' after return value.");
 	}
-	OP_RETURN_WRITE(compiler->fn, compiler->prsr->previous.line);
+	OP_RETURN_WRITE(compiler->fn, compiler->prsr->current.line);
 }
 
 static void __compiler_begin_scope(struct compiler *compiler)
