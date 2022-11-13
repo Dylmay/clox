@@ -584,7 +584,7 @@ static void __parse_for_stmt(struct compiler *compiler)
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_NUMBER(range_start),
 		       compiler->prsr->previous.line);
 	lookup_var_t glbl_idx =
-		__compiler_define_var(compiler, name, len, def_ln, true);
+		__compiler_define_var(compiler, name, len, def_ln, false);
 
 	parser_consume(compiler->prsr, TKN_DOT, "Expected range '..'");
 	parser_consume(compiler->prsr, TKN_DOT, "Expected range '..'");
