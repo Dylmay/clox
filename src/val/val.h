@@ -28,6 +28,7 @@ enum object_type {
 	OBJ_FN,
 	OBJ_NATIVE,
 	OBJ_CLOSURE,
+	OBJ_UPVALUE,
 };
 
 //! @brief lox number
@@ -61,6 +62,7 @@ typedef struct object_str {
 typedef struct object_fn {
 	struct object obj;
 	int arity;
+	uint16_t upval_cnt;
 	chunk_t chunk;
 	struct object_str *name;
 } lox_fn_t;
@@ -73,7 +75,13 @@ typedef struct object_native_fn {
 
 typedef struct object_closure {
 	struct object obj;
+	list_t upvalues;
 	lox_fn_t *fn;
 } lox_closure_t;
+
+typedef struct object_upval {
+	struct object obj;
+	lox_val_t *location;
+} lox_upval_t;
 
 #endif // __CLOX_UTIL_VALUE_H__

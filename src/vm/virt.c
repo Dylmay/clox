@@ -58,6 +58,7 @@ static uint32_t __frame_proc_idx(struct vm_call_frame *);
 static uint32_t __frame_proc_idx_ext(struct vm_call_frame *);
 static int16_t __frame_proc_jump_offset(struct vm_call_frame *);
 static void __vm_discard(vm_t *vm, uint32_t discard_cnt);
+static lox_upval_t *__vm_capture_upval(vm_t *vm, size_t idx);
 
 #define VM_PEEK_NUM(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.number)
 #define VM_PEEK_BOOL(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.boolean)
@@ -251,6 +252,22 @@ static enum vm_res __vm_run(vm_t *vm)
 				object_closure_new(OBJECT_AS_FN(fn));
 
 			__vm_push_const(vm, VAL_CREATE_OBJ(closure));
+			for (size_t i = 0; i < closure->fn->upval_cnt; i++) {
+				lox_upval_t *upval;
+				bool is_local = __frame_read_byte(cur_frame);
+				uint8_t idx = __frame_read_byte(
+					cur_frame); // TODO: add support for wide commands
+
+				if (is_local) {
+					upval = __vm_capture_upval(
+						vm, cur_frame->stack_snapshot +
+							    idx);
+				} else {
+					upval = object_closure_get_upval(
+						cur_frame->closure, idx);
+				}
+				object_closure_push_upval(closure, upval);
+			}
 		} break;
 
 		case OP_CLOSURE_LONG: {
@@ -355,6 +372,37 @@ static enum vm_res __vm_run(vm_t *vm)
 						    __vm_pop_const(vm))));
 			break;
 
+		case OP_UPVALUE_GET: {
+			uint32_t slot = __frame_proc_idx(cur_frame);
+			const lox_upval_t *upval = object_closure_get_upval(
+				cur_frame->closure, slot);
+			__vm_push_const(vm, *upval->location);
+		} break;
+
+		case OP_UPVALUE_GET_LONG: {
+			uint32_t slot = __frame_proc_idx_ext(cur_frame);
+			const lox_upval_t *upval = object_closure_get_upval(
+				cur_frame->closure, slot);
+
+			__vm_push_const(vm, *upval->location);
+		} break;
+
+		case OP_UPVALUE_SET: {
+			uint32_t slot = __frame_proc_idx(cur_frame);
+			lox_val_t *new_val = __vm_peek_const_ptr(vm, 0);
+
+			object_closure_set_upval(cur_frame->closure, slot,
+						 new_val);
+		} break;
+
+		case OP_UPVALUE_SET_LONG: {
+			uint32_t slot = __frame_proc_idx_ext(cur_frame);
+			lox_val_t *new_val = __vm_peek_const_ptr(vm, 0);
+
+			object_closure_set_upval(cur_frame->closure, slot,
+						 new_val);
+		} break;
+
 		case OP_GLOBAL_DEFINE: {
 			uint32_t idx = __frame_proc_idx(cur_frame);
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
@@ -412,6 +460,7 @@ static enum vm_res __vm_run(vm_t *vm)
 				return INTERPRET_RUNTIME_ERROR;
 			}
 		} break;
+
 		case OP_VAR_DEFINE: {
 			__frame_proc_idx(cur_frame);
 			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
@@ -754,10 +803,10 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 			}
 
 			return __vm_call(vm, closure);
-		} break;
+		}
 
 		case OBJ_NATIVE: {
-			lox_native_t *native = OBJECT_AS_NATIVE(callee);
+			const lox_native_t *native = OBJECT_AS_NATIVE(callee);
 
 			lox_val_t res = native->fn(
 				call_arity,
@@ -778,6 +827,7 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 		}
 
 		default:
+			assert(("Unknown value call type", 0));
 			break;
 		}
 	}
@@ -796,4 +846,14 @@ static bool __vm_call(vm_t *vm, lox_closure_t *closure)
 	list_push(&vm->frames, &frame);
 
 	return true;
+}
+
+static lox_upval_t *__vm_capture_upval(vm_t *vm, size_t idx)
+{
+	list_t *stack = &vm->stack;
+	lox_val_t *slot = list_get(stack, idx);
+
+	lox_upval_t *new_upval = object_upval_new(slot);
+
+	return new_upval;
 }

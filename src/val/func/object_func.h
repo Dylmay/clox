@@ -70,6 +70,17 @@
 #define OBJECT_IS_CLOSURE(obj) (object_is_type(obj, OBJ_CLOSURE))
 
 /**
+ * @brief Checks whether the passed lox value is an upvalue
+ *
+ * @see lox_upval_t
+ *
+ * @return true lox_upval_t is an object and is an upval
+ * @return false lox_upval_t is not an object or is not an upval
+ *
+ */
+#define OBJECT_IS_UPVALUE(obj) (object_is_type(obj, OBJ_UPVALUE))
+
+/**
  * @brief returns the the passed lox value as a lox string. Undefined behaviour if the value is not a lox object and is not lox string
  *
  * @see lox_str_t
@@ -115,6 +126,18 @@
  *
  */
 #define OBJECT_AS_CLOSURE(obj) (((struct object_closure *)VAL_AS_OBJ(obj)))
+
+/**
+ * @brief returns the passed lox value as a lox upvalue. Undefined behaviour if the value is not a lox object and is not a lox upvalue
+ *
+ * @see lox_upval_t
+ *
+ * @param obj the lox value to get as a lox upvalue
+ *
+ * @return struct object_upval * lox upvalue
+ *
+ */
+#define OBJECT_AS_UPVALUE(obj) (((struct object_upval *)VAL_AS_OBJ(obj)))
 
 /**
  * @brief returns the passed lox value as a lox string and gets the c string (asciiz) associated with it.
@@ -207,6 +230,53 @@ struct object_native_fn *object_native_fn_new(native_fn native_fn);
  * @return struct object_closure* the new object closure
  */
 struct object_closure *object_closure_new(struct object_fn *fn);
+
+/**
+ * @brief gets the upvalue at the given position within the closure
+ *
+ * @param closure the closure to read
+ * @param idx the index of the upvalue
+ * @return lox_upval_t* the upvalue pointer
+ */
+static inline lox_upval_t *
+object_closure_get_upval(struct object_closure *closure, int idx)
+{
+	return *(lox_upval_t **)list_get(&closure->upvalues, idx);
+}
+
+/**
+ * @brief sets the given upvalue with the chosen value
+ *
+ * @param closure the closure to write to
+ * @param idx the index of the upvalue
+ * @param val the new value
+ */
+static inline void object_closure_set_upval(struct object_closure *closure,
+					    int idx, lox_val_t *val)
+{
+	lox_upval_t *upval = object_closure_get_upval(closure, idx);
+	upval->location = val;
+}
+
+/**
+ * @brief pushes the given value on to the upvalue list
+ *
+ * @param closure the closure to write to
+ * @param val the new upvalue value
+ */
+static inline void object_closure_push_upval(struct object_closure *closure,
+					     lox_upval_t *val)
+{
+	list_push(&closure->upvalues, &val);
+}
+
+/**
+ * @brief creates a new upvalue over the given lox value
+ *
+ * @param slot the value to wrap
+ * @return struct object_upval* the new object upvalue
+ */
+struct object_upval *object_upval_new(lox_val_t *slot);
 
 /**
  * @brief whether the two passed objects are equal

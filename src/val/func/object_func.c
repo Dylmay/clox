@@ -47,6 +47,7 @@ struct object_fn *object_fn_new()
 	struct object_fn *fn = ALLOCATE_OBJECT(struct object_fn, OBJ_FN);
 
 	fn->arity = 0;
+	fn->upval_cnt = 0;
 	fn->name = NULL;
 	fn->chunk = chunk_new();
 
@@ -84,8 +85,20 @@ struct object_closure *object_closure_new(struct object_fn *fn)
 		ALLOCATE_OBJECT(struct object_closure, OBJ_CLOSURE);
 
 	closure->fn = fn;
+	closure->upvalues = list_of_type(struct object_upval *);
+	list_set_cap(&closure->upvalues, fn->upval_cnt);
 
 	return closure;
+}
+
+struct object_upval *object_upval_new(lox_val_t *slot)
+{
+	struct object_upval *upval =
+		ALLOCATE_OBJECT(struct object_upval, OBJ_UPVALUE);
+
+	upval->location = slot;
+
+	return upval;
 }
 
 void object_free(struct object *obj)
@@ -109,8 +122,14 @@ void object_free(struct object *obj)
 		FREE(struct object_native_fn, obj);
 		break;
 
-	case OBJ_CLOSURE:
+	case OBJ_CLOSURE: {
+		struct object_closure *closure = (struct object_closure *)obj;
+		list_free(&closure->upvalues);
 		FREE(struct object_closure, obj);
+	} break;
+
+	case OBJ_UPVALUE:
+		FREE(struct object_upval, obj);
 		break;
 
 	default:
@@ -137,6 +156,10 @@ void object_print(lox_val_t val)
 		__print_function(OBJECT_AS_CLOSURE(val)->fn);
 		break;
 
+	case OBJ_UPVALUE:
+		val_print(*OBJECT_AS_UPVALUE(val)->location);
+		break;
+
 	default:
 		assert(("Unknown object type", 0));
 		break;
@@ -160,32 +183,34 @@ lox_val_t object_to_string(lox_val_t val)
 
 	case OBJ_FN: {
 		struct object_fn *fn = OBJECT_AS_FN(val);
+		struct object_str *string;
 
 		if (fn->name == NULL) {
-			return VAL_CREATE_OBJ(object_str_new(
-				SCRIPT_STR, sizeof(SCRIPT_STR) - 1));
+			string = object_str_new(SCRIPT_STR,
+						sizeof(SCRIPT_STR) - 1);
 		} else {
 			size_t len = (sizeof("<fn >") - 1) + fn->name->len;
 			char *concat_str = reallocate(NULL, 0, len);
 			snprintf(concat_str, len, "<fn %s>", fn->name->chars);
-			struct object_str *interned_str =
-				object_str_new(concat_str, len);
 			reallocate(concat_str, len, 0);
 
-			return VAL_CREATE_OBJ(interned_str);
+			string = object_str_new(concat_str, len);
 		}
-	} break;
+
+		return VAL_CREATE_OBJ(string);
+	}
 
 	case OBJ_NATIVE:
 		return VAL_CREATE_OBJ(object_str_new(
 			NATIVE_FN_STR, sizeof(NATIVE_FN_STR) - 1));
-		break;
+
+	case OBJ_UPVALUE:
+		return object_to_string(*OBJECT_AS_UPVALUE(val)->location);
 
 	default:
 		assert(("Unknown object type", 0));
 		return VAL_CREATE_OBJ(
 			object_str_new(UNKNOWN_STR, sizeof(UNKNOWN_STR) - 1));
-		break;
 	}
 }
 

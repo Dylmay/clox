@@ -59,6 +59,18 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 		return __closure_long_instr(op_name(instruction), chunk,
 					    offset);
 
+	case OP_UPVALUE_GET:
+		return __var_instr(op_name(instruction), chunk, offset);
+
+	case OP_UPVALUE_GET_LONG:
+		return __var_long_instr(op_name(instruction), chunk, offset);
+
+	case OP_UPVALUE_SET:
+		return __var_instr(op_name(instruction), chunk, offset);
+
+	case OP_UPVALUE_SET_LONG:
+		return __var_long_instr(op_name(instruction), chunk, offset);
+
 	case OP_VAR_DEFINE:
 		return __var_instr(op_name(instruction), chunk, offset);
 
