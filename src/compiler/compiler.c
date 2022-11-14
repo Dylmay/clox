@@ -675,17 +675,17 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 				       "Expected variable name");
 
 			uint32_t def_ln = compiler->prsr->previous.line;
-			const char *name = compiler->prsr->previous.start;
+			const char *var_name = compiler->prsr->previous.start;
 			size_t len = compiler->prsr->previous.len;
 
-			if (__compiler_has_defined(compiler, name, len)) {
+			if (__compiler_has_defined(compiler, var_name, len)) {
 				parser_error_at_previous(
 					compiler->prsr,
 					"Variables cannot be redefined.");
 			}
 
 			if (!parser_had_error(compiler->prsr)) {
-				__compiler_define_var(&new_comp, name, len,
+				__compiler_define_var(&new_comp, var_name, len,
 						      def_ln, is_mutable);
 			}
 		} while (parser_match(compiler->prsr, TKN_COMMA));

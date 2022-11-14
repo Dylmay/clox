@@ -18,8 +18,8 @@ static lookup_var_t *__lookup_find_name_ptr(lookup_t *lookup, const char *name,
 					    size_t len);
 static lookup_var_t *__lookup_scope_find_name_ptr(lookup_t *lookup,
 						  const char *name, size_t len);
-static size_t __lookup_inc_global_cnt(lookup_t *lookup);
-static size_t __lookup_inc_local_cnt(lookup_t *lookup);
+static uint32_t __lookup_inc_global_cnt(lookup_t *lookup);
+static uint32_t __lookup_inc_local_cnt(lookup_t *lookup);
 
 void lookup_entry_free(struct map_entry entry, struct map_for_each_entry *data)
 {
@@ -220,12 +220,17 @@ static lookup_var_t *__lookup_find_name_ptr(lookup_t *lookup, const char *name,
 	return NULL;
 }
 
-static size_t __lookup_inc_global_cnt(lookup_t *lookup)
+static uint32_t __lookup_inc_global_cnt(lookup_t *lookup)
 {
+	assert(("Lookup global count will overflow",
+		lookup->glbl_idx != UINT32_MAX));
+
 	return lookup->glbl_idx++;
 }
 
-static size_t __lookup_inc_local_cnt(lookup_t *lookup)
+static uint32_t __lookup_inc_local_cnt(lookup_t *lookup)
 {
+	assert(("Lookup local count will overflow",
+		lookup->cur_idx != UINT32_MAX));
 	return lookup->cur_idx++;
 }
