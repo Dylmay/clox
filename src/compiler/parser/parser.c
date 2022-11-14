@@ -2,6 +2,10 @@
 
 #include <stdio.h>
 
+/* Forwards */
+static void __parser_unescape_string(parser_t *prsr);
+/* Forwards */
+
 bool parser_check(const parser_t *prsr, enum tkn_type type)
 {
 	return prsr->current.type == type;
@@ -20,6 +24,9 @@ void parser_advance(parser_t *prsr)
 		case TKN_ERR:
 			parser_error_at_current(prsr, prsr->current.start);
 			break;
+		case TKN_STR:
+			__parser_unescape_string(prsr);
+			return;
 		default:
 			return;
 		}
@@ -91,4 +98,70 @@ void parser_sync(parser_t *prsr)
 
 		parser_advance(prsr);
 	}
+}
+
+// NOTE: string unescaping is destructive
+// (saves creating a buffer for a known, valid string)
+// if the escaped character is invalid, an error is reported so the
+// string should not be present in the vm at runtime
+// NOTE: also does not update the string token length so
+// the string token will be out-of-sync for any escaped character strings
+static void __parser_unescape_string(parser_t *prsr)
+{
+	size_t idx = 0;
+	int offset = 0;
+	char *chars = (char *)prsr->current.start + 1;
+	size_t len = prsr->current.len - 1;
+
+#define CHAR_OFFSET() (idx + offset)
+
+	for (; CHAR_OFFSET() < len; idx++) {
+#define HAS_NEXT_CHAR() (idx + offset + 1 < len)
+
+		char cur_char = chars[CHAR_OFFSET()];
+
+		if (cur_char == '\\' && HAS_NEXT_CHAR()) {
+			offset++;
+			char next_char = chars[CHAR_OFFSET()];
+			switch (next_char) {
+			case 'a':
+				cur_char = '\a';
+				break;
+			case 'b':
+				cur_char = '\b';
+				break;
+			case 'f':
+				cur_char = '\f';
+				break;
+			case 'n':
+				cur_char = '\n';
+				break;
+			case 'r':
+				cur_char = '\r';
+				break;
+			case 't':
+				cur_char = '\t';
+				break;
+			case 'v':
+				cur_char = '\v';
+				break;
+			case '\\':
+				cur_char = '\\';
+				break;
+			case '"':
+				cur_char = '\"';
+				break;
+			default:
+				parser_error_at_current(
+					prsr, "Unknown escape sequence");
+			}
+		}
+		chars[idx] = cur_char;
+
+#undef HAS_NEXT_CHAR
+	}
+
+#undef CHAR_OFFSET
+
+	prsr->current.len = idx + 1;
 }

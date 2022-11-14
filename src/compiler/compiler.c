@@ -76,8 +76,6 @@ static void __parse_return_stmt(struct compiler *);
 static uint8_t __parse_arglist(struct compiler *);
 static bool __compiler_has_defined(struct compiler *, const char *, size_t);
 static void __compiler_import(struct compiler *, struct import_list);
-static size_t __compiler_unescape_string(struct compiler *compiler, char *chars,
-					 size_t len);
 /* Forwards */
 
 static struct parse_rule PARSE_RULES[] = {
@@ -345,13 +343,9 @@ static void __parse_lit(struct compiler *compiler)
 
 static void __parse_string(struct compiler *compiler)
 {
-	// see warning for __compiler_unescape_string()
-	size_t unescaped_len = __compiler_unescape_string(
-		compiler, (char *)compiler->prsr->previous.start + 1,
-		compiler->prsr->previous.len - 2);
-
-	struct object_str *string = object_str_new(
-		compiler->prsr->previous.start + 1, unescaped_len);
+	struct object_str *string =
+		object_str_new(compiler->prsr->previous.start + 1,
+			       compiler->prsr->previous.len - 2);
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_OBJ(string),
 		       compiler->prsr->previous.line);
 }
@@ -822,70 +816,4 @@ static void __compiler_import(struct compiler *compiler,
 		__compiler_define_var(compiler, native_fn.fn_name,
 				      native_fn.name_sz, line, false);
 	}
-}
-
-// NOTE: string unescaping is destructive
-// (saves creating a buffer for a known, valid string)
-// if the escaped character is invalid, an error is reported so the
-// string should not be present in the vm at runtime
-// NOTE: also does not update the string token length so
-// the string token will be out-of-sync for any escaped character strings
-static size_t __compiler_unescape_string(struct compiler *compiler, char *chars,
-					 size_t len)
-{
-	size_t idx = 0;
-	int offset = 0;
-
-#define CHAR_OFFSET() (idx + offset)
-
-	for (; CHAR_OFFSET() < len; idx++) {
-#define HAS_NEXT_CHAR() (idx + offset + 1 < len)
-
-		char cur_char = chars[CHAR_OFFSET()];
-
-		if (cur_char == '\\' && HAS_NEXT_CHAR()) {
-			offset++;
-			char next_char = chars[CHAR_OFFSET()];
-			switch (next_char) {
-			case 'a':
-				cur_char = '\a';
-				break;
-			case 'b':
-				cur_char = '\b';
-				break;
-			case 'f':
-				cur_char = '\f';
-				break;
-			case 'n':
-				cur_char = '\n';
-				break;
-			case 'r':
-				cur_char = '\r';
-				break;
-			case 't':
-				cur_char = '\t';
-				break;
-			case 'v':
-				cur_char = '\v';
-				break;
-			case '\\':
-				cur_char = '\\';
-				break;
-			case '"':
-				cur_char = '\"';
-				break;
-			default:
-				parser_error_at_previous(
-					compiler->prsr,
-					"Unknown escape sequence");
-			}
-		}
-		chars[idx] = cur_char;
-
-#undef HAS_NEXT_CHAR
-	}
-
-#undef CHAR_OFFSET
-
-	return idx;
 }
