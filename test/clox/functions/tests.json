@@ -1,5 +1,13 @@
 [
   {
+    "name": "Make closure test",
+    "description": "Expect functions to be able to make closures",
+    "file": "make_closure.lox",
+    "expect": {
+      "to_output": ["doughnut", "bagel"]
+    }
+  },
+  {
     "name": "Arg Call Test",
     "description": "Expect functions to be callable with multiple arguments",
     "reason": "To check arg func calls continue to work",

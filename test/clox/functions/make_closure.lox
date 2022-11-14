@@ -1,0 +1,9 @@
+fn make_closure(value) {
+    fn closure() {
+        print(value);
+    }
+}
+let doughnut = make_closure("doughnut");
+let bagel = make_closure("bagel");
+doughnut();
+bagel();
