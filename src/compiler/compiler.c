@@ -189,16 +189,16 @@ static lox_fn_t *__compiler_run(struct compiler compiler, bool is_main)
 lox_fn_t *compile(const char *src, struct state *state)
 {
 	parser_t prsr = parser_new(src);
-	size_t global_sz = lookup_get_size(&state->globals);
+	uint32_t global_sz = lookup_get_size(&state->globals);
 
 	struct compiler compiler = __compiler_new(NULL, &prsr, state, NULL);
 
 	lox_fn_t *fn = __compiler_run(compiler, true);
 
 	if (!fn) {
-		size_t new_global_sz = lookup_get_size(&state->globals);
+		uint32_t new_global_sz = lookup_get_size(&state->globals);
 
-		for (size_t i = global_sz; i < new_global_sz; i++) {
+		for (uint32_t i = global_sz; i < new_global_sz; i++) {
 			lookup_remove(&state->globals, i);
 		}
 	}
