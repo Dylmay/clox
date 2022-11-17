@@ -662,35 +662,35 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 	__compiler_begin_scope(&new_comp);
 	parser_consume(new_comp.prsr, TKN_LEFT_PAREN,
 		       "Expected '(' after function name.");
-	if (!parser_check(compiler->prsr, TKN_RIGHT_PAREN)) {
+	if (!parser_check(new_comp.prsr, TKN_RIGHT_PAREN)) {
 		do {
 			if (arity == 255) {
 				parser_error_at_current(
-					compiler->prsr,
+					new_comp.prsr,
 					"Can't have more than 255 parameters.");
 			}
 			arity++;
 
-			bool is_mutable = parser_match(compiler->prsr, TKN_MUT);
+			bool is_mutable = parser_match(new_comp.prsr, TKN_MUT);
 
-			parser_consume(compiler->prsr, TKN_ID,
+			parser_consume(new_comp.prsr, TKN_ID,
 				       "Expected variable name");
 
-			uint32_t def_ln = compiler->prsr->previous.line;
-			const char *var_name = compiler->prsr->previous.start;
-			size_t len = compiler->prsr->previous.len;
+			uint32_t def_ln = new_comp.prsr->previous.line;
+			const char *var_name = new_comp.prsr->previous.start;
+			size_t len = new_comp.prsr->previous.len;
 
-			if (__compiler_has_defined(compiler, var_name, len)) {
+			if (__compiler_has_defined(&new_comp, var_name, len)) {
 				parser_error_at_previous(
-					compiler->prsr,
+					new_comp.prsr,
 					"Variables cannot be redefined.");
 			}
 
-			if (!parser_had_error(compiler->prsr)) {
+			if (!parser_had_error(new_comp.prsr)) {
 				__compiler_define_var(&new_comp, var_name, len,
 						      def_ln, is_mutable);
 			}
-		} while (parser_match(compiler->prsr, TKN_COMMA));
+		} while (parser_match(new_comp.prsr, TKN_COMMA));
 	}
 	new_comp.fn->arity = arity;
 	parser_consume(new_comp.prsr, TKN_RIGHT_PAREN,
