@@ -95,6 +95,22 @@ typedef uint8_t var_flags_t;
  *
  */
 #define LOOKUP_VAR_GLOBAL (1 << 3)
+/**
+ * @brief flag to indicate lookup variable is not an upvalue
+ *
+ * @see var_flags_t
+ * @see lookup_var_is_upval()
+ *
+ */
+#define LOOKUP_VAR_STANDARD (0 << 4)
+/**
+ * @brief flag to indicate lookup variable is an upvalue
+ *
+ * @see var_flags_t
+ * @see lookup_var_is_upval()
+ *
+ */
+#define LOOKUP_VAR_UPVAL (1 << 4)
 #pragma endregion
 
 //! @brief lookup variable
@@ -160,5 +176,17 @@ static inline bool lookup_var_is_defined(lookup_var_t var)
 static inline bool lookup_var_is_global(lookup_var_t var)
 {
 	return var.var_flags & LOOKUP_VAR_GLOBAL;
+}
+
+/**
+ * @brief returns whether the variable is global
+ *
+ * @param var the variable to check
+ * @return true variable is global
+ * @return false variable is local
+ */
+static inline bool lookup_var_is_upval(lookup_var_t var)
+{
+	return var.var_flags & LOOKUP_VAR_UPVAL;
 }
 #endif // __CLOX_STATE_LOOKUP_VAR_H__

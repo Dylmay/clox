@@ -69,8 +69,11 @@ static void __parse_return_stmt(struct compiler *);
 static uint8_t __parse_arglist(struct compiler *);
 static bool __compiler_has_defined(struct compiler *, const char *, size_t);
 static void __compiler_import(struct compiler *, struct import_list);
-static lookup_var_t __compiler_find_name(struct compiler *, const char *,
-					 size_t);
+static lookup_var_t __compiler_find_name(struct compiler *compiler,
+					 const char *name, size_t name_sz);
+static lookup_var_t __compiler_find_name_local(struct compiler *compiler,
+					       const char *name,
+					       size_t name_sz);
 static lookup_t *__compiler_cur_scope(struct compiler *);
 /* Forwards */
 
@@ -780,6 +783,8 @@ static lookup_var_t __compiler_define_var(struct compiler *compiler,
 
 	if (lookup_var_is_global(new_var)) {
 		OP_GLOBAL_DEFINE_WRITE(compiler->fn, new_var.idx, line);
+	} else if (lookup_var_is_upval(new_var)) {
+		assert(("upval vars should never be defined", 0));
 	} else {
 		OP_VAR_DEFINE_WRITE(compiler->fn, new_var.idx, line);
 	}
@@ -792,6 +797,9 @@ static void __compiler_set_var(struct compiler *compiler, lookup_var_t var)
 	if (lookup_var_is_global(var)) {
 		OP_GLOBAL_SET_WRITE(compiler->fn, var.idx,
 				    compiler->prsr->previous.line);
+	} else if (lookup_var_is_upval(var)) {
+		OP_UPVALUE_SET_WRITE(compiler->fn, var.idx,
+				     compiler->prsr->previous.line);
 	} else {
 		OP_VAR_SET_WRITE(compiler->fn, var.idx,
 				 compiler->prsr->previous.line);
@@ -803,6 +811,10 @@ static void __compiler_get_var(struct compiler *compiler, lookup_var_t var)
 	if (lookup_var_is_global(var)) {
 		OP_GLOBAL_GET_WRITE(compiler->fn, var.idx,
 				    compiler->prsr->previous.line);
+	} else if (lookup_var_is_upval(var)) {
+		compiler->fn->upval_cnt++;
+		OP_UPVALUE_GET_WRITE(compiler->fn, var.idx,
+				     compiler->prsr->previous.line);
 	} else {
 		OP_VAR_GET_WRITE(compiler->fn, var.idx,
 				 compiler->prsr->previous.line);
@@ -856,50 +868,50 @@ static void __compiler_import(struct compiler *compiler,
 	}
 }
 
-// TODO: add upvalue support
-// static lookup_var_t __compiler_find_name(const struct compiler *compiler,
-// 					 const char *name, size_t name_sz)
-// {
-// 	lookup_var_t var;
-// 	const struct compiler *enclosing = compiler;
-
-// 	do {
-// 		var = lookup_find_name(__compiler_cur_scope(enclosing), name,
-// 				       name_sz);
-// 		enclosing = enclosing->enclosing;
-// 	} while (!lookup_var_is_valid(var) && enclosing != NULL);
-
-// 	if (lookup_var_is_valid(var)) {
-// 		return var;
-// 	} else {
-// 		return lookup_find_name(&compiler->global_state->globals, name,
-// 					name_sz);
-// 	}
-// }
-
 static lookup_var_t __compiler_find_name(struct compiler *compiler,
 					 const char *name, size_t name_sz)
 {
-	if (list_size(&compiler->lookup_scopes) != 0) {
-		// return LOOKUP_VAR_TYPE_INVALID;
+	lookup_var_t var;
+	struct compiler *enclosing = compiler;
 
-		for (size_t i = list_size(&compiler->lookup_scopes); i != 0;
-		     i--) {
-			const lookup_t *cur_scope =
-				list_get(&compiler->lookup_scopes, i - 1);
+	do {
+		var = __compiler_find_name_local(enclosing, name, name_sz);
+		enclosing = (struct compiler *)enclosing->enclosing;
+	} while (!lookup_var_is_valid(var) && enclosing != NULL);
 
-			lookup_var_t var =
-				lookup_find_name(cur_scope, name, name_sz);
+	if (!lookup_var_is_valid(var)) {
+		return lookup_find_name(&compiler->global_state->globals, name,
+					name_sz);
+	}
 
-			if (lookup_var_is_valid(var)) {
-				return var;
-			}
+	if (enclosing != compiler->enclosing) {
+		var.var_flags |= LOOKUP_VAR_UPVAL;
+	}
+
+	return var;
+}
+
+static lookup_var_t __compiler_find_name_local(struct compiler *compiler,
+					       const char *name, size_t name_sz)
+{
+	lookup_var_t var = LOOKUP_VAR_TYPE_INVALID;
+
+	if (list_size(&compiler->lookup_scopes) == 0) {
+		return var;
+	}
+
+	for (size_t i = list_size(&compiler->lookup_scopes); i != 0; i--) {
+		const lookup_t *cur_scope =
+			list_get(&compiler->lookup_scopes, i - 1);
+
+		var = lookup_find_name(cur_scope, name, name_sz);
+
+		if (lookup_var_is_valid(var)) {
+			return var;
 		}
 	}
 
-	// TODO: move to checking enclosing compilers first
-	return lookup_find_name(&compiler->global_state->globals, name,
-				name_sz);
+	return var;
 }
 
 static lookup_t *__compiler_cur_scope(struct compiler *compiler)
