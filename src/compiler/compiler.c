@@ -17,18 +17,11 @@
 #include "debug/debug.h"
 #endif
 
-struct compile_unit {
-	lox_fn_t *fn;
-	lookup_t lookup;
-	//list_t scope_lst; // TODO: convert lookup in to hashmaps and let the compiler handle adding/removing/selecting vars
-	bool can_assign;
-};
-
-// TODO: move to compile units. all share a pointer to the compiler struct
 struct compiler {
+	const struct compiler *enclosing;
+	struct state *global_state;
 	parser_t *prsr;
-	struct state *state;
-	// struct compile_unit *comp_unit;
+	list_t lookup_scopes;
 	lox_fn_t *fn;
 	bool can_assign;
 };
@@ -48,8 +41,8 @@ static void __compiler_begin_scope(struct compiler *);
 static void __compiler_end_scope(struct compiler *);
 static lookup_var_t __compiler_define_var(struct compiler *, const char *,
 					  size_t, uint32_t, bool);
-static void __compiler_set_var(struct compiler *, lookup_var_t, uint32_t);
-static void __compiler_get_var(struct compiler *, lookup_var_t, uint32_t);
+static void __compiler_set_var(struct compiler *, lookup_var_t);
+static void __compiler_get_var(struct compiler *, lookup_var_t);
 static void __parse_block(struct compiler *);
 static void __parse_expr(struct compiler *);
 static void __parse_precedence(struct compiler *, enum precedence);
@@ -76,6 +69,9 @@ static void __parse_return_stmt(struct compiler *);
 static uint8_t __parse_arglist(struct compiler *);
 static bool __compiler_has_defined(struct compiler *, const char *, size_t);
 static void __compiler_import(struct compiler *, struct import_list);
+static lookup_var_t __compiler_find_name(struct compiler *, const char *,
+					 size_t);
+static lookup_t *__compiler_cur_scope(struct compiler *);
 /* Forwards */
 
 static struct parse_rule PARSE_RULES[] = {
@@ -130,15 +126,18 @@ static const struct parse_rule *__compiler_get_rule(enum tkn_type tkn)
 	return &PARSE_RULES[tkn];
 }
 
-static struct compiler __compiler_new(parser_t *prsr, struct state *state,
+static struct compiler __compiler_new(const struct compiler *enclosing,
+				      parser_t *prsr, struct state *state,
 				      lox_str_t *name)
 {
 	lox_fn_t *fn = object_fn_new();
 	fn->name = name;
 
 	return (struct compiler){
+		.enclosing = enclosing,
 		.prsr = prsr,
-		.state = state,
+		.global_state = state,
+		.lookup_scopes = list_of_type(lookup_t),
 		.fn = fn,
 		.can_assign = false,
 	};
@@ -190,10 +189,21 @@ static lox_fn_t *__compiler_run(struct compiler compiler, bool is_main)
 lox_fn_t *compile(const char *src, struct state *state)
 {
 	parser_t prsr = parser_new(src);
+	size_t global_sz = lookup_get_size(&state->globals);
 
-	struct compiler compiler = __compiler_new(&prsr, state, NULL);
+	struct compiler compiler = __compiler_new(NULL, &prsr, state, NULL);
 
-	return __compiler_run(compiler, true);
+	lox_fn_t *fn = __compiler_run(compiler, true);
+
+	if (!fn) {
+		size_t new_global_sz = lookup_get_size(&state->globals);
+
+		for (size_t i = global_sz; i < new_global_sz; i++) {
+			lookup_remove(&state->globals, i);
+		}
+	}
+
+	return fn;
 }
 
 static void __parse_expr(struct compiler *compiler)
@@ -438,13 +448,13 @@ static void __parse_expr_stmt(struct compiler *compiler)
 static void __parse_var(struct compiler *compiler)
 {
 	token_t name_tkn = compiler->prsr->previous;
-	lookup_var_t var = lookup_find_name(&compiler->state->globals,
-					    name_tkn.start, name_tkn.len);
+	lookup_var_t var =
+		__compiler_find_name(compiler, name_tkn.start, name_tkn.len);
 
 	if (!lookup_var_is_declared(var)) {
-		var = lookup_declare(&compiler->state->globals,
-				     LOOKUP_GLOBAL_DEPTH, name_tkn.start,
-				     name_tkn.len, false);
+		var = lookup_declare(&compiler->global_state->globals,
+				     name_tkn.start, name_tkn.len,
+				     LOOKUP_VAR_GLOBAL);
 	}
 
 	if (compiler->can_assign && parser_match(compiler->prsr, TKN_EQ)) {
@@ -455,11 +465,9 @@ static void __parse_var(struct compiler *compiler)
 				     "Variable isn't mutable");
 		}
 
-		__compiler_set_var(compiler, var,
-				   compiler->prsr->previous.line);
+		__compiler_set_var(compiler, var);
 	} else {
-		__compiler_get_var(compiler, var,
-				   compiler->prsr->previous.line);
+		__compiler_get_var(compiler, var);
 	}
 }
 
@@ -607,7 +615,7 @@ static void __parse_for_stmt(struct compiler *compiler)
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_NUMBER(1),
 		       compiler->prsr->previous.line);
 	OP_ADD_WRITE(compiler->fn, compiler->prsr->previous.line);
-	__compiler_set_var(compiler, glbl_idx, compiler->prsr->previous.line);
+	__compiler_set_var(compiler, glbl_idx);
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
 	OP_LOOP_WRITE(compiler->fn, inc_start, compiler->prsr->previous.line);
 
@@ -648,8 +656,8 @@ static void __parse_fn_decl(struct compiler *compiler)
 static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 {
 	uint8_t arity = 0;
-	struct compiler new_comp =
-		__compiler_new(compiler->prsr, compiler->state, name);
+	struct compiler new_comp = __compiler_new(compiler, compiler->prsr,
+						  compiler->global_state, name);
 
 	__compiler_begin_scope(&new_comp);
 	parser_consume(new_comp.prsr, TKN_LEFT_PAREN,
@@ -723,25 +731,52 @@ static void __parse_return_stmt(struct compiler *compiler)
 
 static void __compiler_begin_scope(struct compiler *compiler)
 {
-	lookup_begin_scope(&compiler->state->globals);
+	uint32_t cur_idx;
+
+	if (list_size(&compiler->lookup_scopes) == 0) {
+		cur_idx = 0;
+	} else {
+		const lookup_t *cur_scope =
+			(lookup_t *)list_peek(&compiler->lookup_scopes);
+
+		cur_idx = lookup_get_idx(cur_scope);
+	}
+
+	lookup_t new_scope = lookup_new(cur_idx);
+
+	list_push(&compiler->lookup_scopes, &new_scope);
 }
 
 static void __compiler_end_scope(struct compiler *compiler)
 {
-	OP_POP_COUNT_WRITE(
-		compiler->fn,
-		map_size(lookup_cur_scope(&compiler->state->globals)),
-		compiler->prsr->previous.line);
+	lookup_t *cur_scope = __compiler_cur_scope(compiler);
+	uint32_t scope_sz = lookup_get_size(cur_scope);
 
-	lookup_end_scope(&compiler->state->globals);
+	OP_POP_COUNT_WRITE(compiler->fn, scope_sz,
+			   compiler->prsr->previous.line);
+
+	lookup_free(cur_scope);
+	list_pop(&compiler->lookup_scopes);
 }
 
 static lookup_var_t __compiler_define_var(struct compiler *compiler,
 					  const char *name, size_t len,
 					  uint32_t line, bool mutable)
 {
-	lookup_var_t new_var =
-		lookup_define(&compiler->state->globals, name, len, mutable);
+	// TODO: split in to two functions
+	var_flags_t flags = mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_IMMUTABLE;
+	lookup_var_t new_var;
+
+	if (compiler->enclosing == NULL &&
+	    list_size(&compiler->lookup_scopes) == 0) {
+		flags |= LOOKUP_VAR_GLOBAL;
+
+		new_var = lookup_define(&compiler->global_state->globals, name,
+					len, flags);
+	} else {
+		new_var = lookup_define(__compiler_cur_scope(compiler), name,
+					len, flags);
+	}
 
 	if (lookup_var_is_global(new_var)) {
 		OP_GLOBAL_DEFINE_WRITE(compiler->fn, new_var.idx, line);
@@ -752,8 +787,7 @@ static lookup_var_t __compiler_define_var(struct compiler *compiler,
 	return new_var;
 }
 
-static void __compiler_set_var(struct compiler *compiler, lookup_var_t var,
-			       uint32_t line)
+static void __compiler_set_var(struct compiler *compiler, lookup_var_t var)
 {
 	if (lookup_var_is_global(var)) {
 		OP_GLOBAL_SET_WRITE(compiler->fn, var.idx,
@@ -764,8 +798,7 @@ static void __compiler_set_var(struct compiler *compiler, lookup_var_t var,
 	}
 }
 
-static void __compiler_get_var(struct compiler *compiler, lookup_var_t var,
-			       uint32_t line)
+static void __compiler_get_var(struct compiler *compiler, lookup_var_t var)
 {
 	if (lookup_var_is_global(var)) {
 		OP_GLOBAL_GET_WRITE(compiler->fn, var.idx,
@@ -779,7 +812,12 @@ static void __compiler_get_var(struct compiler *compiler, lookup_var_t var,
 static bool __compiler_has_defined(struct compiler *compiler, const char *name,
 				   size_t len)
 {
-	return lookup_scope_has_name(&compiler->state->globals, name, len);
+	if (list_size(&compiler->lookup_scopes) == 0) {
+		return false;
+	}
+
+	const lookup_t *cur_scope = __compiler_cur_scope(compiler);
+	return lookup_has_name(cur_scope, name, len);
 }
 
 static uint8_t __parse_arglist(struct compiler *compiler)
@@ -816,4 +854,55 @@ static void __compiler_import(struct compiler *compiler,
 		__compiler_define_var(compiler, native_fn.fn_name,
 				      native_fn.name_sz, line, false);
 	}
+}
+
+// TODO: add upvalue support
+// static lookup_var_t __compiler_find_name(const struct compiler *compiler,
+// 					 const char *name, size_t name_sz)
+// {
+// 	lookup_var_t var;
+// 	const struct compiler *enclosing = compiler;
+
+// 	do {
+// 		var = lookup_find_name(__compiler_cur_scope(enclosing), name,
+// 				       name_sz);
+// 		enclosing = enclosing->enclosing;
+// 	} while (!lookup_var_is_valid(var) && enclosing != NULL);
+
+// 	if (lookup_var_is_valid(var)) {
+// 		return var;
+// 	} else {
+// 		return lookup_find_name(&compiler->global_state->globals, name,
+// 					name_sz);
+// 	}
+// }
+
+static lookup_var_t __compiler_find_name(struct compiler *compiler,
+					 const char *name, size_t name_sz)
+{
+	if (list_size(&compiler->lookup_scopes) != 0) {
+		// return LOOKUP_VAR_TYPE_INVALID;
+
+		for (size_t i = list_size(&compiler->lookup_scopes); i != 0;
+		     i--) {
+			const lookup_t *cur_scope =
+				list_get(&compiler->lookup_scopes, i - 1);
+
+			lookup_var_t var =
+				lookup_find_name(cur_scope, name, name_sz);
+
+			if (lookup_var_is_valid(var)) {
+				return var;
+			}
+		}
+	}
+
+	// TODO: move to checking enclosing compilers first
+	return lookup_find_name(&compiler->global_state->globals, name,
+				name_sz);
+}
+
+static lookup_t *__compiler_cur_scope(struct compiler *compiler)
+{
+	return (lookup_t *)list_peek(&compiler->lookup_scopes);
 }

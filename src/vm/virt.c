@@ -177,8 +177,7 @@ void vm_print_vars(vm_t *vm)
 	};
 
 	puts("Globals: {");
-	map_entries_for_each(lookup_scope_at_depth(&vm->state.globals,
-						   LOOKUP_GLOBAL_DEPTH),
+	map_entries_for_each(&vm->state.globals.table,
 			     (struct map_for_each_entry *)&var_prnt);
 	puts("}");
 #undef INDENT_BY

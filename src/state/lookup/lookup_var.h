@@ -19,7 +19,7 @@ typedef uint8_t var_flags_t;
  * @see lookup_var_is_valid()
  *
  */
-#define LOOKUP_VAR_INVALID (0)
+#define LOOKUP_VAR_INVALID_FLAG (0)
 /**
  * @brief constant to set var_flags_t to zero
  *
@@ -103,9 +103,15 @@ typedef struct __lookup_var {
 	var_flags_t var_flags;
 } lookup_var_t;
 
+#define LOOKUP_VAR_TYPE_INVALID                                                \
+	(lookup_var_t)                                                         \
+	{                                                                      \
+		.idx = 0, .var_flags = LOOKUP_VAR_INVALID_FLAG,                \
+	}
+
 static inline bool lookup_var_is_valid(lookup_var_t var)
 {
-	return var.var_flags & ~LOOKUP_VAR_INVALID;
+	return var.var_flags & ~LOOKUP_VAR_INVALID_FLAG;
 }
 
 /**

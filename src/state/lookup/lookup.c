@@ -12,173 +12,133 @@ struct name_matcher {
 	size_t strlen;
 };
 
-static hashmap_t __lookup_scope_new();
-static struct name_matcher __create_matcher(const char *name, size_t len);
-static lookup_var_t *__lookup_find_name_ptr(lookup_t *lookup, const char *name,
-					    size_t len);
-static lookup_var_t *__lookup_scope_find_name_ptr(lookup_t *lookup,
-						  const char *name, size_t len);
-static uint32_t __lookup_inc_global_cnt(lookup_t *lookup);
-static uint32_t __lookup_inc_local_cnt(lookup_t *lookup);
+struct idx_matcher {
+	const struct val_matcher v;
+	uint32_t idx;
+};
 
-void lookup_entry_free(struct map_entry entry, struct map_for_each_entry *data)
-{
-	string_free(entry.key);
-}
-
-void scope_free(const void *m)
-{
-	struct map_for_each_entry lookup_free = (struct map_for_each_entry){
-		.func = &lookup_entry_free,
-	};
-
-	hashmap_t *map = (hashmap_t *)m;
-	map_entries_for_each(map, (struct map_for_each_entry *)&lookup_free);
-	map_free(map);
-}
+static struct name_matcher __create_name_matcher(const char *name, size_t len);
+static struct idx_matcher __create_idx_matcher(uint32_t idx);
+static lookup_var_t *__lookup_find_name_ptr(const lookup_t *lookup,
+					    const char *name, size_t len);
+static uint32_t __lookup_inc_cnt(lookup_t *lookup);
 
 bool match_key(const void *key, struct key_matcher *m)
 {
 	struct string *str = (struct string *)key;
-	struct name_matcher *matcher = (struct name_matcher *)m;
+	const struct name_matcher *matcher = (const struct name_matcher *)m;
 
 	return string_get_len(str) == matcher->strlen &&
 	       strncmp(string_get_cstring(str), matcher->str,
 		       matcher->strlen) == 0;
 }
 
-lookup_t lookup_new()
+bool match_value(const void *val, struct val_matcher *m)
 {
-	list_t scopes = list_of_type(hashmap_t);
-	list_set_cap(&scopes, 1);
+	const struct idx_matcher *matcher = (const struct idx_matcher *)m;
+	lookup_var_t *var = (lookup_var_t *)val;
 
+	return var->idx == matcher->idx;
+}
+
+lookup_t lookup_new(uint32_t idx_start)
+{
 	lookup_t lookup = (lookup_t){
-		.scopes = list_of_type(hashmap_t),
-		.glbl_idx = 0,
-		.cur_idx = 0,
+		.table = map_of_type(lookup_var_t, (hash_fn)&string_gen_hash),
+		.idx = idx_start,
 	};
-	lookup_begin_scope(&lookup);
 
 	return lookup;
 }
 
 void lookup_free(lookup_t *lookup)
 {
-	list_for_each (&lookup->scopes, (for_each_fn)&scope_free)
-		;
-	list_free(&lookup->scopes);
+	map_free(&lookup->table);
+	*lookup = (lookup_t){ 0 };
 }
 
-lookup_var_t lookup_declare(lookup_t *lookup, size_t scope_depth,
-			    const char *chars, size_t len, bool mutable)
+lookup_var_t lookup_declare(lookup_t *lookup, const char *chars, size_t len,
+			    var_flags_t flags)
 {
-	assert(("scope starts at 1", scope_depth));
-
 	struct string *name = string_new(chars, len);
 
-	bool is_glbl = scope_depth == LOOKUP_GLOBAL_DEPTH;
-
-	var_flags_t flags =
-		LOOKUP_VAR_DECLARED |
-		(is_glbl ? LOOKUP_VAR_GLOBAL : LOOKUP_VAR_LOCAL) |
-		(mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_IMMUTABLE);
+	flags |= LOOKUP_VAR_DECLARED;
 
 	lookup_var_t var = (lookup_var_t){
 
-		.idx = is_glbl ? __lookup_inc_global_cnt(lookup) :
-				 __lookup_inc_local_cnt(lookup),
+		.idx = __lookup_inc_cnt(lookup),
 		.var_flags = flags,
 	};
 
-	map_insert(lookup_scope_at_depth(lookup, scope_depth), name, &var);
+	map_insert(&lookup->table, name, &var);
 
 	return var;
 }
 
+bool lookup_remove(lookup_t *lookup, uint32_t idx)
+{
+	struct idx_matcher matcher = __create_idx_matcher(idx);
+
+	struct map_entry entry = map_find_by_value(
+		&lookup->table, (struct val_matcher *)&matcher);
+
+	if (!entry.key) {
+		return false;
+	}
+
+	return map_remove(&lookup->table, entry.key);
+}
+
 lookup_var_t lookup_define(lookup_t *lookup, const char *chars, size_t len,
-			   bool mutable)
+			   var_flags_t flags)
 {
 	struct string *name = string_new(chars, len);
 
-	lookup_var_t *reserved =
-		__lookup_scope_find_name_ptr(lookup, chars, len);
+	lookup_var_t *reserved = __lookup_find_name_ptr(lookup, chars, len);
 
 	if (reserved) {
 		if (lookup_var_is_defined(*reserved)) {
-			return (lookup_var_t){
-				.idx = 0,
-				.var_flags = LOOKUP_VAR_INVALID,
-			};
+			return LOOKUP_VAR_TYPE_INVALID;
 		}
 
 		reserved->var_flags |= LOOKUP_VAR_DEFINED;
 		return *reserved;
 	}
-	bool is_glbl = lookup_cur_depth(lookup) == LOOKUP_GLOBAL_DEPTH;
 
-	var_flags_t flags =
-		LOOKUP_VAR_DECLARED | LOOKUP_VAR_DEFINED |
-		(is_glbl ? LOOKUP_VAR_GLOBAL : LOOKUP_VAR_LOCAL) |
-		(mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_IMMUTABLE);
+	flags |= LOOKUP_VAR_DECLARED;
+	flags |= LOOKUP_VAR_DEFINED;
 
 	lookup_var_t var = (lookup_var_t){
 
-		.idx = is_glbl ? __lookup_inc_global_cnt(lookup) :
-				 __lookup_inc_local_cnt(lookup),
+		.idx = __lookup_inc_cnt(lookup),
 		.var_flags = flags,
 	};
 
-	map_insert(lookup_cur_scope(lookup), name, &var);
+	map_insert(&lookup->table, name, &var);
 
 	return var;
 }
 
-bool lookup_scope_has_name(lookup_t *lookup, const char *name, size_t len)
+bool lookup_has_name(const lookup_t *lookup, const char *name, size_t len)
 {
-	struct name_matcher matcher = __create_matcher(name, len);
-	lookup_var_t *var = map_find_by_key(lookup_cur_scope(lookup),
-					    (struct key_matcher *)&matcher)
-				    .value;
+	struct name_matcher matcher = __create_name_matcher(name, len);
+	const lookup_var_t *var =
+		map_find_by_key(&lookup->table, (struct key_matcher *)&matcher)
+			.value;
 
 	return var && lookup_var_is_defined(*var);
 }
 
-lookup_var_t lookup_find_name(lookup_t *lookup, const char *name, size_t len)
+lookup_var_t lookup_find_name(const lookup_t *lookup, const char *name,
+			      size_t len)
 {
-	lookup_var_t *var = __lookup_find_name_ptr(lookup, name, len);
+	const lookup_var_t *var = __lookup_find_name_ptr(lookup, name, len);
 
 	return var ? *var :
 		     (lookup_var_t){ .var_flags = LOOKUP_VAR_NOT_DECLARED };
 }
 
-void lookup_begin_scope(lookup_t *lookup)
-{
-	hashmap_t scope = __lookup_scope_new();
-	list_push(&lookup->scopes, &scope);
-}
-
-void lookup_end_scope(lookup_t *lookup)
-{
-	assert(("lookup depth must be over 1", lookup_cur_depth(lookup) > 1));
-	hashmap_t *scope = (hashmap_t *)list_pop(&lookup->scopes);
-	lookup->cur_idx -= map_size(scope);
-
-	map_free(scope);
-}
-
-hashmap_t *lookup_scope_at_depth(lookup_t *lookup, size_t idx)
-{
-	assert(("Indexing begins at 1", idx));
-
-	return (hashmap_t *)list_get(&lookup->scopes, idx - 1);
-}
-
-static hashmap_t __lookup_scope_new()
-{
-	return map_of_type(lookup_var_t, (hash_fn)&string_gen_hash);
-}
-
-static struct name_matcher __create_matcher(const char *name, size_t len)
+static struct name_matcher __create_name_matcher(const char *name, size_t len)
 {
 	return (struct name_matcher){
 		.m = {
@@ -190,47 +150,27 @@ static struct name_matcher __create_matcher(const char *name, size_t len)
 	};
 }
 
-static lookup_var_t *__lookup_scope_find_name_ptr(lookup_t *lookup,
-						  const char *name, size_t len)
+static struct idx_matcher __create_idx_matcher(uint32_t idx)
 {
-	struct name_matcher matcher = __create_matcher(name, len);
-	lookup_var_t *found = map_find_by_key(lookup_cur_scope(lookup),
-					      (struct key_matcher *)&matcher)
-				      .value;
+	return (struct idx_matcher){
+		.v = { .is_match = &match_value },
+		.idx = idx,
+	};
+}
+
+static lookup_var_t *__lookup_find_name_ptr(const lookup_t *lookup,
+					    const char *name, size_t len)
+{
+	struct name_matcher matcher = __create_name_matcher(name, len);
+	lookup_var_t *found =
+		map_find_by_key(&lookup->table, (struct key_matcher *)&matcher)
+			.value;
 
 	return found;
 }
 
-static lookup_var_t *__lookup_find_name_ptr(lookup_t *lookup, const char *name,
-					    size_t len)
+static uint32_t __lookup_inc_cnt(lookup_t *lookup)
 {
-	struct name_matcher matcher = __create_matcher(name, len);
-
-	for (size_t depth = lookup_cur_depth(lookup); depth >= 1; depth--) {
-		const hashmap_t *scope = lookup_scope_at_depth(lookup, depth);
-		lookup_var_t *found =
-			map_find_by_key(scope, (struct key_matcher *)&matcher)
-				.value;
-
-		if (found) {
-			return found;
-		}
-	}
-
-	return NULL;
-}
-
-static uint32_t __lookup_inc_global_cnt(lookup_t *lookup)
-{
-	assert(("Lookup global count will overflow",
-		lookup->glbl_idx != UINT32_MAX));
-
-	return lookup->glbl_idx++;
-}
-
-static uint32_t __lookup_inc_local_cnt(lookup_t *lookup)
-{
-	assert(("Lookup local count will overflow",
-		lookup->cur_idx != UINT32_MAX));
-	return lookup->cur_idx++;
+	assert(("Lookup count will overflow", lookup->idx != UINT32_MAX));
+	return lookup->idx++;
 }

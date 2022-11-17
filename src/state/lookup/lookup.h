@@ -12,14 +12,9 @@
 #include "val/val.h"
 #include "lookup_var.h"
 
-//! @brief global scope depth
-#define LOOKUP_GLOBAL_DEPTH 1
-
-//! @brief lookup table for variables
 typedef struct __lookup {
-	list_t scopes;
-	uint32_t cur_idx;
-	uint32_t glbl_idx;
+	hashmap_t table;
+	uint32_t idx;
 } lookup_t;
 
 /**
@@ -27,7 +22,7 @@ typedef struct __lookup {
  *
  * @return lookup_t the new lookup table
  */
-lookup_t lookup_new();
+lookup_t lookup_new(uint32_t idx_start);
 
 /**
  * @brief frees all related memory held by the lookup table
@@ -35,24 +30,6 @@ lookup_t lookup_new();
  * @param lookup the lookup table to free
  */
 void lookup_free(lookup_t *lookup);
-
-/**
- * @brief begins a new lookup scope
- *
- * @param lookup the lookup table to scope
- */
-void lookup_begin_scope(lookup_t *lookup);
-
-/**
- * @brief gets the current scope depth of the lookup table
- *
- * @param lookup the lookup table
- * @return size_t the current lookup depth
- */
-static inline size_t lookup_cur_depth(const lookup_t *lookup)
-{
-	return list_size(&lookup->scopes);
-}
 
 /**
  * @brief declares a variable within the lookup at a given scope.
@@ -65,8 +42,8 @@ static inline size_t lookup_cur_depth(const lookup_t *lookup)
  * @param mutable if the variable can be modified
  * @return lookup_var_t the created lookup variable
  */
-lookup_var_t lookup_declare(lookup_t *lookup, size_t scope_depth,
-			    const char *chars, size_t name_sz, bool mutable);
+lookup_var_t lookup_declare(lookup_t *lookup, const char *chars, size_t name_sz,
+			    var_flags_t flags);
 
 /**
  * @brief declares and/or defines a variable within the lookup at the current scope.
@@ -78,67 +55,17 @@ lookup_var_t lookup_declare(lookup_t *lookup, size_t scope_depth,
  * @return lookup_var_t the created lookup variable
  */
 lookup_var_t lookup_define(lookup_t *lookup, const char *name, size_t name_sz,
-			   bool mutable);
+			   var_flags_t flags);
 
 /**
- * @brief looks through the current scope for the given index
+ * @brief looks through the current scope for the given name
  *
  * @param lookup the lookup table
  * @param idx the variable index
  * @return lox_str_t* the name of the variable
  */
-lox_str_t *lookup_scope_find(const lookup_t *lookup, uint32_t idx);
-
-/**
- * @brief looks through the lookup table (inner scope to outer scope), to match the first variable
- * which has the given name
- *
- * @param lookup the lookup table
- * @param name the variable name
- * @param name_sz name length
- * @return lookup_var_t the variable lookup info
- */
-lookup_var_t lookup_find_name(lookup_t *lookup, const char *name,
+lookup_var_t lookup_find_name(const lookup_t *lookup, const char *name,
 			      size_t name_sz);
-
-/**
- * @brief checks whether the given name (inner scope to outer scope), has been defined
- * Will match the first variable with the given name and return
- *
- * @param lookup the lookup table
- * @param name the variable name
- * @param name_sz name length
- * @return true variable has been defined
- * @return false variable has not been defined
- */
-bool lookup_has_defined(lookup_t *lookup, const char *name, size_t name_sz);
-
-/**
- * @brief gets the lookup scope at the given depth. Depth starts at one
- *
- * @param lookup the lookup table
- * @param depth The scope depth
- * @return hashmap_t* the lookup scope
- */
-hashmap_t *lookup_scope_at_depth(lookup_t *lookup, size_t depth);
-
-/**
- * @brief gets the current scope of the lookup table
- *
- * @param lookup the lookup table
- * @return hashmap_t* the current lookup scope
- */
-static inline hashmap_t *lookup_cur_scope(lookup_t *lookup)
-{
-	return (hashmap_t *)list_peek(&lookup->scopes);
-}
-
-/**
- * @brief ends the current scope of the lookup table
- *
- * @param lookup the lookup table
- */
-void lookup_end_scope(lookup_t *lookup);
 
 /**
  * @brief returns whether the current scope has the given name
@@ -149,6 +76,18 @@ void lookup_end_scope(lookup_t *lookup);
  * @return true the lookup scope does have the name
  * @return false the lookup scope deos not have the name
  */
-bool lookup_scope_has_name(lookup_t *lookup, const char *name, size_t name_sz);
+bool lookup_has_name(const lookup_t *lookup, const char *name, size_t name_sz);
+
+static inline uint32_t lookup_get_idx(const lookup_t *lookup)
+{
+	return lookup->idx;
+}
+
+static inline uint32_t lookup_get_size(const lookup_t *lookup)
+{
+	return (uint32_t)map_size(&lookup->table);
+}
+
+bool lookup_remove(lookup_t *lookup, uint32_t idx);
 
 #endif // __CLOX_STATE_LOOKUP_H__
