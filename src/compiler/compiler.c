@@ -35,7 +35,7 @@ struct parse_rule {
 };
 
 /* Forwards */
-static lox_fn_t *__compiler_run(struct compiler, bool);
+static lox_fn_t *__compiler_run(struct compiler *, bool);
 static const struct parse_rule *__compiler_get_rule(enum tkn_type);
 static void __compiler_begin_scope(struct compiler *);
 static void __compiler_end_scope(struct compiler *);
@@ -146,7 +146,7 @@ static struct compiler __compiler_new(const struct compiler *enclosing,
 	};
 }
 
-static lox_fn_t *__compiler_run(struct compiler compiler, bool is_main)
+static lox_fn_t *__compiler_run(struct compiler *compiler, bool is_main)
 {
 #ifdef DEBUG_BENCH
 	struct timespec timer;
@@ -154,30 +154,30 @@ static lox_fn_t *__compiler_run(struct compiler compiler, bool is_main)
 #endif
 
 	if (is_main) {
-		__compiler_import(&compiler, sys_get_import_list());
+		__compiler_import(compiler, sys_get_import_list());
 
-		while (!parser_match(compiler.prsr, TKN_EOF)) {
-			__parse_decl(&compiler);
+		while (!parser_match(compiler->prsr, TKN_EOF)) {
+			__parse_decl(compiler);
 		}
 	} else {
-		__parse_block(&compiler);
+		__parse_block(compiler);
 	}
 
 	// TODO: only push if no return was found - call to return leaves this as
 	// dead code
-	OP_CONST_WRITE(compiler.fn, VAL_CREATE_NIL,
-		       compiler.prsr->previous.line);
-	OP_RETURN_WRITE(compiler.fn, compiler.prsr->previous.line);
+	OP_CONST_WRITE(compiler->fn, VAL_CREATE_NIL,
+		       compiler->prsr->previous.line);
+	OP_RETURN_WRITE(compiler->fn, compiler->prsr->previous.line);
 
-	if (parser_had_error(compiler.prsr)) {
-		reallocate(compiler.fn, sizeof(chunk_t), 0);
+	if (parser_had_error(compiler->prsr)) {
+		reallocate(compiler->fn, sizeof(chunk_t), 0);
 
 		return NULL;
 	} else {
 #ifdef DEBUG_PRINT_CODE
-		disassem_chunk(&compiler.fn->chunk,
-			       compiler.fn->name != NULL ?
-				       compiler.fn->name->chars :
+		disassem_chunk(&compiler->fn->chunk,
+			       compiler->fn->name != NULL ?
+				       compiler->fn->name->chars :
 				       "<script>");
 #endif
 #ifdef DEBUG_BENCH
@@ -185,7 +185,7 @@ static lox_fn_t *__compiler_run(struct compiler compiler, bool is_main)
 		timespec_print(timer_end(timer), true);
 		puts("");
 #endif
-		return compiler.fn;
+		return compiler->fn;
 	}
 }
 
@@ -196,7 +196,7 @@ lox_fn_t *compile(const char *src, struct state *state)
 
 	struct compiler compiler = __compiler_new(NULL, &prsr, state, NULL);
 
-	lox_fn_t *fn = __compiler_run(compiler, true);
+	lox_fn_t *fn = __compiler_run(&compiler, true);
 
 	if (!fn) {
 		uint32_t new_global_sz = lookup_get_size(&state->globals);
@@ -699,7 +699,7 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 	parser_consume(new_comp.prsr, TKN_RIGHT_PAREN,
 		       "Expected ')' after function params.");
 	parser_consume(new_comp.prsr, TKN_LEFT_BRACE, "Expected block start.");
-	lox_fn_t *comp_res = __compiler_run(new_comp, false);
+	lox_fn_t *comp_res = __compiler_run(&new_comp, false);
 
 	if (comp_res == NULL || parser_had_error(new_comp.prsr)) {
 		return;
