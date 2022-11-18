@@ -21,7 +21,6 @@ static struct name_matcher __create_name_matcher(const char *name, size_t len);
 static struct idx_matcher __create_idx_matcher(uint32_t idx);
 static lookup_var_t *__lookup_find_name_ptr(const lookup_t *lookup,
 					    const char *name, size_t len);
-static uint32_t __lookup_inc_cnt(lookup_t *lookup);
 
 bool match_key(const void *key, struct key_matcher *m)
 {
@@ -36,16 +35,15 @@ bool match_key(const void *key, struct key_matcher *m)
 bool match_value(const void *val, struct val_matcher *m)
 {
 	const struct idx_matcher *matcher = (const struct idx_matcher *)m;
-	lookup_var_t *var = (lookup_var_t *)val;
+	const lookup_var_t *var = (lookup_var_t *)val;
 
 	return var->idx == matcher->idx;
 }
 
-lookup_t lookup_new(uint32_t idx_start)
+lookup_t lookup_new()
 {
 	lookup_t lookup = (lookup_t){
 		.table = map_of_type(lookup_var_t, (hash_fn)&string_gen_hash),
-		.idx = idx_start,
 	};
 
 	return lookup;
@@ -58,7 +56,7 @@ void lookup_free(lookup_t *lookup)
 }
 
 lookup_var_t lookup_declare(lookup_t *lookup, const char *chars, size_t len,
-			    var_flags_t flags)
+			    uint32_t idx, var_flags_t flags)
 {
 	struct string *name = string_new(chars, len);
 
@@ -66,7 +64,7 @@ lookup_var_t lookup_declare(lookup_t *lookup, const char *chars, size_t len,
 
 	lookup_var_t var = (lookup_var_t){
 
-		.idx = __lookup_inc_cnt(lookup),
+		.idx = idx,
 		.var_flags = flags,
 	};
 
@@ -90,7 +88,7 @@ bool lookup_remove(lookup_t *lookup, uint32_t idx)
 }
 
 lookup_var_t lookup_define(lookup_t *lookup, const char *chars, size_t len,
-			   var_flags_t flags)
+			   uint32_t idx, var_flags_t flags)
 {
 	struct string *name = string_new(chars, len);
 
@@ -109,8 +107,7 @@ lookup_var_t lookup_define(lookup_t *lookup, const char *chars, size_t len,
 	flags |= LOOKUP_VAR_DEFINED;
 
 	lookup_var_t var = (lookup_var_t){
-
-		.idx = __lookup_inc_cnt(lookup),
+		.idx = idx,
 		.var_flags = flags,
 	};
 
@@ -167,10 +164,4 @@ static lookup_var_t *__lookup_find_name_ptr(const lookup_t *lookup,
 			.value;
 
 	return found;
-}
-
-static uint32_t __lookup_inc_cnt(lookup_t *lookup)
-{
-	assert(("Lookup count will overflow", lookup->idx != UINT32_MAX));
-	return lookup->idx++;
 }

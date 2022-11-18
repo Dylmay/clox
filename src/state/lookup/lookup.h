@@ -14,7 +14,6 @@
 
 typedef struct __lookup {
 	hashmap_t table;
-	uint32_t idx;
 } lookup_t;
 
 /**
@@ -22,7 +21,7 @@ typedef struct __lookup {
  *
  * @return lookup_t the new lookup table
  */
-lookup_t lookup_new(uint32_t idx_start);
+lookup_t lookup_new();
 
 /**
  * @brief frees all related memory held by the lookup table
@@ -43,7 +42,7 @@ void lookup_free(lookup_t *lookup);
  * @return lookup_var_t the created lookup variable
  */
 lookup_var_t lookup_declare(lookup_t *lookup, const char *chars, size_t name_sz,
-			    var_flags_t flags);
+			    uint32_t idx, var_flags_t flags);
 
 /**
  * @brief declares and/or defines a variable within the lookup at the current scope.
@@ -55,7 +54,7 @@ lookup_var_t lookup_declare(lookup_t *lookup, const char *chars, size_t name_sz,
  * @return lookup_var_t the created lookup variable
  */
 lookup_var_t lookup_define(lookup_t *lookup, const char *name, size_t name_sz,
-			   var_flags_t flags);
+			   uint32_t idx, var_flags_t flags);
 
 /**
  * @brief looks through the current scope for the given name
@@ -77,11 +76,6 @@ lookup_var_t lookup_find_name(const lookup_t *lookup, const char *name,
  * @return false the lookup scope deos not have the name
  */
 bool lookup_has_name(const lookup_t *lookup, const char *name, size_t name_sz);
-
-static inline uint32_t lookup_get_idx(const lookup_t *lookup)
-{
-	return lookup->idx;
-}
 
 static inline uint32_t lookup_get_size(const lookup_t *lookup)
 {
