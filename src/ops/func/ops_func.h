@@ -141,6 +141,14 @@ CREATE_EXTENDED_WRITE_FUNC(OP_GLOBAL_SET, OP_GLOBAL_SET_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_UPVALUE_GET, OP_UPVALUE_SET_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_UPVALUE_SET, OP_UPVALUE_SET_LONG)
 
+static inline void OP_UPVALUE_DEFINE_WRITE(lox_fn_t *fn, uint32_t idx,
+					   uint8_t flags, uint32_t line)
+{
+	__extended_op(&fn->chunk, OP_UPVALUE_DEFINE, OP_UPVALUE_DEFINE_LONG,
+		      idx, line);
+	chunk_write_code(&fn->chunk, (code_t)flags, line);
+}
+
 static inline void OP_BANG_EQ_WRITE(lox_fn_t *fn, uint32_t line)
 {
 	OP_EQUAL_WRITE(fn, line);

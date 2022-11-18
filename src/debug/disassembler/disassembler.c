@@ -11,6 +11,8 @@ static size_t __const_long_instr(const char *, chunk_t *, uint32_t);
 static size_t __closure_instr(const char *, chunk_t *, uint32_t);
 static size_t __closure_long_instr(const char *, chunk_t *, uint32_t);
 static size_t __var_instr(const char *, chunk_t *, uint32_t);
+static size_t __upval_def_instr(const char *, chunk_t *, uint32_t);
+static size_t __upval_def_long_instr(const char *, chunk_t *, uint32_t);
 static size_t __var_long_instr(const char *, chunk_t *, uint32_t);
 static size_t __pop_count_instr(const char *, chunk_t *, uint32_t);
 static size_t __jump_instr(const char *, chunk_t *, uint32_t);
@@ -85,6 +87,13 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 
 	case OP_VAR_GET:
 		return __var_instr(op_name(instruction), chunk, offset);
+
+	case OP_UPVALUE_DEFINE:
+		return __upval_def_instr(op_name(instruction), chunk, offset);
+
+	case OP_UPVALUE_DEFINE_LONG:
+		return __upval_def_long_instr(op_name(instruction), chunk,
+					      offset);
 
 	case OP_VAR_GET_LONG:
 		return __var_long_instr(op_name(instruction), chunk, offset);
@@ -259,4 +268,16 @@ static void __print_const(const char *name, lox_val_t const_val,
 	val_print(const_val);
 	putchar('\'');
 	puts("");
+}
+
+static size_t __upval_def_instr(const char *name, chunk_t *chunk,
+				uint32_t offset)
+{
+	return __var_instr(name, chunk, offset) + 1;
+}
+
+static size_t __upval_def_long_instr(const char *name, chunk_t *chunk,
+				     uint32_t offset)
+{
+	return __var_long_instr(name, chunk, offset) + 1;
 }

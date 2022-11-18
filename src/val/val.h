@@ -62,7 +62,7 @@ typedef struct object_str {
 typedef struct object_fn {
 	struct object obj;
 	int arity;
-	uint16_t upval_cnt;
+	uint32_t upval_cnt;
 	chunk_t chunk;
 	struct object_str *name;
 } lox_fn_t;

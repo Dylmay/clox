@@ -253,9 +253,15 @@ static enum vm_res __vm_run(vm_t *vm)
 			__vm_push_const(vm, VAL_CREATE_OBJ(closure));
 			for (size_t i = 0; i < closure->fn->upval_cnt; i++) {
 				lox_upval_t *upval;
-				bool is_local = __frame_read_byte(cur_frame);
-				uint8_t idx = __frame_read_byte(
+				op_code_t opcode = __frame_read_byte(cur_frame);
+				assert(("expected upval define indicator",
+					opcode == OP_UPVALUE_DEFINE ||
+						opcode ==
+							OP_UPVALUE_DEFINE_LONG));
+
+				uint32_t idx = __frame_proc_idx(
 					cur_frame); // TODO: add support for wide commands
+				bool is_local = __frame_read_byte(cur_frame);
 
 				if (is_local) {
 					upval = __vm_capture_upval(

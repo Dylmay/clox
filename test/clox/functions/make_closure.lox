@@ -2,6 +2,8 @@ fn make_closure(value) {
     fn closure() {
         print(value);
     }
+
+    return closure;
 }
 let doughnut = make_closure("doughnut");
 let bagel = make_closure("bagel");
