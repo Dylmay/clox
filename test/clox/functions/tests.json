@@ -158,5 +158,16 @@
     "expect": {
       "to_output": ["Vector(x: 10, y: 20)", "Vector(x: 30, y: 40)", "Vector(x: 40, y: 60)"]
     }
+  },
+  {
+    "name": "Immutable upvalue test",
+    "description": "Upvalues remember the mutability",
+    "file": "immutable_upval.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 65,
+      "on_line": 21,
+      "to_error": ["Variable isn't mutable"]
+    }
   }
 ]

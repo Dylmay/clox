@@ -1,0 +1,27 @@
+let mut val = "global";
+
+fn change_val() {
+    let mut val = "original val";
+
+    fn change() {
+        val = "new val";
+    }
+
+    change();
+    assert(val == "new val", "val hasn't changed");
+}
+change_val();
+
+
+
+fn change_immutable_val() {
+    let val = "immutable val";
+
+    fn change() {
+        val = "changed immutability";
+        assert(false, "line above should fail at compilation");
+    }
+
+    change();
+}
+change_immutable_val();
