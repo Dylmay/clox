@@ -1,0 +1,17 @@
+let mut glbl_one;
+let mut glbl_two;
+
+for a in 1..3 {
+    fn closure() {
+        print(a);
+    }
+
+    if glbl_one == nil {
+        glbl_one = closure;
+    } else {
+        glbl_two = closure;
+    }
+}
+
+glbl_one();
+glbl_two();

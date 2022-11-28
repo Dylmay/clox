@@ -53,5 +53,13 @@
       "has_return_code":65,
       "to_error": ["Variable isn't mutable"]
     }
+  },
+  {
+    "name": "For loop values are upvalue-able",
+    "description":"Expect the for loop variable to be captured at their given state and not final state",
+    "file": "closured.lox",
+    "expect": {
+      "to_output": [1, 2]
+    }
   }
 ]

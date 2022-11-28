@@ -626,8 +626,13 @@ static void __parse_for_stmt(struct compiler *compiler)
 	if (!parser_check(compiler->prsr, TKN_LEFT_BRACE)) {
 		parser_error_at_current(compiler->prsr, "Expected left brace");
 	}
-	// TODO: have unreleased scopes
+	// TODO: stop new var from being created and use old var
+	__compiler_begin_scope(compiler);
+	OP_VAR_GET_WRITE(compiler->fn, glbl_idx.idx,
+			 compiler->prsr->previous.line);
+	__compiler_define_var(compiler, name, len, def_ln, false);
 	__parse_decl(compiler);
+	__compiler_end_scope(compiler);
 
 	OP_VAR_GET_WRITE(compiler->fn, glbl_idx.idx,
 			 compiler->prsr->previous.line);
