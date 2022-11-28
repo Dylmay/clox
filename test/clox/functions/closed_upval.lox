@@ -1,4 +1,6 @@
 fn outer() {
+    let discarded = true;
+    let other_disc = true;
     let x = "outside";
 
     fn inner() {

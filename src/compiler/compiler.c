@@ -769,13 +769,12 @@ static void __compiler_end_scope(struct compiler *compiler)
 {
 	lookup_t *cur_scope = __compiler_cur_scope(compiler);
 	uint32_t scope_sz = lookup_get_size(cur_scope);
-	uint32_t cur_idx = compiler->lookup.idx;
 
-	for (uint32_t i = cur_idx;
-	     i > 0 && list_size(&compiler->captured_vals) != 0;
+	for (uint32_t i = compiler->lookup.idx - 1;
+	     scope_sz > 0 && list_size(&compiler->captured_vals) != 0;
 	     i--, scope_sz--) {
 		uint32_t escaped_val =
-			*(uint32_t *)list_peek(&compiler->captured_vals) + 1;
+			*(uint32_t *)list_peek(&compiler->captured_vals);
 
 		if (i == escaped_val) {
 			list_pop(&compiler->captured_vals);
@@ -790,9 +789,8 @@ static void __compiler_end_scope(struct compiler *compiler)
 	if (scope_sz > 0) {
 		OP_POP_COUNT_WRITE(compiler->fn, scope_sz,
 				   compiler->prsr->previous.line);
-
-		compiler->lookup.idx -= scope_sz;
 	}
+	compiler->lookup.idx -= lookup_get_size(cur_scope);
 	lookup_free(cur_scope);
 	list_pop(&compiler->lookup.scopes);
 }
@@ -997,6 +995,7 @@ static lookup_var_t __compiler_add_upvalue(struct compiler *compiler,
 	}
 
 	list_push(&compiler->upvalues, &upval);
+	upval.idx = upval_cnt;
 
 	return upval;
 }
