@@ -28,6 +28,7 @@ typedef struct __vm {
 	struct state state;
 	list_t globals;
 	list_t stack;
+	lox_upval_t *open_upvals;
 #ifdef DEBUG_BENCH
 	hashmap_t timings_map;
 #endif

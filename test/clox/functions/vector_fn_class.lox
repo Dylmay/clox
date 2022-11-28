@@ -1,0 +1,46 @@
+fn vector_new(x_val, y_val) {
+    fn vector_data(op) {
+        return op(x_val, y_val);
+    }
+
+    return vector_data;
+}
+
+fn vector_x(vector) {
+    fn get_x(x, y) {
+        return x;
+    }
+
+    return vector(get_x);
+}
+
+fn vector_y(vector) {
+    fn get_y(x, y) {
+        return y;
+    }
+
+    return vector(get_y);
+}
+
+fn vector_print(vector) {
+    fn print_vec(x, y) {
+        print("Vector(x: " + str(x) + ", y: " + str(y) + ")");
+    }
+
+    vector(print_vec);
+}
+
+fn vector_add(vec_one, vec_two) {
+    let new_x = vector_x(vec_one) + vector_x(vec_two);
+    let new_y = vector_y(vec_one) + vector_y(vec_two);
+
+    return vector_new(new_x, new_y);
+}
+
+let vec_one = vector_new(10, 20);
+let vec_two = vector_new(30, 40);
+let added_vec = vector_add(vec_one, vec_two);
+
+vector_print(vec_one);
+vector_print(vec_two);
+vector_print(added_vec);

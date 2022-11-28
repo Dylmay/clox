@@ -97,6 +97,8 @@ struct object_upval *object_upval_new(lox_val_t *slot)
 		ALLOCATE_OBJECT(struct object_upval, OBJ_UPVALUE);
 
 	upval->location = slot;
+	upval->closed = VAL_CREATE_NIL;
+	upval->next = NULL;
 
 	return upval;
 }

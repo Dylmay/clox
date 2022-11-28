@@ -59,6 +59,7 @@ static uint32_t __frame_proc_idx_ext(struct vm_call_frame *);
 static int16_t __frame_proc_jump_offset(struct vm_call_frame *);
 static void __vm_discard(vm_t *vm, uint32_t discard_cnt);
 static lox_upval_t *__vm_capture_upval(vm_t *vm, size_t idx);
+static void __vm_close_upvalues(vm_t *vm, size_t frame_idx);
 
 #define VM_PEEK_NUM(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.number)
 #define VM_PEEK_BOOL(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.boolean)
@@ -69,6 +70,13 @@ struct var_printer {
 	size_t depth;
 };
 
+static void __vm_reset(vm_t *vm)
+{
+	list_reset(&vm->stack);
+	list_reset(&vm->frames);
+	vm->open_upvals = NULL;
+}
+
 vm_t vm_init()
 {
 	vm_t vm = (vm_t){
@@ -76,6 +84,7 @@ vm_t vm_init()
 		.globals = list_of_type(lox_val_t),
 		.frames = list_of_type(struct vm_call_frame),
 		.state = state_new(),
+		.open_upvals = NULL,
 #ifdef DEBUG_BENCH
 		.timings_map =
 			map_of_type(struct timespec, (hash_fn)&asciiz_gen_hash),
@@ -151,7 +160,12 @@ void _var_prnt(struct map_entry entry, struct map_for_each_entry *d)
 
 	if (lookup_var_is_defined(var_def)) {
 		printf("(%u) %s: ", var_def.idx, string_get_cstring(name));
-		val_print(*((lox_val_t *)list_get(data->vm_vars, var_def.idx)));
+		if (var_def.idx < list_size(data->vm_vars)) {
+			val_print(*((lox_val_t *)list_get(data->vm_vars,
+							  var_def.idx)));
+		} else {
+			printf("undefined");
+		}
 	} else {
 		printf("(?) %s: ", string_get_cstring(name));
 	}
@@ -186,7 +200,7 @@ void vm_print_vars(vm_t *vm)
 void vm_print_stack(vm_t *vm)
 {
 	printf("[");
-	for (size_t idx = 0; idx < vm->stack.cnt; idx++) {
+	for (size_t idx = 0; idx < list_size(&vm->stack); idx++) {
 		val_print(*((lox_val_t *)list_get(&vm->stack, idx)));
 		printf(", ");
 	}
@@ -288,6 +302,11 @@ static enum vm_res __vm_run(vm_t *vm)
 
 			__vm_push_const(vm, VAL_CREATE_OBJ(closure));
 		} break;
+
+		case OP_CLOSE_UPVALUE:
+			__vm_close_upvalues(vm, list_size(&vm->stack) - 1);
+			__vm_pop_const(vm);
+			break;
 
 		case OP_NIL:
 			__vm_push_const(vm, VAL_CREATE_NIL);
@@ -562,7 +581,7 @@ static enum vm_res __vm_run(vm_t *vm)
 			}
 
 			lox_val_t retval = __vm_pop_const(vm);
-
+			__vm_close_upvalues(vm, cur_frame->stack_snapshot - 1);
 			list_set_cnt(&vm->stack, cur_frame->stack_snapshot - 1);
 
 			__vm_push_const(vm, retval);
@@ -745,7 +764,7 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 					    "script");
 	}
 
-	list_reset(&vm->stack);
+	__vm_reset(vm);
 }
 
 static inline void
@@ -858,7 +877,39 @@ static lox_upval_t *__vm_capture_upval(vm_t *vm, size_t idx)
 	list_t *stack = &vm->stack;
 	lox_val_t *slot = list_get(stack, idx);
 
+	lox_upval_t *prev_upval = NULL;
+	lox_upval_t *upval = vm->open_upvals;
+
+	while (upval != NULL && upval->location > slot) {
+		prev_upval = upval;
+		upval = upval->next;
+	}
+
+	if (upval != NULL && upval->location == slot) {
+		return upval;
+	}
+
 	lox_upval_t *new_upval = object_upval_new(slot);
+	new_upval->next = upval;
+
+	if (prev_upval == NULL) {
+		vm->open_upvals = new_upval;
+	} else {
+		prev_upval->next = new_upval;
+	}
 
 	return new_upval;
+}
+
+static void __vm_close_upvalues(vm_t *vm, size_t frame_idx)
+{
+	lox_val_t *last = list_get(&vm->stack, frame_idx);
+
+	while (vm->open_upvals != NULL && vm->open_upvals->location >= last) {
+		lox_upval_t *upval = vm->open_upvals;
+		upval->closed = *upval->location;
+		upval->location = &upval->closed;
+
+		vm->open_upvals = upval->next;
+	}
 }

@@ -255,7 +255,7 @@ static inline void object_closure_set_upval(struct object_closure *closure,
 					    int idx, lox_val_t *val)
 {
 	lox_upval_t *upval = object_closure_get_upval(closure, idx);
-	upval->location = val;
+	*upval->location = *val;
 }
 
 /**

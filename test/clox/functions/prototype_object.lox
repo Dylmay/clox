@@ -1,0 +1,20 @@
+let mut glbl_set;
+let mut glbl_get;
+{
+    let mut name = "Dylan";
+
+    fn get() { return name; }
+    fn set(new_val) { name = new_val; }
+
+    glbl_set = set;
+    glbl_get = get;
+
+    assert(glbl_set == set, "Expected glbl_set() to equal set()");
+    assert(glbl_get == get, "Expected glbl_get() to equal get()");
+}
+assert(glbl_get() == "Dylan", "Expected upvalue to hold Dylan but holds " + str(glbl_get()));
+
+glbl_set("Mayor");
+print(glbl_get());
+print("a " + str(glbl_get()));
+assert(glbl_get() == "Mayor", "Expected upvalue to hold Mayor but holds " + str(glbl_get()));

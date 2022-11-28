@@ -26,6 +26,7 @@ struct compiler {
 		uint32_t idx;
 	} lookup;
 	list_t upvalues;
+	list_t captured_vals;
 	lox_fn_t *fn;
 	bool can_assign;
 };
@@ -153,6 +154,7 @@ static struct compiler __compiler_new(struct compiler *enclosing,
 			.idx = 0,
 		},
 		.upvalues = list_of_type(lookup_var_t),
+		.captured_vals = list_of_type(uint32_t),
 		.fn = fn,
 		.can_assign = false,
 	};
@@ -721,7 +723,6 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 
 	comp_res->upval_cnt = (uint32_t)list_size(&new_comp.upvalues);
 
-	__compiler_end_scope(&new_comp);
 	OP_CLOSURE_WRITE(compiler->fn, VAL_CREATE_OBJ(comp_res),
 			 compiler->prsr->previous.line);
 
@@ -768,12 +769,30 @@ static void __compiler_end_scope(struct compiler *compiler)
 {
 	lookup_t *cur_scope = __compiler_cur_scope(compiler);
 	uint32_t scope_sz = lookup_get_size(cur_scope);
+	uint32_t cur_idx = compiler->lookup.idx;
 
-	OP_POP_COUNT_WRITE(compiler->fn, scope_sz,
-			   compiler->prsr->previous.line);
+	for (uint32_t i = cur_idx;
+	     i > 0 && list_size(&compiler->captured_vals) != 0;
+	     i--, scope_sz--) {
+		uint32_t escaped_val =
+			*(uint32_t *)list_peek(&compiler->captured_vals) + 1;
 
-	// TODO: assert
-	compiler->lookup.idx -= scope_sz;
+		if (i == escaped_val) {
+			list_pop(&compiler->captured_vals);
+			OP_CLOSE_UPVALUE_WRITE(compiler->fn,
+					       compiler->prsr->previous.line);
+		} else {
+			OP_POP_WRITE(compiler->fn,
+				     compiler->prsr->previous.line);
+		}
+	}
+
+	if (scope_sz > 0) {
+		OP_POP_COUNT_WRITE(compiler->fn, scope_sz,
+				   compiler->prsr->previous.line);
+
+		compiler->lookup.idx -= scope_sz;
+	}
 	lookup_free(cur_scope);
 	list_pop(&compiler->lookup.scopes);
 }
@@ -942,6 +961,7 @@ static lookup_var_t __compiler_resolve_upval(struct compiler *compiler,
 	lookup_var_t local =
 		__compiler_find_name_local(compiler->enclosing, name, name_sz);
 	if (lookup_var_is_valid(local)) {
+		list_push(&compiler->enclosing->captured_vals, &local.idx);
 		return __compiler_add_upvalue(compiler, local);
 	}
 

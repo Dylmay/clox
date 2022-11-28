@@ -136,5 +136,27 @@
     "description": "Allow commas to be trailing for functions calls and defines",
     "file": "trailing_comma.lox",
     "expect": { }
+  },
+  {
+    "name": "Closed upvalue test",
+    "description": "Upvalues should be closed over",
+    "file": "closed_upval.lox",
+    "expect": {
+      "to_output": ["outside"]
+    }
+  },
+  {
+    "name": "Prototype object test",
+    "description": "closures should allow prototypal programming",
+    "file": "prototype_object.lox",
+    "expect": { }
+  },
+  {
+    "name": "Vector object test",
+    "description": "closures should be able to interact like pseudo-classes",
+    "file": "vector_fn_class.lox",
+    "expect": {
+      "to_output": ["Vector(x: 10, y: 20)", "Vector(x: 30, y: 40)", "Vector(x: 40, y: 60)"]
+    }
   }
 ]

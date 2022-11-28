@@ -57,7 +57,6 @@ lox_val_t val_to_string(lox_val_t val)
 	default:
 		assert(("Unknown val type on val print", 0));
 		return VAL_CREATE_OBJ(LITERAL_OBJECT_STRING("unknown"));
-		break;
 	}
 }
 

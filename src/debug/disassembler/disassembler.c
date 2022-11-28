@@ -128,6 +128,8 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 	case OP_CALL:
 		return __call_instr(op_name(instruction), chunk, offset);
 
+		CASE_SIMPLE_INSTR(OP_CLOSE_UPVALUE);
+
 		CASE_SIMPLE_INSTR(OP_RETURN);
 
 		CASE_SIMPLE_INSTR(OP_NIL);

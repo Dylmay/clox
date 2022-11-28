@@ -1,0 +1,12 @@
+fn outer() {
+    let x = "outside";
+
+    fn inner() {
+      print(x);
+    }
+
+    return inner;
+}
+
+let inner_closure = outer();
+inner_closure();

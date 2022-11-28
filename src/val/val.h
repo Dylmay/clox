@@ -82,6 +82,8 @@ typedef struct object_closure {
 typedef struct object_upval {
 	struct object obj;
 	lox_val_t *location;
+	lox_val_t closed;
+	struct object_upval *next;
 } lox_upval_t;
 
 #endif // __CLOX_UTIL_VALUE_H__
