@@ -11,7 +11,7 @@
 
 #include "ops/ops.h"
 
-#define X(a, b) b,
+#define X(a) #a,
 //! @brief op code name table. SHOULD NOT BE ACCESSED DIRECTLY. @see op_name()
 static char *op_code_names[] = {
 #include "ops/ops_table.h"

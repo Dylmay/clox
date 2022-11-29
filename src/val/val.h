@@ -13,26 +13,7 @@
 #include "util/list/list.h"
 #include "chunk/chunk.h"
 #include "state/lookup/lookup.h"
-
-//! @brief lox value types
-enum value_type {
-	VAL_NIL,
-	VAL_BOOL,
-	VAL_NUMBER,
-	VAL_OBJ,
-	VAL_ERR,
-};
-
-//! @brief object types
-enum object_type {
-	OBJ_STRING,
-	OBJ_FN,
-	OBJ_NATIVE,
-	OBJ_CLASS,
-	OBJ_CLOSURE,
-	OBJ_INSTANCE,
-	OBJ_UPVALUE,
-};
+#include "val_type.h"
 
 //! @brief lox number
 typedef double lox_num_t;

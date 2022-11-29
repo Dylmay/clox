@@ -14,7 +14,7 @@
 //! @brief max value that an extended op code can hold
 #define EXT_CODE_MAX (UINT8_MAX * 24)
 
-#define X(a, b) a,
+#define X(a) a,
 //! @brief enum of operations the VM can perform
 typedef enum __opcode {
 #include "ops_table.h"
