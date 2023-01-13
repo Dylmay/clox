@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Class Test",
+    "description": "Expect class declarations to define class objects",
+    "reason": "To check that classes can be defined",
+    "file": "class.lox",
+    "expect": {}
+  },
+  {
+    "name": "Class no redefine test",
+    "description": "Expect classes to not be redefinable",
+    "reason": "To check classes cannot be redefined",
+    "file": "class_no_redefine.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 65,
+      "on_line": 2,
+      "to_error": [
+        "cannot be redefined"
+      ]
+    }
+  }
+]

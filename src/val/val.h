@@ -27,6 +27,7 @@ enum object_type {
 	OBJ_STRING,
 	OBJ_FN,
 	OBJ_NATIVE,
+	OBJ_CLASS,
 	OBJ_CLOSURE,
 	OBJ_UPVALUE,
 };
@@ -78,6 +79,11 @@ typedef struct object_closure {
 	list_t upvalues;
 	lox_fn_t *fn;
 } lox_closure_t;
+
+typedef struct object_class {
+	struct object obj;
+	struct object_str *name;
+} lox_class_t;
 
 typedef struct object_upval {
 	struct object obj;

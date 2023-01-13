@@ -48,9 +48,20 @@
 #define OBJECT_IS_FN(obj) (object_is_type(obj, OBJ_FN))
 
 /**
+ * @brief Checks whether the passed lox value is a class
+ *
+ * @see lox_class_t
+ *
+ * @return true lox_val_t is an object and is a class
+ * @return false lox_val_t is not an object or is not a class
+ *
+ */
+#define OBJECT_IS_CLASS(obj) (object_is_type(obj, OBJ_CLASS))
+
+/**
  * @brief Checks whether the passed lox value is a native function
  *
- * @see lox_fn_t
+ * @see lox_native_t
  *
  * @return true lox_val_t is an object and is a native function
  * @return false lox_val_t is not an object or is not a native function
@@ -102,6 +113,18 @@
  *
  */
 #define OBJECT_AS_FN(obj) (((struct object_fn *)VAL_AS_OBJ(obj)))
+
+/**
+ * @brief returns the passed lox value as a lox class. Undefined behaviour if the value is not a lox object and is not a lox class
+ *
+ * @see lox_class_t
+ *
+ * @param obj the lox value to get as a lox class
+ *
+ * @return struct object_class * lox class
+ *
+ */
+#define OBJECT_AS_CLASS(obj) (((struct object_class *)VAL_AS_OBJ(obj)))
 
 /**
  * @brief returns the passed lox value as a lox native function. Undefined behaviour if the value is not a lox object and is not a lox native function
@@ -230,6 +253,14 @@ struct object_native_fn *object_native_fn_new(native_fn native_fn);
  * @return struct object_closure* the new object closure
  */
 struct object_closure *object_closure_new(struct object_fn *fn);
+
+/**
+ * @brief creates a new class with the given name
+ *
+ * @param fn the function to wrap
+ * @return struct object_closure* the new object closure
+ */
+struct object_class *object_class_new(struct object_str *fn);
 
 /**
  * @brief gets the upvalue at the given position within the closure

@@ -7,7 +7,10 @@ fn print_using_str(item) {
     print(to_str);
 }
 
+class Cls {}
+
 assert(str(true) == "true");
+assert(str(Cls) == "Cls")
 assert(str(false) == "false");
 assert(str(nil) == "nil");
 assert(str(123_456) == "123456");

@@ -16,7 +16,15 @@
     "reason": "To check print() correctly handles printing of all values",
     "file": "print_test.lox",
     "expect": {
-      "to_output": ["Hello World", "nil", 123, "true", "false", "<fn fn_to_print>"]
+      "to_output": [
+        "Hello World",
+        "nil",
+        123,
+        "true",
+        "false",
+        "<fn fn_to_print>",
+        "<class Cls>"
+      ]
     }
   },
   {
@@ -25,7 +33,14 @@
     "reason": "To check print() correctly handles printing of all values",
     "file": "print_test.lox",
     "expect": {
-      "to_output": ["Hello World", "nil", 123, "true", "false", "<fn fn_to_print>"]
+      "to_output": [
+        "Hello World",
+        "nil",
+        123,
+        "true",
+        "false",
+        "<fn fn_to_print>"
+      ]
     }
   },
   {
@@ -71,7 +86,9 @@
       "to_fail": true,
       "has_return_code": 70,
       "on_line": 3,
-      "to_error": ["Argument is not a number"]
+      "to_error": [
+        "Argument is not a number"
+      ]
     }
   }
 ]

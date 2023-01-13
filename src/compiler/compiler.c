@@ -57,6 +57,7 @@ static void __parse_grouping(struct compiler *);
 static void __parse_number(struct compiler *);
 static void __parse_lit(struct compiler *);
 static void __parse_string(struct compiler *);
+static void __parse_class_decl(struct compiler *);
 static void __parse_decl(struct compiler *);
 static void __parse_var_decl(struct compiler *);
 static void __parse_stmnt(struct compiler *);
@@ -379,7 +380,9 @@ static void __parse_string(struct compiler *compiler)
 
 static void __parse_decl(struct compiler *compiler)
 {
-	if (parser_match(compiler->prsr, TKN_LET)) {
+	if (parser_match(compiler->prsr, TKN_CLS)) {
+		__parse_class_decl(compiler);
+	} else if (parser_match(compiler->prsr, TKN_LET)) {
 		__parse_var_decl(compiler);
 	} else if (parser_match(compiler->prsr, TKN_FN)) {
 		__parse_fn_decl(compiler);
@@ -871,11 +874,39 @@ static bool __compiler_has_defined(struct compiler *compiler, const char *name,
 				   size_t len)
 {
 	if (list_size(&compiler->lookup.scopes) == 0) {
-		return false;
+		return lookup_has_name(&compiler->global_state->globals, name,
+				       len);
 	}
 
 	const lookup_t *cur_scope = __compiler_cur_scope(compiler);
 	return lookup_has_name(cur_scope, name, len);
+}
+
+static void __parse_class_decl(struct compiler *compiler)
+{
+	parser_consume(compiler->prsr, TKN_ID, "Expected class name");
+
+	const char *name = compiler->prsr->previous.start;
+	size_t len = compiler->prsr->previous.len;
+
+	if (__compiler_has_defined(compiler, name, len)) {
+		parser_error_at_previous(
+			compiler->prsr,
+			"Variables/functions cannot be redefined.");
+	}
+
+	lox_str_t *cls_name = object_str_new(name, len);
+	lox_class_t *cls = object_class_new(cls_name);
+
+	OP_CONST_WRITE(compiler->fn, VAL_CREATE_OBJ(cls),
+		       compiler->prsr->previous.line);
+	/*lookup_var_t var =*/__compiler_define_var(
+		compiler, name, len, compiler->prsr->previous.line, false);
+
+	parser_consume(compiler->prsr, TKN_LEFT_BRACE,
+		       "Expected '{' before class body");
+	parser_consume(compiler->prsr, TKN_RIGHT_BRACE,
+		       "Expected '}' after class body");
 }
 
 static uint8_t __parse_arglist(struct compiler *compiler)

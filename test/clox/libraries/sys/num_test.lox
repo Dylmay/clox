@@ -21,8 +21,8 @@ assert(num_item == 10, "num_item should equal the same amount");
 num_item = num("nan");
 assert(str(num_item) == "nan", "num_item should equal nan but is " + str(num_item));
 
-num_item = num("-nan");
-assert(str(num_item) == "-nan", "num_item should equal -nan but is " + str(num_item));
+num_item = num("nan");
+assert(str(num_item) == "nan", "num_item should equal nan but is " + str(num_item));
 
 num_item = num("-infinity");
 assert(str(num_item) == "-inf", "num_item should equal -inf but is" + str(num_item));

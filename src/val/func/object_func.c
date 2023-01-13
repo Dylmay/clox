@@ -20,6 +20,7 @@
 #define NATIVE_FN_STR "<native fn>"
 #define UNKNOWN_STR "<unknown>"
 #define SCRIPT_STR "<script>"
+#define CLASS_STR "<class %s>"
 
 struct object_str_matcher {
 	struct key_matcher m;
@@ -91,6 +92,16 @@ struct object_closure *object_closure_new(struct object_fn *fn)
 	return closure;
 }
 
+struct object_class *object_class_new(struct object_str *cls_name)
+{
+	struct object_class *cls =
+		ALLOCATE_OBJECT(struct object_class, OBJ_CLASS);
+
+	cls->name = cls_name;
+
+	return cls;
+}
+
 struct object_upval *object_upval_new(lox_val_t *slot)
 {
 	struct object_upval *upval =
@@ -158,6 +169,10 @@ void object_print(lox_val_t val)
 		__print_function(OBJECT_AS_CLOSURE(val)->fn);
 		break;
 
+	case OBJ_CLASS:
+		printf(CLASS_STR, OBJECT_AS_CLASS(val)->name->chars);
+		break;
+
 	case OBJ_UPVALUE:
 		val_print(*OBJECT_AS_UPVALUE(val)->location);
 		break;
@@ -201,6 +216,9 @@ lox_val_t object_to_string(lox_val_t val)
 
 		return VAL_CREATE_OBJ(string);
 	}
+
+	case OBJ_CLASS:
+		return VAL_CREATE_OBJ(OBJECT_AS_CLASS(val)->name);
 
 	case OBJ_NATIVE:
 		return VAL_CREATE_OBJ(object_str_new(

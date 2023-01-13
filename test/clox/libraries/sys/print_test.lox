@@ -5,6 +5,8 @@ if !print {
 fn fn_to_print() {}
 let empty_val;
 
+class Cls {}
+
 print("Hello World");
 print(nil);
 print(123);
@@ -13,3 +15,4 @@ print(false);
 print();
 print(fn_to_print);
 print(empty_val);
+print(Cls);
