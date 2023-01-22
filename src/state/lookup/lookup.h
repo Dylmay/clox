@@ -9,7 +9,6 @@
 
 #include "util/common.h"
 #include "util/map/map.h"
-#include "val/val.h"
 #include "lookup_var.h"
 
 typedef struct __lookup {

@@ -48,6 +48,17 @@
 #define OBJECT_IS_FN(obj) (object_is_type(obj, OBJ_FN))
 
 /**
+ * @brief Checks whether the passed lox value is a class instance
+ *
+ * @see lox_instance_t
+ *
+ * @return true lox_instance_t is an object and is a function
+ * @return false lox_instance_t is not an object or is not a function
+ *
+ */
+#define OBJECT_IS_INSTANCE(obj) (object_is_type(obj, OBJ_INSTANCE))
+
+/**
  * @brief Checks whether the passed lox value is a class
  *
  * @see lox_class_t
@@ -113,6 +124,18 @@
  *
  */
 #define OBJECT_AS_FN(obj) (((struct object_fn *)VAL_AS_OBJ(obj)))
+
+/**
+ * @brief returns the passed lox value as a lox class. Undefined behaviour if the value is not a lox object and is not a lox class instance
+ *
+ * @see lox_instance_t
+ *
+ * @param obj the lox value to get as a lox class instance
+ *
+ * @return struct object_instance * lox class instance
+ *
+ */
+#define OBJECT_AS_INSTANCE(obj) (((struct object_instance *)VAL_AS_OBJ(obj)))
 
 /**
  * @brief returns the passed lox value as a lox class. Undefined behaviour if the value is not a lox object and is not a lox class
@@ -261,6 +284,14 @@ struct object_closure *object_closure_new(struct object_fn *fn);
  * @return struct object_closure* the new object closure
  */
 struct object_class *object_class_new(struct object_str *fn);
+
+/**
+ * @brief creates a new instance of the given class
+ *
+ * @param cls the class to instantiate
+ * @return struct object_instance* the new object instance
+ */
+struct object_instance *object_instance_new(struct object_class *cls);
 
 /**
  * @brief gets the upvalue at the given position within the closure

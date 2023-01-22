@@ -1,0 +1,6 @@
+class Person {
+
+}
+
+let instantiated = Person();
+print(instantiated);

@@ -12,6 +12,7 @@
 #include "util/common.h"
 #include "util/list/list.h"
 #include "chunk/chunk.h"
+#include "state/lookup/lookup.h"
 
 //! @brief lox value types
 enum value_type {
@@ -29,6 +30,7 @@ enum object_type {
 	OBJ_NATIVE,
 	OBJ_CLASS,
 	OBJ_CLOSURE,
+	OBJ_INSTANCE,
 	OBJ_UPVALUE,
 };
 
@@ -83,7 +85,17 @@ typedef struct object_closure {
 typedef struct object_class {
 	struct object obj;
 	struct object_str *name;
+	struct {
+		lookup_t table;
+		uint32_t idx;
+	} lookup;
 } lox_class_t;
+
+typedef struct object_instance {
+	struct object obj;
+	struct object_class *cls;
+	list_t fields;
+} lox_instance_t;
 
 typedef struct object_upval {
 	struct object obj;

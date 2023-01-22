@@ -829,6 +829,15 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 			return __vm_call(vm, closure);
 		}
 
+		case OBJ_CLASS: {
+			lox_class_t *cls = OBJECT_AS_CLASS(callee);
+
+			__vm_push_const(
+				vm, VAL_CREATE_OBJ(object_instance_new(cls)));
+
+			return true;
+		}
+
 		case OBJ_NATIVE: {
 			const lox_native_t *native = OBJECT_AS_NATIVE(callee);
 

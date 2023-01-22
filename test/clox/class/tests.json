@@ -19,5 +19,16 @@
         "cannot be redefined"
       ]
     }
+  },
+  {
+    "name": "Instantiation Test",
+    "description": "Expect classes to be instantiable",
+    "reason": "To check that classes can be instanced",
+    "file": "class_instantiates.lox",
+    "expect": {
+      "to_output": [
+        "<instance Person>"
+      ]
+    }
   }
 ]

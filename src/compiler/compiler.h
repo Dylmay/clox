@@ -9,6 +9,7 @@
 
 #include "chunk/chunk.h"
 #include "state/state.h"
+#include "val/val.h"
 
 /**
  * @brief compiles the given source in to a script function

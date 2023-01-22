@@ -21,6 +21,7 @@
 #define UNKNOWN_STR "<unknown>"
 #define SCRIPT_STR "<script>"
 #define CLASS_STR "<class %s>"
+#define INSTANCE_STR "<instance %s>"
 
 struct object_str_matcher {
 	struct key_matcher m;
@@ -102,6 +103,18 @@ struct object_class *object_class_new(struct object_str *cls_name)
 	return cls;
 }
 
+struct object_instance *object_instance_new(struct object_class *cls)
+{
+	struct object_instance *instance =
+		ALLOCATE_OBJECT(lox_instance_t, OBJ_INSTANCE);
+
+	instance->cls = cls;
+	instance->fields = list_of_type(lox_obj_t);
+	list_set_cap(&instance->fields, cls->lookup.idx);
+
+	return instance;
+}
+
 struct object_upval *object_upval_new(lox_val_t *slot)
 {
 	struct object_upval *upval =
@@ -145,6 +158,15 @@ void object_free(struct object *obj)
 		FREE(struct object_upval, obj);
 		break;
 
+	case OBJ_INSTANCE: {
+		struct object_instance *instance =
+			(struct object_instance *)obj;
+
+		list_free(&instance->fields);
+		FREE(struct object_instance, obj);
+		break;
+	}
+
 	default:
 		break;
 	}
@@ -171,6 +193,10 @@ void object_print(lox_val_t val)
 
 	case OBJ_CLASS:
 		printf(CLASS_STR, OBJECT_AS_CLASS(val)->name->chars);
+		break;
+
+	case OBJ_INSTANCE:
+		printf(INSTANCE_STR, OBJECT_AS_INSTANCE(val)->cls->name->chars);
 		break;
 
 	case OBJ_UPVALUE:
@@ -241,13 +267,12 @@ bool object_equals(const struct object *a, const struct object *b)
 	}
 
 	switch (a->type) {
+	default:
+		assert(("Unknown object comparison type", 0));
 	case OBJ_STRING:
 	case OBJ_FN:
 	case OBJ_CLOSURE:
 	case OBJ_NATIVE:
-		return a == b;
-	default:
-		assert(("Unknown object comparison type", 0));
 		return a == b;
 	}
 }

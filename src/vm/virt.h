@@ -9,6 +9,7 @@
 #include "chunk/chunk.h"
 #include "state/state.h"
 #include "util/list/list.h"
+#include "val/val.h"
 
 //! @brief number of stack slots reserved by the vm
 #define STACK_RESERVED_COUNT 1
