@@ -1,7 +1,8 @@
 from typing import List, Tuple
 
+from .printer import Printer
+from .printer import PrintString as Ps
 from .test import Test, TestResult
-from .util import bold, indent, italic, red
 
 
 class Recordings:
@@ -29,30 +30,36 @@ class Recordings:
         return self.total_test_count() - self.failed_test_count()
 
     def print_failed_test_info(self, indent_by: int = 0):
-        print(bold("==========================================================="))
-        print(bold(self.__directory))
+        Printer.print(
+            Ps("===========================================================").bold()
+        )
+        Printer.print(Ps(self.__directory).bold())
         for (test, result) in self.__failed_tests:
-            print("")
-            print(indent(red("Failed ") + bold(test.name), indent_by))
-            print(italic(indent(f"Program returned {result.retcode}", indent_by)))
+            fail_msg = Ps("Failed ").red() + Ps(test.name).bold()
 
-            print(bold(indent("Result:", 2 + indent_by)))
+            Printer.print()
+            Printer.print(Ps(fail_msg).indent(indent_by))
+            Printer.print(
+                Ps(f"Program returned {result.retcode}").italic().indent(indent_by)
+            )
+
+            Printer.print(Ps("Result").bold().indent(indent_by))
             for fail in result.fails:
-                print(indent(fail, 4 + indent_by))
+                Printer.print(Ps(fail).indent(4 + indent_by))
 
-            print(bold(indent("stdout:", 2 + indent_by)))
+            Printer.print(Ps("stdout:").bold().indent(2 + indent_by))
             if not result.stdout or result.stdout.isspace():
                 stdout = "<no stdout>"
             else:
                 stdout = result.stdout
-            print(italic(indent(stdout, 4 + indent_by)))
+            Printer.print(Ps(stdout).italic().indent(4 + indent_by))
 
-            print(bold(indent("stderr:", 2 + indent_by)))
+            Printer.print(Ps("stderr:").bold().indent(2 + indent_by))
             if not result.stderr or result.stderr.isspace():
                 stderr = "<no stderr>"
             else:
                 stderr = result.stderr
-            print(italic(indent(stderr, 4 + indent_by)))
+            Printer.print(Ps(stderr).italic().indent(4 + indent_by))
 
     def all_passed(self) -> bool:
         return self.total_test_count() == self.passed_test_count()

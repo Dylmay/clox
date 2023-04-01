@@ -1,19 +1,19 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import json
 import os
 import sys
 from argparse import ArgumentParser
-from functools import reduce
 from typing import List
 
 from pydantic import ValidationError
 from pydantic.dataclasses import dataclass
 from test_runner.interpreter import Interpreter
+from test_runner.printer import Printer
+from test_runner.printer import PrintString as Ps
 from test_runner.recordings import Recordings
 from test_runner.test import Test
-from test_runner.util import (JSONSchemaError, bold, green, indent, italic,
-                              red, yellow)
+from test_runner.util import JSONSchemaError
 
 
 def __get_tests(test_path: str) -> List[Test]:
@@ -25,7 +25,7 @@ def __get_tests(test_path: str) -> List[Test]:
         try:
             return [Test(**t) for t in json.load(test_info)]
         except (TypeError, ValidationError, json.JSONDecodeError) as exc:
-            raise JSONSchemaError(f"{test_path} failed to validate. {exc}") from exc
+            raise JSONSchemaError(f"{test_path} failed to validate") from exc
 
 
 def record_tests(
@@ -41,38 +41,39 @@ def record_tests(
     recordings = Recordings(directory)
 
     if len(tests) > 0:
-        print(bold(directory))
+        Printer.print(Ps(directory).bold())
         for (idx, test) in enumerate(tests):
             res = test.run(interpreter)
 
-            idx_str = f"[{idx + 1}/{len(tests)}]"
-
             if res.success:
-                success_msg = green("Passed")
+                success_msg = Ps("Passed").green()
             else:
-                success_msg = red("Failed")
+                success_msg = Ps("Failed").red()
 
-            print(
-                indent(
-                    f"{idx_str}({success_msg})"
-                    + f" {bold(test.name)}: {italic(test.description)}",
-                    2,
-                )
+            idx_str = f"[{idx + 1}/{len(tests)}]({success_msg})"
+            Printer.print(
+                Ps(
+                    idx_str
+                    + f" {Ps(test.name).bold()}: {Ps(test.description).italic()}"
+                ).indent(2)
             )
             recordings.record_test_result(test, res)
 
-        print(
-            italic(
-                f"{recordings.passed_test_count()} out of "
-                + f"{recordings.total_test_count()} tests passed"
-            )
+        Printer.print(
+            Ps(
+                f"{recordings.passed_test_count()} out of {recordings.total_test_count()}"
+                + " tests passed"
+            ).italic()
         )
 
     return recordings
 
 
 def run_clox_tests(
-    clox_path: str, directory: str, test_file: str, use_valgrind: bool
+    clox_path: str,
+    directory: str,
+    test_file: str,
+    use_valgrind: bool,
 ) -> List[Recordings]:
     test_list: List[Recordings] = []
 
@@ -81,17 +82,17 @@ def run_clox_tests(
             test = record_tests(clox_path, cur_folder, test_file, use_valgrind)
             test_list.append(test)
         except FileNotFoundError:
-            print(
-                yellow("[warning]")
+            Printer.print(
+                Ps("[warning]").yellow()
                 + f" no {test_file} found within {cur_folder}. Ignoring folder."
             )
         except JSONSchemaError as exc:
-            print(f"{yellow('[warning]')} {exc}. Ignoring folder.")
+            Printer.print(Ps("[warning]").yellow() + f" {exc}. Ignoring folder.")
 
     return test_list
 
 
-@dataclass
+@dataclass(frozen=True)
 class TestRunnerArgs:
     clox_interpreter: str
     test_directory: str
@@ -100,18 +101,16 @@ class TestRunnerArgs:
     fail_info: bool
     verbose: bool
     recursive: bool
+    quiet: bool
 
 
 def parse_main_args() -> TestRunnerArgs:
     parser = ArgumentParser(description="Python script used to run lox tests")
-    parser.add_argument("clox_interpreter", nargs=1, help="Path to the lox interpreter")
-    parser.add_argument(
-        "test_directory", nargs=1, help="Path to the lox test directory"
-    )
+    parser.add_argument("clox_interpreter", help="Path to the lox interpreter")
+    parser.add_argument("test_directory", help="Path to the lox test directory")
     parser.add_argument(
         "-t",
         "--tests",
-        nargs=1,
         default="tests.json",
         help="The test layout file to use within the test directory",
     )
@@ -128,6 +127,12 @@ def parse_main_args() -> TestRunnerArgs:
         help="Outputs information about the tests that have failed",
     )
     parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="Disable printing of test information",
+    )
+    parser.add_argument(
         "-v", "--verbose", action="store_true", help="Output all test information"
     )
     parser.add_argument(
@@ -140,33 +145,43 @@ def parse_main_args() -> TestRunnerArgs:
     parser_args = parser.parse_args()
 
     return TestRunnerArgs(
-        clox_interpreter=parser_args.clox_interpreter[0],
-        test_directory=parser_args.test_directory[0],
+        clox_interpreter=parser_args.clox_interpreter,
+        test_directory=parser_args.test_directory,
         tests=parser_args.tests,
         valgrind=parser_args.valgrind,
         fail_info=parser_args.fail_info,
         verbose=parser_args.verbose,
         recursive=parser_args.recursive,
+        quiet=parser_args.quiet,
     )
 
 
 if __name__ == "__main__":
     args = parse_main_args()
 
+    if args.quiet:
+        Printer.disable()
+
     if args.recursive:
         results = run_clox_tests(
-            args.clox_interpreter, args.test_directory, args.tests, args.valgrind
+            args.clox_interpreter,
+            args.test_directory,
+            args.tests,
+            args.valgrind,
         )
     else:
         results = [
             record_tests(
-                args.clox_interpreter, args.test_directory, args.tests, args.valgrind
+                args.clox_interpreter,
+                args.test_directory,
+                args.tests,
+                args.valgrind,
             )
         ]
 
-    total_tests = reduce(lambda t, r: t + r.total_test_count(), results, 0)
-    passed_tests = reduce(lambda t, r: t + r.passed_test_count(), results, 0)
-    print(bold(f"Total: {passed_tests} out of {total_tests} tests passed"))
+    total_tests = sum(result.total_test_count() for result in results)
+    passed_tests = sum(result.passed_test_count() for result in results)
+    Printer.print(Ps(f"Total: {passed_tests} out of {total_tests} tests passed").bold())
 
     if args.fail_info:
         for result in results:
