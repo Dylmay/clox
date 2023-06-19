@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "util/common.h"
 #include "compiler.h"
@@ -819,6 +820,9 @@ static lookup_var_t __compiler_define_var(struct compiler *compiler,
 			&compiler->global_state->globals, name, len,
 			lookup_get_size(&compiler->global_state->globals),
 			flags);
+
+		assert(("created variable is invalid",
+			lookup_var_is_valid(new_var)));
 	} else {
 		lookup_t *cur_scope = __compiler_cur_scope(compiler);
 		uint32_t prev_sz = lookup_get_size(cur_scope);
@@ -930,6 +934,13 @@ static void __compiler_import(struct compiler *compiler,
 {
 	for (size_t i = 0; i < imports.import_cnt; i++) {
 		struct native_import native_fn = imports.import_arr[i];
+
+		if (__compiler_has_defined(compiler, native_fn.fn_name,
+					   native_fn.name_sz)) {
+			// TODO: make it an error to overwrite an import
+			// or properly support it
+			continue;
+		}
 
 		uint32_t line = compiler->prsr->previous.line ?
 					compiler->prsr->previous.line :
