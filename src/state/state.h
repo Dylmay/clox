@@ -24,7 +24,7 @@ struct state {
 static inline struct state state_new()
 {
 	return (struct state){
-		.globals = lookup_new(0),
+		.globals = lookup_new(),
 	};
 }
 
