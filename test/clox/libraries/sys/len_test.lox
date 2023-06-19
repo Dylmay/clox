@@ -1,0 +1,2 @@
+assert(len("hello") == 5, "length of hello should be 5");
+assert(len("") == 0, "length of an empty string should be 0");

@@ -90,5 +90,38 @@
         "Argument is not a number"
       ]
     }
+  },
+  {
+    "name": "len count test",
+    "description": "Expect len() to count the length of a string",
+    "reason": "To check len() works as expected",
+    "file": "len_test.lox",
+    "expect": {}
+  },
+  {
+    "name": "len invalid arg count test",
+    "description": "Expect len() to only accept a single argument",
+    "file": "len_invalid_arg_cnt.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 70,
+      "on_line": 1,
+      "to_error": [
+        "Invalid number of arguments"
+      ]
+    }
+  },
+  {
+    "name": "len invalid arg test",
+    "description": "Expect len() to only accept strings",
+    "file": "len_invalid_arg.lox",
+    "expect": {
+      "to_fail": true,
+      "has_return_code": 70,
+      "on_line": 1,
+      "to_error": [
+        "len() only accepts strings"
+      ]
+    }
   }
 ]

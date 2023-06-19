@@ -17,6 +17,7 @@ static lox_val_t __to_num(int arg_cnt, lox_val_t *args);
 static lox_val_t __assert(int arg_cnt, lox_val_t *args);
 static lox_val_t __read(int arg_cnt, lox_val_t *args);
 static lox_val_t __round_val(int arg_cnt, lox_val_t *args);
+static lox_val_t __len(int arg_cnt, lox_val_t *args);
 /* Helpers */
 static lox_val_t __round_double(double value, int round_to);
 static lox_val_t __str_to_num(const lox_str_t *str);
@@ -35,6 +36,7 @@ static struct native_import imports[] = {
 	CREATE_FUNC_DEF("assert", __assert),
 	CREATE_FUNC_DEF("read", __read),
 	CREATE_FUNC_DEF("round", __round_val),
+	CREATE_FUNC_DEF("len", __len),
 };
 
 #undef CREATE_FUNC_DEF
@@ -75,6 +77,22 @@ static lox_val_t __to_str(int arg_cnt, lox_val_t *args)
 	} else {
 		return VAL_CREATE_OBJ(LITERAL_OBJECT_STRING(""));
 	}
+}
+
+static lox_val_t __len(int arg_cnt, lox_val_t *args)
+{
+	if (arg_cnt != 1) {
+		return VAL_CREATE_ERR(
+			LITERAL_OBJECT_STRING("Invalid number of arguments"));
+	}
+
+	if (!OBJECT_IS_STRING(args[0])) {
+		return VAL_CREATE_ERR(
+			LITERAL_OBJECT_STRING("len() only accepts strings"));
+	}
+
+	lox_str_t *str = OBJECT_AS_STRING(args[0]);
+	return VAL_CREATE_NUMBER(str->len);
 }
 
 static lox_val_t __assert(int arg_cnt, lox_val_t *args)
