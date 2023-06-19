@@ -1,0 +1,8 @@
+class Person {
+  let mut name;
+  let age;
+}
+
+let person = Person();
+person.name = "Dylan";
+person.age = 120;

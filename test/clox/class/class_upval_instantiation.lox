@@ -1,0 +1,11 @@
+fn newPerson() {
+  class Person {
+    let name;
+    let mut age;
+  }
+
+  return Person();
+}
+
+let person = newPerson();
+print(person);

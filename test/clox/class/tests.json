@@ -30,5 +30,30 @@
         "<instance Person>"
       ]
     }
+  },
+  {
+    "name": "Generator Test",
+    "description": "Expect classes to be instantiable and definable within an upval",
+    "reason": "To check that classes are useable outside of their upval",
+    "file": "class_upval_instantiation.lox",
+    "expect": {
+      "to_output": [
+        "<instance Person>"
+      ]
+    }
+  },
+  {
+    "name": "Variable Test",
+    "description": "Expect classes to be able to state variables",
+    "reason": "To check that classes can define variables",
+    "file": "class_with_variables.lox",
+    "expect": {}
+  },
+  {
+    "name": "Method Test",
+    "description": "Expect classes to be able to state methods",
+    "reason": "To check that classes can define methodss",
+    "file": "class_with_methods.lox",
+    "expect": {}
   }
 ]

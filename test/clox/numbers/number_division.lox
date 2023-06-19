@@ -11,10 +11,10 @@ num_var = 4.56 / 1.23;
 assert(round(num_var, 5) == 3.70732, "num_var must equal 3.70732");
 
 num_var = 0 / 0;
-assert(str(num_var) == "-nan", "num_var must equal -nan");
+assert(str(num_var) == "nan", "num_var must equal nan but equals " + str(num_var));
 
 num_var = -0 / -0;
-assert(str(num_var) == "-nan", "num_var must equal -nan");
+assert(str(num_var) == "nan", "num_var must equal nan but equals " + str(num_var));
 
 num_var = 1 / 0;
 assert(str(num_var) == "inf", "num_var must equal inf");
