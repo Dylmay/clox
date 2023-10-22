@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS = -std=c17
+CFLAGS = "-std=c17 -Wall"
 BUILD_ROOT = build/
 UNOP_DEFINES = ""
 DBG_DEFINES = "-DDEBUG_TRACE_EXECUTION -DDEBUG_PRINT_CODE -DDEBUG_BENCH"
@@ -24,15 +24,15 @@ test: $(BUILD_DIR)/$(TARGET_EXEC)
 	$(VALGRIND) ./build/clox_test
 
 dbg:
-	make -C src/ CC=$(CC) CFLAGS="-Wall -Wno-unused-value $(CFLAGS)" DEFINES=$(DBG_DEFINES)
+	make -C src/ CC=$(CC) CFLAGS="-g -Wno-unused-value $(CFLAGS)" DEFINES=$(DBG_DEFINES)
 
 unoptimized:
 	make -C src/ CC=$(CC) CFLAGS=$(CFLAGS) DEFINES=$(UNOP_DEFINES)
 
 bench:
-	make -C src/ CFLAGS="-Wall -Wno-unused-value -O3 $(CFLAGS)" CC=$(CC) DEFINES=$(BENCH_DEFINES)
+	make -C src/ CFLAGS="-Wno-unused-value -O3 $(CFLAGS)" CC=$(CC) DEFINES=$(BENCH_DEFINES)
 
 rel:
-	make -C src/ CFLAGS="-Wall -O3 $(CFLAGS)" CC=$(CC) DEFINES=$(REL_DEFINES)
+	make -C src/ CFLAGS="-O3 $(CFLAGS)" CC=$(CC) DEFINES=$(REL_DEFINES)
 
 MKDIR_P ?= mkdir -p

@@ -45,12 +45,13 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 	code_t instruction = chunk_get_code(chunk, offset);
 
 	switch (instruction) {
-#define CASE_SIMPLE_INSTR(instr)                                               \
-	case instr:                                                            \
-		return __simple_instr(op_name(instr), offset)
+	case OP_PROPERTY_GET:
+	case OP_PROPERTY_SET:
 	case OP_CONSTANT:
 		return __const_instr(op_name(instruction), chunk, offset);
 
+	case OP_PROPERTY_GET_LONG:
+	case OP_PROPERTY_SET_LONG:
 	case OP_CONSTANT_LONG:
 		return __const_long_instr(op_name(instruction), chunk, offset);
 
@@ -61,60 +62,12 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 		return __closure_long_instr(op_name(instruction), chunk,
 					    offset);
 
-	case OP_UPVALUE_GET:
-		return __var_instr(op_name(instruction), chunk, offset);
-
-	case OP_UPVALUE_GET_LONG:
-		return __var_long_instr(op_name(instruction), chunk, offset);
-
-	case OP_UPVALUE_SET:
-		return __var_instr(op_name(instruction), chunk, offset);
-
-	case OP_UPVALUE_SET_LONG:
-		return __var_long_instr(op_name(instruction), chunk, offset);
-
-	case OP_VAR_DEFINE:
-		return __var_instr(op_name(instruction), chunk, offset);
-
-	case OP_VAR_DEFINE_LONG:
-		return __var_long_instr(op_name(instruction), chunk, offset);
-
-	case OP_VAR_SET:
-		return __var_instr(op_name(instruction), chunk, offset);
-
-	case OP_VAR_SET_LONG:
-		return __var_long_instr(op_name(instruction), chunk, offset);
-
-	case OP_VAR_GET:
-		return __var_instr(op_name(instruction), chunk, offset);
-
 	case OP_UPVALUE_DEFINE:
 		return __upval_def_instr(op_name(instruction), chunk, offset);
 
 	case OP_UPVALUE_DEFINE_LONG:
 		return __upval_def_long_instr(op_name(instruction), chunk,
 					      offset);
-
-	case OP_VAR_GET_LONG:
-		return __var_long_instr(op_name(instruction), chunk, offset);
-
-	case OP_GLOBAL_DEFINE:
-		return __var_instr(op_name(instruction), chunk, offset);
-
-	case OP_GLOBAL_DEFINE_LONG:
-		return __var_long_instr(op_name(instruction), chunk, offset);
-
-	case OP_GLOBAL_SET:
-		return __var_instr(op_name(instruction), chunk, offset);
-
-	case OP_GLOBAL_SET_LONG:
-		return __var_long_instr(op_name(instruction), chunk, offset);
-
-	case OP_GLOBAL_GET:
-		return __var_instr(op_name(instruction), chunk, offset);
-
-	case OP_GLOBAL_GET_LONG:
-		return __var_long_instr(op_name(instruction), chunk, offset);
 
 	case OP_POP_COUNT:
 		return __pop_count_instr(op_name(instruction), chunk, offset);
@@ -128,45 +81,50 @@ size_t disassem_inst(chunk_t *chunk, size_t offset)
 	case OP_CALL:
 		return __call_instr(op_name(instruction), chunk, offset);
 
-		CASE_SIMPLE_INSTR(OP_CLOSE_UPVALUE);
+	case OP_PROPERTY_DEFINE:
+	case OP_UPVALUE_SET:
+	case OP_UPVALUE_GET:
+	case OP_GLOBAL_DEFINE:
+	case OP_GLOBAL_SET:
+	case OP_GLOBAL_GET:
+	case OP_VAR_SET:
+	case OP_VAR_GET:
+	case OP_VAR_DEFINE:
+		return __var_instr(op_name(instruction), chunk, offset);
 
-		CASE_SIMPLE_INSTR(OP_RETURN);
+	case OP_PROPERTY_DEFINE_LONG:
+	case OP_UPVALUE_GET_LONG:
+	case OP_UPVALUE_SET_LONG:
+	case OP_VAR_DEFINE_LONG:
+	case OP_VAR_SET_LONG:
+	case OP_GLOBAL_DEFINE_LONG:
+	case OP_GLOBAL_SET_LONG:
+	case OP_GLOBAL_GET_LONG:
+	case OP_VAR_GET_LONG:
+		return __var_long_instr(op_name(instruction), chunk, offset);
 
-		CASE_SIMPLE_INSTR(OP_NIL);
-
-		CASE_SIMPLE_INSTR(OP_TRUE);
-
-		CASE_SIMPLE_INSTR(OP_FALSE);
-
-		CASE_SIMPLE_INSTR(OP_ADD);
-
-		CASE_SIMPLE_INSTR(OP_SUBTRACT);
-
-		CASE_SIMPLE_INSTR(OP_DIVIDE);
-
-		CASE_SIMPLE_INSTR(OP_MULTIPLY);
-
-		CASE_SIMPLE_INSTR(OP_NEGATE);
-
-		CASE_SIMPLE_INSTR(OP_NOT);
-
-		CASE_SIMPLE_INSTR(OP_EQUAL);
-
-		CASE_SIMPLE_INSTR(OP_GREATER);
-
-		CASE_SIMPLE_INSTR(OP_LESS);
-
-		CASE_SIMPLE_INSTR(OP_POP);
-
-		CASE_SIMPLE_INSTR(OP_MOD);
-
-		CASE_SIMPLE_INSTR(OP_NOP);
+	case OP_CLOSE_UPVALUE:
+	case OP_RETURN:
+	case OP_NIL:
+	case OP_TRUE:
+	case OP_FALSE:
+	case OP_ADD:
+	case OP_SUBTRACT:
+	case OP_DIVIDE:
+	case OP_MULTIPLY:
+	case OP_NEGATE:
+	case OP_NOT:
+	case OP_EQUAL:
+	case OP_GREATER:
+	case OP_LESS:
+	case OP_POP:
+	case OP_MOD:
+	case OP_NOP:
+		return __simple_instr(op_name(instruction), offset);
 
 	default:
 		printf("Unknown opcode %u\n", instruction);
 		return offset + 1;
-
-#undef CASE_SIMPLE_INSTR
 	}
 }
 

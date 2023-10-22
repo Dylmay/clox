@@ -88,7 +88,7 @@ void list_set_cnt(list_t *lst, size_t cnt)
 	}
 }
 
-void list_for_each (list_t *lst, for_each_fn func)
+void list_for_each(list_t *lst, for_each_fn func)
 {
 	for (size_t idx = 0; idx < lst->cnt; idx++) {
 		func(list_get(lst, idx));

@@ -1,8 +1,21 @@
+let value = 10;
+
 class Person {
   let mut name;
-  let age;
+  let mut age;
 }
 
-let person = Person();
-person.name = "Dylan";
-person.age = 120;
+fn print_person(person) {
+  print("Name: " + str(person.name) + "; Age: " + str(person.age));
+}
+
+let dylan = Person();
+let abby = Person();
+
+dylan.name = "Dylan";
+dylan.age = 25;
+abby.name = "Abby";
+abby.age = 23;
+
+print_person(dylan);
+print_person(abby);

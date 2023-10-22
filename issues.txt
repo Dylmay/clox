@@ -1,8 +1,14 @@
-current outstanding:
-usage of string_util is sparse and debatably confusing
-decide how to handle the interner (be better to be an internal lox string impl detail)
-clear lookup and assert it only has one scope (global) on vm start
-improve return behaviour (detect dead code, don't construct code afterwards, no implicit null retcode)
-implement unit testing
-improve os x / win timer
-clean up/update win solution
+# The TODO List:
+## Current outstanding:
+* usage of string_util is sparse and debatably confusing
+* decide how to handle the interner (be better to be an internal lox string impl detail)
+* clear lookup and assert it only has one scope (global) on vm start
+* improve return behaviour (detect dead code, don't construct code afterwards, no implicit null retcode)
+* improve os x / win timer
+* clean up/update win solution
+* typing is now required
+  * Compiler can guess the type but it is needed so definitions are known
+  * for classes
+* classes should be scoped to global?
+  * class definitions are needed to allow property usage
+* implement structs?
