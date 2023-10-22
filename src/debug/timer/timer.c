@@ -3,25 +3,24 @@
 #include "timer.h"
 #include "util/list/list.h"
 
+#if defined(_WIN32)
+#define clock_get(timespec) timespec_get(timespec, TIME_UTC)
+#else
+#define clock_get(timespec) clock_gettime(CLOCK_PROCESS_CPUTIME_ID, timespec)
+#endif
+
 static void __print_fmtd_time(time_t time);
 
 void timer_start(struct timespec *timer)
 {
-#ifdef _WIN32
-	timespec_get(timer, TIME_UTC);
-#else
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, timer);
-#endif
+	clock_get(timer);
 }
 
 struct timespec timer_end(const struct timespec timer)
 {
 	struct timespec end;
-#ifdef _WIN32
-	timespec_get(&end, TIME_UTC);
-#else
-	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
-#endif
+
+	clock_get(&end);
 
 	return timespec_diff(timer, end);
 }
