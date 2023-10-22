@@ -87,7 +87,7 @@ struct object_closure *object_closure_new(struct object_fn *fn)
 		ALLOCATE_OBJECT(struct object_closure, OBJ_CLOSURE);
 
 	closure->fn = fn;
-	closure->upvalues = list_of_type(struct object_upval *);
+	closure->upvalues = list_of_type(lox_upval_t);
 	list_set_cap(&closure->upvalues, fn->upval_cnt);
 
 	return closure;
@@ -100,6 +100,13 @@ struct object_class *object_class_new(struct object_str *cls_name)
 
 	cls->name = cls_name;
 
+	cls->field_lookup.table = lookup_new();
+	cls->field_lookup.idx = 0;
+
+	cls->static_lookup.table = lookup_new();
+	cls->static_lookup.idx = 0;
+	cls->statics = list_of_type(lox_val_t);
+
 	return cls;
 }
 
@@ -109,8 +116,9 @@ struct object_instance *object_instance_new(struct object_class *cls)
 		ALLOCATE_OBJECT(lox_instance_t, OBJ_INSTANCE);
 
 	instance->cls = cls;
-	instance->fields = list_of_type(lox_obj_t);
-	list_set_cap(&instance->fields, cls->lookup.idx);
+	instance->fields = list_of_type(lox_val_t);
+	size_t field_size = map_size(&cls->field_lookup.table.table);
+	list_set_cnt(&instance->fields, field_size);
 
 	return instance;
 }
@@ -269,6 +277,7 @@ bool object_equals(const struct object *a, const struct object *b)
 	switch (a->type) {
 	default:
 		assert(("Unknown object comparison type", 0));
+		return false;
 	case OBJ_STRING:
 	case OBJ_FN:
 	case OBJ_CLOSURE:

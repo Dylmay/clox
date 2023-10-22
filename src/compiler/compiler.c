@@ -18,6 +18,13 @@
 #include "debug/debug.h"
 #endif
 
+// TODO(dmayor): place check to stop recursive classes
+// not possible due to flag being unset
+enum define_state {
+	DEFAULT_DEFINE,
+	CLASS_DEFINE,
+};
+
 struct compiler {
 	struct compiler *enclosing;
 	struct state *global_state;
@@ -30,6 +37,7 @@ struct compiler {
 	list_t captured_vals;
 	lox_fn_t *fn;
 	bool can_assign;
+	enum define_state define_state;
 };
 
 typedef void (*parse_fn)(struct compiler *);
@@ -73,6 +81,7 @@ static void __parse_fn_decl(struct compiler *);
 static void __parse_fn(struct compiler *, lox_str_t *);
 static void __parse_call(struct compiler *);
 static void __parse_return_stmt(struct compiler *);
+static void __parse_dot(struct compiler *);
 static uint8_t __parse_arglist(struct compiler *);
 static bool __compiler_has_defined(struct compiler *, const char *, size_t);
 static void __compiler_import(struct compiler *, struct import_list);
@@ -95,7 +104,7 @@ static struct parse_rule PARSE_RULES[] = {
 	[TKN_LEFT_BRACE] = { NULL, NULL, PREC_NONE },
 	[TKN_RIGHT_BRACE] = { NULL, NULL, PREC_NONE },
 	[TKN_COMMA] = { NULL, NULL, PREC_NONE },
-	[TKN_DOT] = { NULL, NULL, PREC_NONE },
+	[TKN_DOT] = { NULL, __parse_dot, PREC_CALL },
 	[TKN_MINUS] = { __parse_unary, __parse_binary, PREC_TERM },
 	[TKN_PLUS] = { __parse_unary, __parse_binary, PREC_TERM },
 	[TKN_MOD] = { NULL, __parse_binary, PREC_FACTOR },
@@ -159,6 +168,7 @@ static struct compiler __compiler_new(struct compiler *enclosing,
 		.captured_vals = list_of_type(uint32_t),
 		.fn = fn,
 		.can_assign = false,
+		.define_state = DEFAULT_DEFINE,
 	};
 }
 
@@ -421,11 +431,12 @@ static void __parse_var_decl(struct compiler *compiler)
 
 	// if undef_var exists, set flags on object
 	// could have a list of pendings
-	if (!parser_had_error(compiler->prsr)) {
-		__compiler_define_var(compiler, name, len, def_ln, is_mutable);
-	} else {
+	if (parser_had_error(compiler->prsr)) {
 		OP_VAR_DEFINE_WRITE(compiler->fn, 0, def_ln);
+	} else {
+		__compiler_define_var(compiler, name, len, def_ln, is_mutable);
 	}
+	// OP_POP_WRITE(compiler->fn, def_ln);
 }
 
 static void __parse_stmnt(struct compiler *compiler)
@@ -835,7 +846,10 @@ static lookup_var_t __compiler_define_var(struct compiler *compiler,
 		}
 	}
 
-	if (lookup_var_is_global(new_var)) {
+	if (compiler->define_state == CLASS_DEFINE) {
+		// no op
+		OP_PROPERTY_DEFINE_WRITE(compiler->fn, new_var.idx, line);
+	} else if (lookup_var_is_global(new_var)) {
 		OP_GLOBAL_DEFINE_WRITE(compiler->fn, new_var.idx, line);
 	} else if (lookup_var_is_upval(new_var)) {
 		assert(("upval vars should never be defined", 0));
@@ -906,11 +920,54 @@ static void __parse_class_decl(struct compiler *compiler)
 		       compiler->prsr->previous.line);
 	/*lookup_var_t var =*/__compiler_define_var(
 		compiler, name, len, compiler->prsr->previous.line, false);
+	list_push(&compiler->lookup.scopes, &cls->field_lookup);
 
 	parser_consume(compiler->prsr, TKN_LEFT_BRACE,
 		       "Expected '{' before class body");
+
+	compiler->define_state = CLASS_DEFINE;
+	while (!parser_check(compiler->prsr, TKN_RIGHT_BRACE) &&
+	       !parser_check(compiler->prsr, TKN_EOF)) {
+		if (parser_match(compiler->prsr, TKN_LET)) {
+			__parse_var_decl(compiler);
+		} else if (parser_match(compiler->prsr, TKN_FN)) {
+			__parse_fn_decl(compiler);
+		} else {
+			parser_error_at_current(compiler->prsr,
+						"Unknown class item");
+		}
+	}
+
 	parser_consume(compiler->prsr, TKN_RIGHT_BRACE,
 		       "Expected '}' after class body");
+	compiler->define_state = DEFAULT_DEFINE;
+	cls->field_lookup.table = *__compiler_cur_scope(compiler);
+	list_pop(&compiler->lookup.scopes);
+}
+
+static void __parse_dot(struct compiler *compiler)
+{
+	parser_consume(compiler->prsr, TKN_ID, "Expecting a property name");
+	token_t name_tkn = compiler->prsr->previous;
+	lox_str_t *prop_name = object_str_new(name_tkn.start, name_tkn.len);
+
+	// TODO: need to make this compile-time - Currently fails will be runtime
+	if (compiler->can_assign && parser_match(compiler->prsr, TKN_EQ)) {
+		__parse_expr(compiler);
+
+		// TODO: check for mutability - This is done at runtime currently
+		// TODO: add ability to set defaults
+		// TODO: add ability to set statics
+		// if (!lookup_var_is_mutable(var)) {
+		// 	parser_error(compiler->prsr, name_tkn,
+		// 		     "Variable isn't mutable");
+		// }
+		OP_PROPERTY_SET_WRITE(compiler->fn, VAL_CREATE_OBJ(prop_name),
+				      name_tkn.line);
+	} else {
+		OP_PROPERTY_GET_WRITE(compiler->fn, VAL_CREATE_OBJ(prop_name),
+				      name_tkn.line);
+	}
 }
 
 static uint8_t __parse_arglist(struct compiler *compiler)

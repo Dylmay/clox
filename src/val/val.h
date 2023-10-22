@@ -88,7 +88,12 @@ typedef struct object_class {
 	struct {
 		lookup_t table;
 		uint32_t idx;
-	} lookup;
+	} field_lookup;
+	struct {
+		lookup_t table;
+		uint32_t idx;
+	} static_lookup;
+	list_t statics;
 } lox_class_t;
 
 typedef struct object_instance {

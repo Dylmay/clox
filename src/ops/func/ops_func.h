@@ -93,6 +93,22 @@ static inline bool OP_LOOP_WRITE(lox_fn_t *fn, long loop_begin, uint32_t line)
 	return true;
 }
 
+static inline void OP_PROPERTY_GET_WRITE(lox_fn_t *fn, lox_val_t prop_name,
+					 uint32_t line)
+{
+	size_t const_offset = chunk_write_const(&fn->chunk, prop_name);
+	__extended_op(&fn->chunk, OP_PROPERTY_GET, OP_PROPERTY_GET_LONG,
+		      const_offset, line);
+}
+
+static inline void OP_PROPERTY_SET_WRITE(lox_fn_t *fn, lox_val_t prop_name,
+					 uint32_t line)
+{
+	size_t const_offset = chunk_write_const(&fn->chunk, prop_name);
+	__extended_op(&fn->chunk, OP_PROPERTY_SET, OP_PROPERTY_SET_LONG,
+		      const_offset, line);
+}
+
 #define FUNC_NAME_OF(op) op##_WRITE
 #define CREATE_WRITE_FUNC(instr)                                               \
 	static inline void FUNC_NAME_OF(instr)(lox_fn_t * fn, uint32_t line)   \
@@ -137,6 +153,7 @@ CREATE_EXTENDED_WRITE_FUNC(OP_VAR_DEFINE, OP_GLOBAL_DEFINE_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_VAR_GET, OP_GLOBAL_GET_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_VAR_SET, OP_GLOBAL_SET_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_GLOBAL_DEFINE, OP_GLOBAL_DEFINE_LONG)
+CREATE_EXTENDED_WRITE_FUNC(OP_PROPERTY_DEFINE, OP_PROPERTY_DEFINE_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_GLOBAL_GET, OP_GLOBAL_GET_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_GLOBAL_SET, OP_GLOBAL_SET_LONG)
 CREATE_EXTENDED_WRITE_FUNC(OP_UPVALUE_GET, OP_UPVALUE_SET_LONG)
