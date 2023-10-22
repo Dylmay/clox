@@ -43,6 +43,7 @@ static void __vm_define_global(vm_t *vm, lox_val_t *val, size_t idx);
 static lox_val_t *__vm_get_global(vm_t *vm, uint32_t glbl);
 static bool __vm_set_global(vm_t *vm, uint32_t glbl, lox_val_t *val);
 static void __vm_define_var(vm_t *vm, lox_val_t *val);
+static void __vm_define_prop(vm_t *vm, lox_val_t *val);
 static lox_val_t *__vm_get_var(vm_t *vm, uint32_t glbl);
 static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val);
 static void __vm_set_main(vm_t *vm, lox_fn_t *main);
@@ -536,6 +537,84 @@ static enum vm_res __vm_run(vm_t *vm)
 			}
 		} break;
 
+		case OP_PROPERTY_DEFINE: {
+			__frame_proc_idx(cur_frame);
+			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+			lox_instance_t *instance =
+				OBJECT_AS_INSTANCE(*__vm_peek_const_ptr(vm, 1));
+			// assert(("def is not null", val->type == VAL_NIL));
+
+			__vm_define_prop(vm, val);
+			__vm_pop_const(vm);
+		} break;
+
+		case OP_PROPERTY_DEFINE_LONG: {
+			// TODO(dmayor): pipe
+		} break;
+
+		case OP_PROPERTY_GET: {
+			// TODO: refactor to share between props
+			lox_str_t *prop_name =
+				OBJECT_AS_STRING(__vm_pop_const(vm));
+			lox_instance_t *instance =
+				OBJECT_AS_INSTANCE(*__vm_peek_const_ptr(vm, 0));
+
+			// TODO: verify if sanity checks are needed
+			lookup_var_t var = lookup_find_name(
+				&instance->cls->field_lookup.table,
+				prop_name->chars, prop_name->len);
+
+			// after fetching var, verify it's valid
+			// once valid, assign the val
+			if (!lookup_var_is_valid(var)) {
+				__vm_runtime_error(vm, "Undefined property");
+			}
+
+			lox_val_t *val = list_get(&instance->fields, var.idx);
+			__vm_push_const(vm, *val);
+		} break;
+
+		case OP_PROPERTY_GET_LONG: {
+			// TODO(dmayor): pipe
+		} break;
+
+		case OP_PROPERTY_SET: {
+			// TODO: refactor to share between props
+			puts("hi");
+			lox_str_t *prop_name =
+				OBJECT_AS_STRING(__vm_pop_const(vm));
+
+			lox_instance_t *instance =
+				OBJECT_AS_INSTANCE(*__vm_peek_const_ptr(vm, 0));
+			lox_val_t *new_val = __vm_peek_const_ptr(vm, 1);
+
+			// TODO: check if sanity checks are needed
+			printf("vars in field lookup: %d",
+			       instance->cls->field_lookup.idx);
+			lookup_var_t var = lookup_find_name(
+				&instance->cls->field_lookup.table,
+				prop_name->chars, prop_name->len);
+
+			// after fetching var, verify it's valid
+			// once valid, assign the val
+			printf("lookup var position: %d", var.idx);
+			if (!lookup_var_is_valid(var)) {
+				puts("lookup var is invalid");
+				__vm_runtime_error(vm, "Undefined property");
+			} else {
+				puts("val is valid");
+				fflush(stdout);
+			}
+			lox_val_t *val_ptr =
+				list_get(&instance->fields, var.idx);
+			val_ptr = new_val;
+			// val_ptr = 10;
+		} break;
+
+		case OP_PROPERTY_SET_LONG: {
+			// TODO(dmayor): pipe
+		} break;
+
 		case OP_VAR_SET_LONG: {
 			uint32_t idx = cur_frame->stack_snapshot +
 				       __frame_proc_idx_ext(cur_frame);
@@ -640,6 +719,11 @@ static bool __vm_set_global(vm_t *vm, uint32_t glbl, lox_val_t *val)
 static void __vm_define_var(vm_t *vm, lox_val_t *val)
 {
 	list_push(&vm->stack, val);
+}
+
+static void __vm_define_prop(vm_t *vm, lox_val_t *val)
+{
+	// TODO: check for statics
 }
 
 static lox_val_t *__vm_get_var(vm_t *vm, uint32_t glbl)
@@ -832,6 +916,7 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 		case OBJ_CLASS: {
 			lox_class_t *cls = OBJECT_AS_CLASS(callee);
 
+			__vm_pop_const(vm);
 			__vm_push_const(
 				vm, VAL_CREATE_OBJ(object_instance_new(cls)));
 
