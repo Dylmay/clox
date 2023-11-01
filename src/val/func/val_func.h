@@ -7,6 +7,8 @@
 #ifndef __CLOX_VAL_FUNC_H__
 #define __CLOX_VAL_FUNC_H__
 
+#include <math.h>
+
 #include "val/val.h"
 
 /**
@@ -27,6 +29,23 @@
  *
  */
 #define VAL_CREATE_NIL ((lox_val_t){ VAL_NIL, { .boolean = false } })
+
+static inline double f_to_number(float float_val)
+{
+	return isnan(float_val) ? NAN : float_val;
+}
+
+static inline double d_to_number(double double_val)
+{
+	return isnan(double_val) ? NAN : double_val;
+}
+
+#define VAL_FORMAT_NUMBER(number)                                              \
+	(_Generic((number),                                                    \
+		float: f_to_number(number),                                    \
+		double: d_to_number(number),                                   \
+		default: number))
+
 /**
  * @brief creates a new lox number value
  *
@@ -38,7 +57,8 @@
  *
  */
 #define VAL_CREATE_NUMBER(value)                                               \
-	((lox_val_t){ VAL_NUMBER, { .number = value } })
+	((lox_val_t){ VAL_NUMBER, { .number = VAL_FORMAT_NUMBER(value) } })
+
 /**
  * @brief creates a new error
  *
