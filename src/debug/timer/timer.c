@@ -1,15 +1,24 @@
+
+#ifdef __linux__
+#define _POSIX_C_SOURCE 200809
+#include <time.h>
+#endif
+
 #include <stdio.h>
 
 #include "timer.h"
 #include "util/list/list.h"
 
-#if defined(_WIN32)
-#define clock_get(timespec) timespec_get(timespec, TIME_UTC)
-#else
-#define clock_get(timespec) clock_gettime(CLOCK_PROCESS_CPUTIME_ID, timespec)
-#endif
-
 static void __print_fmtd_time(time_t time);
+
+static void clock_get(struct timespec *timer)
+{
+#if defined(_WIN32)
+	timespec_get(timer, TIME_UTC);
+#else
+	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, timer);
+#endif
+}
 
 void timer_start(struct timespec *timer)
 {

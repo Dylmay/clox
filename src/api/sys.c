@@ -22,12 +22,6 @@ static lox_val_t __len(int arg_cnt, lox_val_t *args);
 static lox_val_t __round_double(double value, int round_to);
 static lox_val_t __str_to_num(const lox_str_t *str);
 
-#define CREATE_FUNC_DEF(func_name, func_def)                                   \
-	{                                                                      \
-		.fn_name = func_name, .name_sz = sizeof(func_name) - 1,        \
-		.fn = &func_def,                                               \
-	}
-
 static struct native_import imports[] = {
 	CREATE_FUNC_DEF("clock", __clock_native),
 	CREATE_FUNC_DEF("print", __print_native),

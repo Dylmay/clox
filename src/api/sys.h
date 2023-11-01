@@ -12,6 +12,16 @@
 #define INPUT_BUF_SZ 256
 
 /**
+ * @brief creates a new function definition with the given function name
+ *
+ */
+#define CREATE_FUNC_DEF(func_name, func_def)                                   \
+	{                                                                      \
+		.fn_name = func_name, .name_sz = sizeof(func_name) - 1,        \
+		.fn = &func_def,                                               \
+	}
+
+/**
  * @brief gets the import list delivered by the sys api
  *
  * @return struct import_list the import list
