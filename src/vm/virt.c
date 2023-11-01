@@ -993,11 +993,11 @@ static lox_upval_t *__vm_capture_upval(vm_t *vm, size_t idx)
 	list_t *stack = &vm->stack;
 	lox_val_t *slot = list_get(stack, idx);
 
-	lox_upval_t *prev_upval = NULL;
 	lox_upval_t *upval = vm->open_upvals;
+	lox_upval_t **next_upval = &vm->open_upvals;
 
 	while (upval != NULL && upval->location > slot) {
-		prev_upval = upval;
+		next_upval = &upval->next;
 		upval = upval->next;
 	}
 
@@ -1007,12 +1007,7 @@ static lox_upval_t *__vm_capture_upval(vm_t *vm, size_t idx)
 
 	lox_upval_t *new_upval = object_upval_new(slot);
 	new_upval->next = upval;
-
-	if (prev_upval == NULL) {
-		vm->open_upvals = new_upval;
-	} else {
-		prev_upval->next = new_upval;
-	}
+	*next_upval = new_upval;
 
 	return new_upval;
 }
