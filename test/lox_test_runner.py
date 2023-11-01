@@ -25,7 +25,7 @@ def __get_tests(test_path: str) -> List[Test]:
         try:
             return [Test(**t) for t in json.load(test_info)]
         except (TypeError, ValidationError, json.JSONDecodeError) as exc:
-            raise JSONSchemaError(f"{test_path} failed to validate") from exc
+            raise JSONSchemaError(f"{test_path} failed to validate", exc) from exc
 
 
 def record_tests(
