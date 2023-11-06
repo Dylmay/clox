@@ -1,21 +1,47 @@
 let value = 10;
 
+class Age {
+  let mut birth_day;
+  let mut birth_month;
+  let mut birth_year;
+}
+
+fn createAge(day, month, year) {
+  let age = Age();
+
+  age.birth_day = day;
+  age.birth_month = month;
+  age.birth_year = year;
+
+  return age;
+}
+
+fn age_to_string(age) {
+  let mut birth_month = str(age.birth_month);
+
+  if age.birth_month < 10 {
+    birth_month = "0" + birth_month;
+  }
+
+  return str(age.birth_day) + "/" + str(birth_month) + "/" + str(age.birth_year);
+}
+
 class Person {
   let mut name;
   let mut age;
 }
 
 fn print_person(person) {
-  print("Name: " + str(person.name) + "; Age: " + str(person.age));
+  print("Name: " + str(person.name) + "; Age: " + age_to_string(person.age));
 }
 
 let dylan = Person();
 let abby = Person();
 
 dylan.name = "Dylan";
-dylan.age = 25;
+dylan.age = createAge(18, 08, 1998);
 abby.name = "Abby";
-abby.age = 23;
+abby.age = createAge(13, 02, 2000);
 
 print_person(dylan);
 print_person(abby);
