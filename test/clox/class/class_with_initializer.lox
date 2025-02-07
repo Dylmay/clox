@@ -1,0 +1,9 @@
+class Person {
+  let name;
+  let mut age;
+
+  Person(name, age) {
+    self.name = name;
+    self.age = age;
+  }
+}

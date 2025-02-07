@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from pydantic.dataclasses import dataclass
 
@@ -9,14 +9,14 @@ from .test_result import TestResult, TestResultBuilder
 @dataclass(frozen=True)
 class Expectation:
     # Failure
-    to_fail: Optional[bool] = None
-    has_return_code: Optional[int] = None
-    on_line: Optional[int] = None
+    to_fail: bool | None = None
+    has_return_code: int | None = None
+    on_line: int | None = None
     # Output in stdout
-    to_output: Optional[List[str]] = None
+    to_output: list[str | int | float] | None = None
     # Output in stderr
-    to_error: Optional[List[str]] = None
-    no_leaks: Optional[bool] = None
+    to_error: list[str] | None = None
+    no_leaks: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -37,6 +37,7 @@ class Test:
             stdout=result.stdout,
             stderr=result.stderr,
             retcode=result.returncode,
+            filename=self.file,
         )
 
         if self.expect.has_return_code:
@@ -52,7 +53,7 @@ class Test:
 
         if self.expect.to_output is not None:
             for expected in self.expect.to_output:
-                result_builder.should_output(expected)
+                result_builder.should_output(str(expected))
 
         if self.expect.to_error is not None:
             for expected in self.expect.to_error:

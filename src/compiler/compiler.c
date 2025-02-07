@@ -701,36 +701,39 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 	__compiler_begin_scope(&new_comp);
 	parser_consume(new_comp.prsr, TKN_LEFT_PAREN,
 		       "Expected '(' after function name.");
-	if (!parser_check(new_comp.prsr, TKN_RIGHT_PAREN)) {
-		do {
-			if (arity == 255) {
-				parser_error_at_current(
-					new_comp.prsr,
-					"Can't have more than 255 parameters.");
-			}
-			arity++;
 
-			bool is_mutable = parser_match(new_comp.prsr, TKN_MUT);
+	while (!parser_check(new_comp.prsr, TKN_RIGHT_PAREN)) {
+		if (arity == 255) {
+			parser_error_at_current(
+				new_comp.prsr,
+				"Can't have more than 255 parameters.");
+		}
+		arity++;
 
-			parser_consume(new_comp.prsr, TKN_ID,
-				       "Expected variable name");
+		bool is_mutable = parser_match(new_comp.prsr, TKN_MUT);
 
-			uint32_t def_ln = new_comp.prsr->previous.line;
-			const char *var_name = new_comp.prsr->previous.start;
-			size_t len = new_comp.prsr->previous.len;
+		parser_consume(new_comp.prsr, TKN_ID, "Expected variable name");
 
-			if (__compiler_has_defined(&new_comp, var_name, len)) {
-				parser_error_at_previous(
-					new_comp.prsr,
-					"Variables cannot be redefined.");
-			}
+		uint32_t def_ln = new_comp.prsr->previous.line;
+		const char *var_name = new_comp.prsr->previous.start;
+		size_t len = new_comp.prsr->previous.len;
 
-			if (!parser_had_error(new_comp.prsr)) {
-				__compiler_define_var(&new_comp, var_name, len,
-						      def_ln, is_mutable);
-			}
-		} while (parser_match(new_comp.prsr, TKN_COMMA));
+		if (__compiler_has_defined(&new_comp, var_name, len)) {
+			parser_error_at_previous(
+				new_comp.prsr,
+				"Variables cannot be redefined.");
+		}
+
+		if (!parser_had_error(new_comp.prsr)) {
+			__compiler_define_var(&new_comp, var_name, len, def_ln,
+					      is_mutable);
+		}
+
+		if (!parser_match(new_comp.prsr, TKN_COMMA)) {
+			break;
+		}
 	}
+
 	new_comp.fn->arity = arity;
 	parser_consume(new_comp.prsr, TKN_RIGHT_PAREN,
 		       "Expected ')' after function params.");
@@ -974,12 +977,15 @@ static uint8_t __parse_arglist(struct compiler *compiler)
 {
 	uint8_t arg_cnt = 0;
 
-	if (!parser_check(compiler->prsr, TKN_RIGHT_PAREN)) {
-		do {
-			__parse_expr(compiler);
-			arg_cnt++;
-		} while (parser_match(compiler->prsr, TKN_COMMA));
+	while (!parser_check(compiler->prsr, TKN_RIGHT_PAREN)) {
+		__parse_expr(compiler);
+		arg_cnt++;
+
+		if (!parser_match(compiler->prsr, TKN_COMMA)) {
+			break;
+		}
 	}
+
 	parser_consume(compiler->prsr, TKN_RIGHT_PAREN,
 		       "Expected ')' after argument list");
 

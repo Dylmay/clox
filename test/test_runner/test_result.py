@@ -1,5 +1,3 @@
-from typing import List
-
 from pydantic.dataclasses import dataclass
 
 
@@ -8,23 +6,19 @@ class TestResult:
     stdout: str
     stderr: str
     retcode: int
-    fails: List[str]
+    fails: list[str]
+    filename: str
     success: bool = True
 
 
 class TestResultBuilder:
-    __success: bool
-    __stdout: str
-    __stderr: str
-    __retcode: int
-    __fails: List[str]
-
-    def __init__(self, stdout: str, stderr: str, retcode: int) -> None:
-        self.__success = True
-        self.__stdout = stdout
-        self.__stderr = stderr
-        self.__retcode = retcode
-        self.__fails = []
+    def __init__(self, stdout: str, stderr: str, retcode: int, filename: str) -> None:
+        self.__success: bool = True
+        self.__stdout: str = stdout
+        self.__stderr: str = stderr
+        self.__retcode: int = retcode
+        self.__fails: list[str] = []
+        self.__filename: str = filename
 
     def should_return(self, retcode: int) -> "TestResultBuilder":
         if self.__retcode != retcode:
@@ -71,4 +65,5 @@ class TestResultBuilder:
             stderr=self.__stderr,
             retcode=self.__retcode,
             fails=self.__fails,
+            filename=self.__filename,
         )

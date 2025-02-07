@@ -1,0 +1,41 @@
+trait Stringify {
+  fn toString();
+}
+
+trait ToMap {
+  fn toMap();
+}
+
+trait Builder {
+  fn build();
+}
+
+struct Person {
+  name;
+  mut postcode
+  pub id;
+  pub mut age;
+}
+
+impl Person {
+  pub constructor() {
+    return Person {
+      name: "dylan",
+      postcode: 123456,
+      id: "abc",
+      age: 10,
+    };
+  }
+}
+
+impl Person {
+  pub fn sayHello() {
+    print("Hello" + this.getName());
+  }
+}
+
+impl Stringify for Person {
+  pub fn toString() {
+    return "Person: {name: " + this.getName() + "}";
+  }
+}

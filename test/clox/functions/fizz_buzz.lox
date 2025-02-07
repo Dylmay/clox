@@ -1,0 +1,17 @@
+fn fizz_buzz(number) {
+  let mut str = "";
+
+  if number mod 3 {
+    str = str + "Fizz";
+  }
+
+  if number mod 5 {
+    str = str + "Buzz";
+  }
+
+  return str;
+}
+
+for i in 1..100 {
+  print(fizz_buzz(i));
+}

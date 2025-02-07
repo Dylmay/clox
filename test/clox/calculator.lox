@@ -1,0 +1,30 @@
+// Basic calculator program
+print("Calculator v0.1");
+
+class Command {
+    let read_value;
+}
+
+fn op(command_a, command_b, function) {
+    return function(get_value(command_a), get_value(command_b));
+}
+
+fn get_value(command) {
+    return  command
+}
+
+fn add(a, b) {
+    return a + b;
+}
+
+fn subtract(a, b) {
+    return a - b;
+}
+
+fn divide(a, b) {
+    return a / b;
+}
+
+fn multiply(a, b) {
+    return a * b;
+}

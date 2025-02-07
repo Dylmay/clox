@@ -1,4 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+# "pydantic",
+# "sty",
+# ]
+# ///
 
 import json
 import os
@@ -17,8 +24,7 @@ from test_runner.util import JSONSchemaError
 
 
 def __get_tests(test_path: str) -> List[Test]:
-    # ignore placeholder files
-    if os.path.getsize(test_path) == 0:
+    if not os.path.exists(test_path):
         return []
 
     with open(test_path, "r", encoding="UTF-8") as test_info:

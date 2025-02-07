@@ -4,14 +4,10 @@ from sty import Style, ef, fg, rs
 
 
 class PrintString(str):
-    __start_attributes: list[str | Style]
-    __end_attributes: list[str | Style]
-    __indent_str: str
-
     def __init__(self, _):
-        self.__start_attributes = []
-        self.__end_attributes = []
-        self.__indent_str = ""
+        self.__start_attributes: list[str | Style] = []
+        self.__end_attributes: list[str | Style] = []
+        self.__indent_str: str = ""
 
     def indent(self, indent_by: int = 0, indent_str: str = " ") -> "PrintString":
         self.__indent_str = indent_str * indent_by

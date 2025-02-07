@@ -1,0 +1,71 @@
+class LinkedListNode {
+    let data;
+    let next_node;
+}
+
+class LinkedList {
+    let start_node;
+}
+
+fn get(list, index) {
+
+}
+
+fn is_empty(list) {
+    return list.start_node == nil;
+}
+
+fn get_last(list) {
+    if (is_empty(list)) {
+        return nil;
+    }
+
+    let mut cur_node = list.start_node;
+    let mut next_node = cur_node.next_node;
+
+    while (next_node != nil) {
+        cur_node = cur_node.next_node;
+        next_node = cur_node.new_node;
+    }
+
+    return cur_node;
+}
+
+fn add(list, item) {
+    let new_node = LinkedListNode();
+    new_node.data = item;
+
+    if (is_empty(list)) {
+        list.start_node = new_node;
+    }
+
+    let last_node = get_last(list);
+    last_node.next_node = new_node;
+}
+
+fn remove(list, index) {
+
+}
+
+fn clear(list) {
+
+}
+
+fn to_string(list) {
+    let mut list_str = "[";
+    let mut cur_node = list.start_node;
+    while (cur_node != nil)  {
+        list_str = list_str + str(cur_node.data) + "; ";
+        cur_node = cur_node.next_node;
+    }
+
+    return list_str + "]";
+}
+
+
+
+let linked_list = LinkedList();
+print(linked_list.start_node);
+// add(linked_list, "hi");
+
+// print(to_string(linked_list));

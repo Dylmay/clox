@@ -1,19 +1,13 @@
-from typing import List, Tuple
-
 from .printer import Printer
 from .printer import PrintString as Ps
 from .test import Test, TestResult
 
 
 class Recordings:
-    __directory: str
-    __test_cnt: int
-    __failed_tests: List[Tuple[Test, TestResult]]
-
     def __init__(self, directory: str):
-        self.__test_cnt = 0
-        self.__failed_tests = []
-        self.__directory = directory
+        self.__test_cnt: int = 0
+        self.__failed_tests: list[(Test, TestResult)] = []
+        self.__directory: str = directory
 
     def record_test_result(self, test: Test, result: TestResult):
         self.__test_cnt += 1
@@ -42,7 +36,7 @@ class Recordings:
             Printer.print(
                 Ps(f"Program returned {result.retcode}").italic().indent(indent_by)
             )
-
+            Printer.print(Ps(f"File: {test.file}").italic().indent(indent_by))
             Printer.print(Ps("Result").bold().indent(indent_by))
             for fail in result.fails:
                 Printer.print(Ps(fail).indent(4 + indent_by))
