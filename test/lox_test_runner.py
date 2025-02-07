@@ -11,7 +11,8 @@ import json
 import os
 import sys
 from argparse import ArgumentParser
-from typing import List
+from typing import List, Optional
+import re
 
 from pydantic import ValidationError
 from pydantic.dataclasses import dataclass
@@ -35,9 +36,26 @@ def __get_tests(test_path: str) -> List[Test]:
 
 
 def record_tests(
-    clox_path: str, directory: str, test_file: str, use_valgrind: bool
+    clox_path: str, directory: str, test_file: str, use_valgrind: bool, test_regex: str,
 ) -> Recordings:
     tests = __get_tests(f"{directory}/{test_file}")
+
+    if test_regex:
+        regex = re.compile(test_regex, flags=re.IGNORECASE)
+
+        Printer.print(Ps(f"Running tests matching regex: \"{test_regex}\"").bold())
+
+        filtered_tests = [
+            test for test in tests if regex.search(test.name)
+        ]
+
+        test_or_tests = "test" if len(filtered_tests) == 1 else "tests"
+
+        Printer.print(Ps(f"Found {len(filtered_tests)} {test_or_tests} out of {len(tests)} which match the given regex").italic())
+
+        tests = filtered_tests
+    else:
+        tests = __get_tests(f"{directory}/{test_file}")
 
     interpreter = Interpreter(
         interpreter_path=clox_path,
@@ -80,12 +98,13 @@ def run_clox_tests(
     directory: str,
     test_file: str,
     use_valgrind: bool,
+    test_regex: str,
 ) -> List[Recordings]:
     test_list: List[Recordings] = []
 
     for (cur_folder, _, _) in os.walk(directory):
         try:
-            test = record_tests(clox_path, cur_folder, test_file, use_valgrind)
+            test = record_tests(clox_path, cur_folder, test_file, use_valgrind, test_regex)
             test_list.append(test)
         except FileNotFoundError:
             Printer.print(
@@ -108,6 +127,7 @@ class TestRunnerArgs:
     verbose: bool
     recursive: bool
     quiet: bool
+    test_regex: Optional[str]
 
 
 def parse_main_args() -> TestRunnerArgs:
@@ -141,6 +161,11 @@ def parse_main_args() -> TestRunnerArgs:
     parser.add_argument(
         "-v", "--verbose", action="store_true", help="Output all test information"
     )
+    # allow passing a regex to match test files based on their name
+    parser.add_argument(
+        "--test-regex",
+        help="Regex to match test files based on their name",
+    )
     parser.add_argument(
         "-r",
         "--recursive",
@@ -159,6 +184,7 @@ def parse_main_args() -> TestRunnerArgs:
         verbose=parser_args.verbose,
         recursive=parser_args.recursive,
         quiet=parser_args.quiet,
+        test_regex=parser_args.test_regex,
     )
 
 
@@ -174,6 +200,7 @@ if __name__ == "__main__":
             args.test_directory,
             args.tests,
             args.valgrind,
+            args.test_regex,
         )
     else:
         results = [
@@ -182,6 +209,7 @@ if __name__ == "__main__":
                 args.test_directory,
                 args.tests,
                 args.valgrind,
+                args.test_regex,
             )
         ]
 
