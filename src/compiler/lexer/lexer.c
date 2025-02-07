@@ -18,7 +18,7 @@ static token_t __lexer_id_token(lexer_t *lexer);
 static token_t __lexer_num_token(lexer_t *lexer);
 
 #define CHAR_IS_DIGIT(chara) ((chara) >= '0' && (chara) <= '9')
-#define CHAR_IS_UNDERSCORE(chara) (chara == '_')
+#define CHAR_IS_UNDERSCORE(chara) ((chara) == '_')
 
 #define CHAR_IS_ALPHA(chara)                                                   \
 	((chara >= 'a' && chara <= 'z') || (chara >= 'A' && chara <= 'Z') ||   \

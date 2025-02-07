@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <errno.h>
 
 #include "util/common.h"
 #include "compiler.h"
@@ -242,7 +243,20 @@ static void __parse_expr(struct compiler *compiler)
 
 static void __parse_number(struct compiler *compiler)
 {
-	double val = strtod(compiler->prsr->previous.start, NULL);
+	char *end_ptr = NULL;
+	errno = 0; // Reset errno before calling strtod
+	double val = strtod(compiler->prsr->previous.start, &end_ptr);
+
+	if (errno == ERANGE) {
+		parser_error_at_previous(compiler->prsr, "Invalid number");
+		errno = 0;
+	}
+
+	if (end_ptr - compiler->prsr->previous.start !=
+		compiler->prsr->previous.len) {
+		parser_error_at_previous(compiler->prsr, "Invalid number");
+	}
+
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_NUMBER(val),
 		       compiler->prsr->previous.line);
 }

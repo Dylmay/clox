@@ -11,5 +11,4 @@
   * for classes
 * classes should be scoped to global?
   * class definitions are needed to allow property usage
-* improve error message for unknown var
 * add += shorthand
