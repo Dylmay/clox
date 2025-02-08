@@ -4,6 +4,7 @@
 # dependencies = [
 # "pydantic",
 # "sty",
+# "yaspin",
 # ]
 # ///
 
@@ -16,6 +17,7 @@ import re
 
 from pydantic import ValidationError
 from pydantic.dataclasses import dataclass
+import yaspin
 from test_runner.interpreter import Interpreter
 from test_runner.printer import Printer
 from test_runner.printer import PrintString as Ps
@@ -67,7 +69,10 @@ def record_tests(
     if len(tests) > 0:
         Printer.print(Ps(directory).bold())
         for (idx, test) in enumerate(tests):
-            res = test.run(interpreter)
+            text = f"Running {test.name} - {test.file}"
+
+            with yaspin.yaspin(text=text, color="yellow"):
+                res = test.run(interpreter)
 
             if res.success:
                 success_msg = Ps("Passed").green()

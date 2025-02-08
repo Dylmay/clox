@@ -252,8 +252,8 @@ static void __parse_number(struct compiler *compiler)
 		errno = 0;
 	}
 
-	if (end_ptr - compiler->prsr->previous.start !=
-		compiler->prsr->previous.len) {
+	if (end_ptr != NULL && end_ptr - compiler->prsr->previous.start !=
+				       compiler->prsr->previous.len) {
 		parser_error_at_previous(compiler->prsr, "Invalid number");
 	}
 
@@ -286,11 +286,12 @@ static void __parse_unary(struct compiler *compiler)
 		break;
 
 	case TKN_PLUS:
-		// TODO: add handling for plus token
+		// no-op
 		break;
 
 	default:
-		assert(("Unexpected unary type", 0));
+		parser_error_at_current(compiler->prsr,
+					"Unexpected unary type");
 		return;
 	}
 }
@@ -337,7 +338,8 @@ static void __parse_binary(struct compiler *compiler)
 		OP_MOD_WRITE(compiler->fn, compiler->prsr->previous.line);
 		break;
 	default:
-		assert(("Unexpected binary type", 0));
+		parser_error_at_current(compiler->prsr,
+					"Unexpected binary type");
 		return;
 	}
 }
@@ -389,7 +391,8 @@ static void __parse_lit(struct compiler *compiler)
 		break;
 
 	default:
-		assert(("Unexpected literal type", 0));
+		parser_error_at_current(compiler->prsr,
+					"Unexpected literal type");
 		return;
 	}
 }
@@ -849,8 +852,10 @@ static lookup_var_t __compiler_define_var(struct compiler *compiler,
 			lookup_get_size(&compiler->global_state->globals),
 			flags);
 
-		assert(("created variable is invalid",
-			lookup_var_is_valid(new_var)));
+		if (!lookup_var_is_valid(new_var)) {
+			parser_error_at_current(compiler->prsr,
+						"Failed to define variable.");
+		}
 	} else {
 		lookup_t *cur_scope = __compiler_cur_scope(compiler);
 		uint32_t prev_sz = lookup_get_size(cur_scope);
@@ -869,7 +874,8 @@ static lookup_var_t __compiler_define_var(struct compiler *compiler,
 	} else if (lookup_var_is_global(new_var)) {
 		OP_GLOBAL_DEFINE_WRITE(compiler->fn, new_var.idx, line);
 	} else if (lookup_var_is_upval(new_var)) {
-		assert(("upval vars should never be defined", 0));
+		parser_error_at_current(compiler->prsr,
+					"Upval vars should never be defined.");
 	} else {
 		OP_VAR_DEFINE_WRITE(compiler->fn, new_var.idx, line);
 	}
@@ -935,6 +941,7 @@ static void __parse_class_decl(struct compiler *compiler)
 
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_OBJ(cls),
 		       compiler->prsr->previous.line);
+	// TODO: we don't define the var?
 	/*lookup_var_t var =*/__compiler_define_var(
 		compiler, name, len, compiler->prsr->previous.line, false);
 	list_push(&compiler->lookup.scopes, &cls->field_lookup);
@@ -952,6 +959,7 @@ static void __parse_class_decl(struct compiler *compiler)
 		} else {
 			parser_error_at_current(compiler->prsr,
 						"Unknown class item");
+			parser_advance(compiler->prsr);
 		}
 	}
 

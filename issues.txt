@@ -11,4 +11,3 @@
   * for classes
 * classes should be scoped to global?
   * class definitions are needed to allow property usage
-* add += shorthand

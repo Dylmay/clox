@@ -1,0 +1,39 @@
+class Person {
+  // let name;
+
+  fn getName(self) {
+    return "abc";
+  }
+}
+
+let person = Person();
+// person.name = "Dylan";
+print(person.getName());
+
+// class Person {
+//   let name;
+
+//   pub fn Person(self, name) {
+//     self.name = name;
+//   }
+
+//   fn getName(self) {
+//     return self.name;
+//   }
+// }
+
+// class PrivatePerson {
+//   let name;
+
+//   PrivatePerson(self, name) {
+//     self.name = name;
+//   }
+
+//   pub create(Self) {
+//     return Self();
+//   }
+// }
+
+// class PublicPerson {
+//   pub mut name;
+// }

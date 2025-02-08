@@ -20,13 +20,6 @@ typedef uint8_t var_flags_t;
  *
  */
 #define LOOKUP_VAR_INVALID_FLAG (0)
-/**
- * @brief constant to set var_flags_t to zero
- *
- * @see var_flags_t
- *
- */
-#define LOOKUP_VAR_NO_FLAGS (0)
 
 /**
  * @brief flag to indicate lookup variable is not mutable. Default value
@@ -111,6 +104,22 @@ typedef uint8_t var_flags_t;
  *
  */
 #define LOOKUP_VAR_UPVAL (1 << 4)
+/**
+ * @brief flag to indicate lookup variable is private within a class
+ *
+ * @see var_flags_t
+ * @see lookup_var_is_public()
+ *
+ */
+#define LOOKUP_VAR_PRIVATE (1 << 4)
+/**
+ * @brief flag to indicate lookup variable is public within a class
+ *
+ * @see var_flags_t
+ * @see lookup_var_is_public()
+ *
+ */
+#define LOOKUP_VAR_PUBLIC (1 << 4)
 #pragma endregion
 
 //! @brief lookup variable
@@ -179,14 +188,26 @@ static inline bool lookup_var_is_global(lookup_var_t var)
 }
 
 /**
- * @brief returns whether the variable is global
+ * @brief returns whether the variable is an upvalue (a value tied to a closure)
  *
  * @param var the variable to check
- * @return true variable is global
- * @return false variable is local
+ * @return true variable is an upvalue
+ * @return false variable is not an upvalue
  */
 static inline bool lookup_var_is_upval(lookup_var_t var)
 {
 	return var.var_flags & LOOKUP_VAR_UPVAL;
+}
+
+/**
+ * @brief returns whether the variable is public
+ *
+ * @param var the variable to check
+ * @return true variable is public
+ * @return false variable is private
+ */
+static inline bool lookup_var_is_public(lookup_var_t var)
+{
+	return var.var_flags & LOOKUP_VAR_PUBLIC;
 }
 #endif // __CLOX_STATE_LOOKUP_VAR_H__
