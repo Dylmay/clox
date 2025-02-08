@@ -967,6 +967,7 @@ static void __parse_class_decl(struct compiler *compiler)
 		       "Expected '}' after class body");
 	compiler->define_state = DEFAULT_DEFINE;
 	cls->field_lookup.table = *__compiler_cur_scope(compiler);
+	compiler->lookup.idx = 0;
 	list_pop(&compiler->lookup.scopes);
 }
 

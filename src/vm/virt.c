@@ -610,6 +610,8 @@ static enum vm_res __vm_run(vm_t *vm)
 				__vm_runtime_error(vm, "Undefined property");
 			}
 
+			// shouldn't be empty
+			// idx is three?
 			lox_val_t *val_ptr =
 				list_get(&instance->fields, var.idx);
 			memcpy(val_ptr, new_val, sizeof(lox_val_t));

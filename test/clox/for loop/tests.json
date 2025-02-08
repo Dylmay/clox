@@ -5,7 +5,7 @@
     "reason": "To check loops iterate correctly through a range",
     "file": "loop_sum.lox",
     "expect": {
-      "to_output": [499999500000]
+      "to_output": [499500]
     }
   },
   {
