@@ -1,15 +1,15 @@
 fn fizz_buzz(number) {
-  let mut str = "";
+  let mut fizz_buzz_string = "";
 
   if number mod 3 {
-    str = str + "Fizz";
+    fizz_buzz_string = fizz_buzz_string + "Fizz";
   }
 
   if number mod 5 {
-    str = str + "Buzz";
+    fizz_buzz_string = fizz_buzz_string + "Buzz";
   }
 
-  return str;
+  return fizz_buzz_string;
 }
 
 for i in 1..100 {

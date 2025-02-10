@@ -146,7 +146,7 @@ struct map_entry map_find_by_key(const hashmap_t *map,
 		return EMPTY_MAP_ENTRY;
 	}
 
-	hash_t idx = matcher->hash % map->cap;
+	hash_t idx = matcher->hash & (map->cap - 1);
 	while (true) {
 		struct __map_entry *entry = ENTRY_AT(map, idx);
 
@@ -162,7 +162,7 @@ struct map_entry map_find_by_key(const hashmap_t *map,
 			};
 		}
 
-		idx = (idx + 1) % map->cap;
+		idx = (idx + 1) & (map->cap - 1);
 	}
 }
 
@@ -216,7 +216,7 @@ void map_entries_for_each(hashmap_t *map, struct map_for_each_entry *for_each)
 static struct __map_entry *__map_find(const hashmap_t *map, const void *key,
 				      hash_t hash)
 {
-	uint32_t idx = hash % map->cap;
+	uint32_t idx = hash & (map->cap - 1);
 	struct __map_entry *tombstone = NULL;
 
 	while (true) {
@@ -236,7 +236,7 @@ static struct __map_entry *__map_find(const hashmap_t *map, const void *key,
 			return entry;
 		}
 
-		idx = (idx + 1) % map->cap;
+		idx = (idx + 1) & (map->cap - 1);
 	}
 }
 
@@ -263,7 +263,9 @@ static void __map_rebuild(hashmap_t *map, size_t new_cap)
 		}
 	}
 
-	free(map->entries);
+	// free(map->entries);
+	reallocate(map->entries, SIZEOF_ENTRY(map) * map->cap, 0);
+
 	memcpy(map, &new_map, sizeof(hashmap_t));
 }
 
