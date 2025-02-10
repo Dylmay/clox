@@ -74,7 +74,7 @@ void *reallocate(void *pointer, size_t old_sz, size_t new_sz)
 	}
 
 	*(struct mem_metadata *)result =
-		(struct mem_metadata){ .flags = METADATA_MARKED };
+		(struct mem_metadata){ .flags = METADATA_NO_FLAGS };
 
 	log_debug("done\n");
 
