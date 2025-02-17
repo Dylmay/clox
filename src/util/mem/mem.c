@@ -55,7 +55,7 @@ void *reallocate(void *pointer, size_t old_sz, size_t new_sz)
 #ifdef DEBUG_STRESS_GC
 		log_debug("Rlox Memory: Reallocating %lu -> %lu\n", old_sz,
 			  new_sz);
-		_collect_garbage();
+		collect_garbage();
 #endif
 	}
 
