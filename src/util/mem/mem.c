@@ -62,7 +62,7 @@ void *reallocate(void *pointer, size_t old_sz, size_t new_sz)
 	if (new_sz == 0) {
 		log_debug("Rlox Memory: Freeing %lu -> %lu\n", old_sz, new_sz);
 
-		assert((pointer, "Pointer does not exist"));
+		assert(("Pointer does not exist", pointer));
 
 		free(offset_pointer);
 
