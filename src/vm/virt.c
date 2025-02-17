@@ -21,7 +21,7 @@
 
 #ifdef DEBUG_BENCH
 #include "ops/ops_name.h"
-void _vm_print_time(struct map_entry entry, struct map_for_each_entry *_)
+void _vm_print_time(map_entry_t entry, struct map_for_each_entry *_)
 {
 	const char *name = entry.key;
 	const struct timespec *avg_time = entry.value;
@@ -51,14 +51,13 @@ static void __vm_set_main(vm_t *vm, lox_fn_t *main);
 static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t arity);
 static bool __vm_call(vm_t *vm, lox_closure_t *closure);
 
-static void __vm_proc_const(vm_t *vm, struct vm_call_frame *frame,
-			    uint32_t idx);
-static inline void __frame_assert_inst_ptr_valid(const struct vm_call_frame *);
-static inline char __frame_read_byte(struct vm_call_frame *);
-static inline int __frame_instr_offset(const struct vm_call_frame *);
-static uint32_t __frame_proc_idx(struct vm_call_frame *);
-static uint32_t __frame_proc_idx_ext(struct vm_call_frame *);
-static int16_t __frame_proc_jump_offset(struct vm_call_frame *);
+static void __vm_proc_const(vm_t *vm, vm_call_frame_t *frame, uint32_t idx);
+static inline void __frame_assert_inst_ptr_valid(const vm_call_frame_t *);
+static inline char __frame_read_byte(vm_call_frame_t *);
+static inline int __frame_instr_offset(const vm_call_frame_t *);
+static uint32_t __frame_proc_idx(vm_call_frame_t *);
+static uint32_t __frame_proc_idx_ext(vm_call_frame_t *);
+static int16_t __frame_proc_jump_offset(vm_call_frame_t *);
 static void __vm_discard(vm_t *vm, uint32_t discard_cnt);
 static lox_upval_t *__vm_capture_upval(vm_t *vm, size_t idx);
 static void __vm_close_upvalues(vm_t *vm, size_t frame_idx);
@@ -84,7 +83,7 @@ vm_t vm_init()
 	vm_t vm = (vm_t){
 		.stack = list_of_type(lox_val_t),
 		.globals = list_of_type(lox_val_t),
-		.frames = list_of_type(struct vm_call_frame),
+		.frames = list_of_type(vm_call_frame_t),
 		.state = state_new(),
 		.open_upvals = NULL,
 #ifdef DEBUG_BENCH
@@ -150,10 +149,10 @@ void vm_free(vm_t *vm)
 #endif
 }
 
-void _var_prnt(struct map_entry entry, struct map_for_each_entry *d)
+void _var_prnt(map_entry_t entry, struct map_for_each_entry *d)
 {
 	struct var_printer *data = (struct var_printer *)d;
-	struct string *name = (struct string *)entry.key;
+	string_t *name = (string_t *)entry.key;
 	lookup_var_t var_def = *((lookup_var_t *)entry.value);
 
 	for (size_t i = 0; i < data->depth; i++) {
@@ -226,7 +225,7 @@ static enum vm_res __vm_run(vm_t *vm)
 #define NUMERICAL_OP(vm, op) BINARY_OP(vm, VAL_CREATE_NUMBER, op)
 #define COMPARISON_OP(vm, op) BINARY_OP(vm, VAL_CREATE_BOOL, op)
 
-	struct vm_call_frame *cur_frame = list_peek(&vm->frames);
+	vm_call_frame_t *cur_frame = list_peek(&vm->frames);
 
 	while (true) {
 		uint8_t instr;
@@ -788,7 +787,7 @@ static void __vm_set_main(vm_t *vm, lox_fn_t *main)
 	lox_val_t main_obj = VAL_CREATE_OBJ(main);
 	lox_closure_t *main_closure = object_closure_new(main);
 
-	struct vm_call_frame main_frame = {
+	vm_call_frame_t main_frame = {
 		.closure = main_closure,
 		.ip = main->chunk.code.data,
 		.stack_snapshot = STACK_RESERVED_COUNT,
@@ -803,13 +802,13 @@ static void __vm_set_main(vm_t *vm, lox_fn_t *main)
 	list_push(&vm->frames, &main_frame);
 }
 
-static uint32_t __frame_proc_idx(struct vm_call_frame *frame)
+static uint32_t __frame_proc_idx(vm_call_frame_t *frame)
 {
 	__frame_assert_inst_ptr_valid(frame);
 	return __frame_read_byte(frame);
 }
 
-static uint32_t __frame_proc_idx_ext(struct vm_call_frame *frame)
+static uint32_t __frame_proc_idx_ext(vm_call_frame_t *frame)
 {
 	__frame_assert_inst_ptr_valid(frame);
 	uint32_t idx = *((uint32_t *)frame->ip) & EXT_CODE_MASK;
@@ -818,7 +817,7 @@ static uint32_t __frame_proc_idx_ext(struct vm_call_frame *frame)
 	return idx;
 }
 
-static int16_t __frame_proc_jump_offset(struct vm_call_frame *frame)
+static int16_t __frame_proc_jump_offset(vm_call_frame_t *frame)
 {
 	__frame_assert_inst_ptr_valid(frame);
 	int16_t idx = *((int16_t *)frame->ip);
@@ -828,7 +827,7 @@ static int16_t __frame_proc_jump_offset(struct vm_call_frame *frame)
 	return idx;
 }
 
-static void __vm_proc_const(vm_t *vm, struct vm_call_frame *frame, uint32_t idx)
+static void __vm_proc_const(vm_t *vm, vm_call_frame_t *frame, uint32_t idx)
 {
 	__frame_assert_inst_ptr_valid(frame);
 	__vm_push_const(vm, chunk_get_const(&frame->closure->fn->chunk, idx));
@@ -874,7 +873,7 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 	fputs("\n", stderr);
 
 	for (int i = list_size(&vm->frames) - 1; i >= 0; i--) {
-		struct vm_call_frame *cur_frame = list_get(&vm->frames, i);
+		vm_call_frame_t *cur_frame = list_get(&vm->frames, i);
 		lox_closure_t *closure = cur_frame->closure;
 
 		size_t offset = ((size_t)__frame_instr_offset(cur_frame)) - 1;
@@ -888,8 +887,7 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 	__vm_reset(vm);
 }
 
-static inline void
-__frame_assert_inst_ptr_valid(const struct vm_call_frame *frame)
+static inline void __frame_assert_inst_ptr_valid(const vm_call_frame_t *frame)
 {
 	assert(("Instruction pointer has passed code end",
 		frame->ip < frame->closure->fn->chunk.code.data +
@@ -897,12 +895,12 @@ __frame_assert_inst_ptr_valid(const struct vm_call_frame *frame)
 				     frame->closure->fn->chunk.code.type_sz)));
 }
 
-static inline char __frame_read_byte(struct vm_call_frame *frame)
+static inline char __frame_read_byte(vm_call_frame_t *frame)
 {
 	return *frame->ip++;
 }
 
-static inline int __frame_instr_offset(const struct vm_call_frame *frame)
+static inline int __frame_instr_offset(const vm_call_frame_t *frame)
 {
 	return (int)(frame->ip - frame->closure->fn->chunk.code.data);
 }
@@ -993,7 +991,7 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 
 static bool __vm_call(vm_t *vm, lox_closure_t *closure)
 {
-	struct vm_call_frame frame = {
+	vm_call_frame_t frame = {
 		.closure = closure,
 		.ip = closure->fn->chunk.code.data,
 		.stack_snapshot = list_size(&vm->stack) - closure->fn->arity,

@@ -41,7 +41,7 @@ int main(int argc, const char *argv[])
 static void __run_repl(vm_t *vm)
 {
 	char line_buf[1024];
-	struct string *source = NULL;
+	string_t *source = NULL;
 	list_t scope_stack = list_of_type(char);
 
 	while (true) {

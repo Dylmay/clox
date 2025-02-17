@@ -16,14 +16,14 @@
  * @see state_new()
  * @see state_free()
  */
-struct state {
+typedef struct {
 	lookup_t globals;
-};
+} vm_state_t;
 
 //! @brief Construct a
-static inline struct state state_new()
+static inline vm_state_t state_new()
 {
-	return (struct state){
+	return (vm_state_t){
 		.globals = lookup_new(),
 	};
 }
@@ -33,7 +33,7 @@ static inline struct state state_new()
  *
  * @param state the state to free
  */
-static inline void state_free(struct state *state)
+static inline void state_free(vm_state_t *state)
 {
 	lookup_free(&state->globals);
 }

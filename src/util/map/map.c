@@ -13,7 +13,7 @@ struct __map_entry {
 	uint8_t value[];
 };
 
-#define EMPTY_MAP_ENTRY ((struct map_entry){ .key = NULL, .value = NULL })
+#define EMPTY_MAP_ENTRY ((map_entry_t){ .key = NULL, .value = NULL })
 
 #define SIZEOF_ENTRY(map) (sizeof(struct __map_entry) + (map)->data_sz)
 #define ENTRY_AT(map, idx)                                                     \
@@ -139,8 +139,7 @@ bool map_set(hashmap_t *map, const void *key, const void *value)
 	return true;
 }
 
-struct map_entry map_find_by_key(const hashmap_t *map,
-				 struct key_matcher *matcher)
+map_entry_t map_find_by_key(const hashmap_t *map, struct key_matcher *matcher)
 {
 	if (!map || !map->cnt) {
 		return EMPTY_MAP_ENTRY;
@@ -156,7 +155,7 @@ struct map_entry map_find_by_key(const hashmap_t *map,
 			}
 		} else if (entry->hash == matcher->hash &&
 			   matcher->is_match(entry->key, matcher)) {
-			return (struct map_entry){
+			return (map_entry_t){
 				.key = entry->key,
 				.value = entry->value,
 			};
@@ -166,8 +165,7 @@ struct map_entry map_find_by_key(const hashmap_t *map,
 	}
 }
 
-struct map_entry map_find_by_value(const hashmap_t *map,
-				   struct val_matcher *matcher)
+map_entry_t map_find_by_value(const hashmap_t *map, struct val_matcher *matcher)
 {
 	if (!map || !map->cnt) {
 		return EMPTY_MAP_ENTRY;
@@ -181,7 +179,7 @@ struct map_entry map_find_by_value(const hashmap_t *map,
 		}
 
 		if (matcher->is_match(entry->value, matcher)) {
-			return (struct map_entry){
+			return (map_entry_t){
 				.key = entry->key,
 				.value = entry->value,
 			};
@@ -205,7 +203,7 @@ void map_entries_for_each(hashmap_t *map, struct map_for_each_entry *for_each)
 		}
 
 		for_each->func(
-			(struct map_entry){
+			(map_entry_t){
 				.key = entry->key,
 				.value = entry->value,
 			},

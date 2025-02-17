@@ -22,7 +22,7 @@ static lox_val_t __len(int arg_cnt, lox_val_t *args);
 static lox_val_t __round_double(double value, int round_to);
 static lox_val_t __str_to_num(const lox_str_t *str);
 
-static struct native_import imports[] = {
+static native_import_t imports[] = {
 	CREATE_FUNC_DEF("clock", __clock_native),
 	CREATE_FUNC_DEF("print", __print_native),
 	CREATE_FUNC_DEF("str", __to_str),
@@ -37,13 +37,13 @@ static struct native_import imports[] = {
 
 #define NAN_ERR_MSG "Argument is not a number"
 
-static struct import_list import_list = {
+static native_import_list_t import_list = {
 	.import_name = "sys",
 	.import_cnt = sizeof(imports) / sizeof(imports[0]),
 	.import_arr = imports,
 };
 
-struct import_list sys_get_import_list()
+native_import_list_t sys_get_import_list()
 {
 	return import_list;
 }
@@ -107,7 +107,7 @@ static lox_val_t __assert(int arg_cnt, lox_val_t *args)
 static lox_val_t __read(int arg_cnt, lox_val_t *args)
 {
 	char buf[INPUT_BUF_SZ];
-	struct string *read_input = NULL;
+	string_t *read_input = NULL;
 
 	if (arg_cnt) {
 		val_print(args[0]);

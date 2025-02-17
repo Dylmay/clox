@@ -16,26 +16,26 @@
  * @see string_new()
  * @see string_free()
  */
-struct string {
+typedef struct {
 	size_t len;
 	char c_str[];
-};
+} string_t;
 
 /**
  * @brief Constructs a new immutable string handled on the heap
  *
  * @param c_str the c string, size len or '\0' delimited
  * @param len the expected/maximum length of the c string. set to SIZE_MAX if the length is unknown and the entire string is required
- * @return struct string* newly allocated pointer to a handled string struct
+ * @return string_t* newly allocated pointer to a handled string struct
  */
-struct string *string_new(const char *c_str, size_t len);
+string_t *string_new(const char *c_str, size_t len);
 
 /**
  * @brief Frees the passed string pointer
  *
  * @param str the string to free
  */
-void string_free(struct string *str);
+void string_free(string_t *str);
 
 /**
  * @brief Checks whether string a equals string b
@@ -45,7 +45,7 @@ void string_free(struct string *str);
  * @return true when both strings equal
  * @return false when strings are not equal
  */
-bool string_equals(const struct string *a, const struct string *b);
+bool string_equals(const string_t *a, const string_t *b);
 
 /**
  * @brief generates a hash for the passed string
@@ -53,15 +53,15 @@ bool string_equals(const struct string *a, const struct string *b);
  * @param str the string to hash
  * @return hash_t the generated hash value
  */
-hash_t string_gen_hash(const struct string *str);
+hash_t string_gen_hash(const string_t *str);
 
 /**
  * @brief copies the passed string
  *
  * @param str the string to copy
- * @return struct string* the newly allocated copy
+ * @return string_t* the newly allocated copy
  */
-struct string *string_copy(const struct string *str);
+string_t *string_copy(const string_t *str);
 
 /**
  * @brief concats two strings.
@@ -70,9 +70,9 @@ struct string *string_copy(const struct string *str);
  *
  * @param a string a
  * @param b string b
- * @return struct string* the concatenated string
+ * @return string_t* the concatenated string
  */
-struct string *string_concat(const struct string *a, const struct string *b);
+string_t *string_concat(const string_t *a, const string_t *b);
 
 /**
  * @brief appends a c string to the end of the given string
@@ -80,10 +80,9 @@ struct string *string_concat(const struct string *a, const struct string *b);
  * @param str the string struct
  * @param chars the c string to append
  * @param len the length of the c string
- * @return struct string* the appended c string
+ * @return string_t* the appended c string
  */
-struct string *string_c_append(struct string *str, const char *chars,
-			       size_t len);
+string_t *string_c_append(string_t *str, const char *chars, size_t len);
 
 /**
  * @brief gets the length of the passed string
@@ -91,7 +90,7 @@ struct string *string_c_append(struct string *str, const char *chars,
  * @param str the string struct
  * @return size_t the length of the string
  */
-static inline size_t string_get_len(const struct string *str)
+static inline size_t string_get_len(const string_t *str)
 {
 	return str->len;
 }
@@ -103,7 +102,7 @@ static inline size_t string_get_len(const struct string *str)
  * @param offset the offset/index of the character
  * @return char the character at the given offset
  */
-char string_char_at(const struct string *str, size_t offset);
+char string_char_at(const string_t *str, size_t offset);
 
 /**
  * @brief gets the underlying c string of the passed struct
@@ -111,7 +110,7 @@ char string_char_at(const struct string *str, size_t offset);
  * @param str the string struct
  * @return char* the c string underlying the string struct
  */
-static inline char *string_get_cstring(struct string *str)
+static inline char *string_get_cstring(string_t *str)
 {
 	return str->c_str;
 }

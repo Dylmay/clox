@@ -11,7 +11,7 @@
 #include "util/map/map.h"
 #include "lookup_var.h"
 
-typedef struct __lookup {
+typedef struct {
 	hashmap_t table;
 } lookup_t;
 

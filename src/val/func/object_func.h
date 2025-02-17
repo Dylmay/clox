@@ -109,9 +109,9 @@
  *
  * @param obj the lox value to get as a lox string
  *
- * @return struct object_str * lox string
+ * @return lox_str_t * lox string
  */
-#define OBJECT_AS_STRING(obj) (((struct object_str *)VAL_AS_OBJ(obj)))
+#define OBJECT_AS_STRING(obj) (((lox_str_t *)VAL_AS_OBJ(obj)))
 
 /**
  * @brief returns the passed lox value as a lox function. Undefined behaviour if the value is not a lox object and is not a lox function
@@ -120,10 +120,10 @@
  *
  * @param obj the lox value to get as a lox function
  *
- * @return struct object_fn * lox function
+ * @return lox_fn_t * lox function
  *
  */
-#define OBJECT_AS_FN(obj) (((struct object_fn *)VAL_AS_OBJ(obj)))
+#define OBJECT_AS_FN(obj) (((lox_fn_t *)VAL_AS_OBJ(obj)))
 
 /**
  * @brief returns the passed lox value as a lox class. Undefined behaviour if the value is not a lox object and is not a lox class instance
@@ -132,10 +132,10 @@
  *
  * @param obj the lox value to get as a lox class instance
  *
- * @return struct object_instance * lox class instance
+ * @return lox_instance_t * lox class instance
  *
  */
-#define OBJECT_AS_INSTANCE(obj) (((struct object_instance *)VAL_AS_OBJ(obj)))
+#define OBJECT_AS_INSTANCE(obj) (((lox_instance_t *)VAL_AS_OBJ(obj)))
 
 /**
  * @brief returns the passed lox value as a lox class. Undefined behaviour if the value is not a lox object and is not a lox class
@@ -144,10 +144,10 @@
  *
  * @param obj the lox value to get as a lox class
  *
- * @return struct object_class * lox class
+ * @return lox_class_t * lox class
  *
  */
-#define OBJECT_AS_CLASS(obj) (((struct object_class *)VAL_AS_OBJ(obj)))
+#define OBJECT_AS_CLASS(obj) (((lox_class_t *)VAL_AS_OBJ(obj)))
 
 /**
  * @brief returns the passed lox value as a lox native function. Undefined behaviour if the value is not a lox object and is not a lox native function
@@ -156,10 +156,10 @@
  *
  * @param obj the lox value to get as a lox function
  *
- * @return struct object_fn * lox function
+ * @return lox_native_t * lox function
  *
  */
-#define OBJECT_AS_NATIVE(obj) (((struct object_native_fn *)VAL_AS_OBJ(obj)))
+#define OBJECT_AS_NATIVE(obj) (((lox_native_t *)VAL_AS_OBJ(obj)))
 
 /**
  * @brief returns the passed lox value as a lox closure. Undefined behaviour if the value is not a lox object and is not a lox closure
@@ -168,10 +168,10 @@
  *
  * @param obj the lox value to get as a lox closure
  *
- * @return struct object_closure * lox closure
+ * @return lox_closure_t * lox closure
  *
  */
-#define OBJECT_AS_CLOSURE(obj) (((struct object_closure *)VAL_AS_OBJ(obj)))
+#define OBJECT_AS_CLOSURE(obj) (((lox_closure_t *)VAL_AS_OBJ(obj)))
 
 /**
  * @brief returns the passed lox value as a lox upvalue. Undefined behaviour if the value is not a lox object and is not a lox upvalue
@@ -180,10 +180,10 @@
  *
  * @param obj the lox value to get as a lox upvalue
  *
- * @return struct object_upval * lox upvalue
+ * @return lox_upval_t * lox upvalue
  *
  */
-#define OBJECT_AS_UPVALUE(obj) (((struct object_upval *)VAL_AS_OBJ(obj)))
+#define OBJECT_AS_UPVALUE(obj) (((lox_upval_t *)VAL_AS_OBJ(obj)))
 
 /**
  * @brief returns the passed lox value as a lox string and gets the c string (asciiz) associated with it.
@@ -196,14 +196,14 @@
  * @return char* c string of the passed lox value
  *
  */
-#define OBJECT_AS_CSTRING(obj) (((struct object_str *)VAL_AS_OBJ(obj))->chars)
+#define OBJECT_AS_CSTRING(obj) (((lox_str_t *)VAL_AS_OBJ(obj))->chars)
 
 /**
  * @brief creates a new object string for a given literal. i.e. "string"
  *
  * @param obj the literal string
  *
- * @return struct object_str* the created literal string
+ * @return lox_str_t* the created literal string
  */
 #define LITERAL_OBJECT_STRING(str) (object_str_new(str, sizeof(str) - 1))
 
@@ -230,28 +230,27 @@ void object_free(struct object *obj);
 /**
  * @brief creates a new lox function object
  *
- * @return struct object_fn* the newly allocated lox function object
+ * @return lox_fn_t* the newly allocated lox function object
  */
-struct object_fn *object_fn_new(struct object_str *name);
+lox_fn_t *object_fn_new(lox_str_t *name);
 
 /**
  * @brief creates a new lox string object
  *
  * @param chars string chars
  * @param len length of the string
- * @return struct object_str* the newly allocated string object
+ * @return lox_str_t* the newly allocated string object
  */
-struct object_str *object_str_new(const char *chars, size_t len);
+lox_str_t *object_str_new(const char *chars, size_t len);
 
 /**
  * @brief concats the two strings in to a new lox string object
  *
  * @param a lox string a
  * @param b lox string b
- * @return struct object_str* the newly allocated string object
+ * @return lox_str_t* the newly allocated string object
  */
-struct object_str *object_str_concat(const struct object_str *a,
-				     const struct object_str *b);
+lox_str_t *object_str_concat(const lox_str_t *a, const lox_str_t *b);
 
 /**
  * @brief generates a hash value for the passed string
@@ -259,40 +258,39 @@ struct object_str *object_str_concat(const struct object_str *a,
  * @param str the string to hash
  * @return hash_t the hash value
  */
-hash_t obj_str_gen_hash(const struct object_str *str);
+hash_t obj_str_gen_hash(const lox_str_t *str);
 
 /**
  * @brief wraps the given native function in to a callable lox native function
  *
  * @param native_fn the native function to wrap
- * @return struct object_native_fn* the wrapped function
+ * @return lox_native_t* the wrapped function
  */
-struct object_native_fn *
-object_native_fn_new(const struct native_import native_import);
+lox_native_t *object_native_fn_new(const native_import_t native_import);
 
 /**
  * @brief creates a new closure over the given function
  *
  * @param fn the function to wrap
- * @return struct object_closure* the new object closure
+ * @return lox_closure_t* the new object closure
  */
-struct object_closure *object_closure_new(struct object_fn *fn);
+lox_closure_t *object_closure_new(lox_fn_t *fn);
 
 /**
  * @brief creates a new class with the given name
  *
  * @param fn the function to wrap
- * @return struct object_closure* the new object closure
+ * @return lox_closure_t* the new object closure
  */
-struct object_class *object_class_new(struct object_str *fn);
+lox_class_t *object_class_new(lox_str_t *fn);
 
 /**
  * @brief creates a new instance of the given class
  *
  * @param cls the class to instantiate
- * @return struct object_instance* the new object instance
+ * @return lox_instance_t* the new object instance
  */
-struct object_instance *object_instance_new(struct object_class *cls);
+lox_instance_t *object_instance_new(lox_class_t *cls);
 
 /**
  * @brief gets the upvalue at the given position within the closure
@@ -301,8 +299,8 @@ struct object_instance *object_instance_new(struct object_class *cls);
  * @param idx the index of the upvalue
  * @return lox_upval_t* the upvalue pointer
  */
-static inline lox_upval_t *
-object_closure_get_upval(struct object_closure *closure, int idx)
+static inline lox_upval_t *object_closure_get_upval(lox_closure_t *closure,
+						    int idx)
 {
 	return *(lox_upval_t **)list_get(&closure->upvalues, idx);
 }
@@ -314,8 +312,8 @@ object_closure_get_upval(struct object_closure *closure, int idx)
  * @param idx the index of the upvalue
  * @param val the new value
  */
-static inline void object_closure_set_upval(struct object_closure *closure,
-					    int idx, lox_val_t *val)
+static inline void object_closure_set_upval(lox_closure_t *closure, int idx,
+					    lox_val_t *val)
 {
 	lox_upval_t *upval = object_closure_get_upval(closure, idx);
 	*upval->location = *val;
@@ -327,7 +325,7 @@ static inline void object_closure_set_upval(struct object_closure *closure,
  * @param closure the closure to write to
  * @param val the new upvalue value
  */
-static inline void object_closure_push_upval(struct object_closure *closure,
+static inline void object_closure_push_upval(lox_closure_t *closure,
 					     lox_upval_t *val)
 {
 	list_push(&closure->upvalues, &val);
@@ -337,9 +335,9 @@ static inline void object_closure_push_upval(struct object_closure *closure,
  * @brief creates a new upvalue over the given lox value
  *
  * @param slot the value to wrap
- * @return struct object_upval* the new object upvalue
+ * @return lox_upval_t* the new object upvalue
  */
-struct object_upval *object_upval_new(lox_val_t *slot);
+lox_upval_t *object_upval_new(lox_val_t *slot);
 
 /**
  * @brief whether the two passed objects are equal

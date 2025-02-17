@@ -18,6 +18,6 @@
  * @param state the current vm state
  * @return lox_fn_t* the root script function. NULL if an error was encountered
  */
-lox_fn_t *compile(const char *src, struct state *state);
+lox_fn_t *compile(const char *src, vm_state_t *state);
 
 #endif // __CLOX_COMPILER_H__

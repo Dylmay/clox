@@ -275,7 +275,7 @@ void map_test_find_by_key()
 			.match_val = i,
 		};
 
-		const struct map_entry val =
+		const map_entry_t val =
 			map_find_by_key(&map, (struct key_matcher *)&matcher);
 
 		assert(("Unable to find value", val.value != NULL));
@@ -337,7 +337,7 @@ void map_test_find_by_key()
 			.match_val = rand_val,
 		};
 
-		const struct map_entry val =
+		const map_entry_t val =
 			map_find_by_key(&map, (struct key_matcher *)&matcher);
 
 		assert(("Unable to find value", val.value != NULL));

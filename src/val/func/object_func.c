@@ -13,39 +13,38 @@
 	((type *)__allocate_object(sizeof(type), type_id))
 
 #define ALLOCATE_OBJECT_STR(str_sz)                                            \
-	((struct object_str *)__allocate_object(                               \
-		sizeof(struct object_str) + (sizeof(char) * (str_sz + 1)),     \
-		OBJ_STRING))
+	((lox_str_t *)__allocate_object(sizeof(lox_str_t) +                    \
+						(sizeof(char) * (str_sz + 1)), \
+					OBJ_STRING))
 
 #define UNKNOWN_STR "<unknown>"
 #define SCRIPT_STR "<script>"
 #define CLASS_STR "<class %s>"
 #define INSTANCE_STR "<instance %s>"
 
-struct object_str_matcher {
+struct lox_str_t_matcher {
 	struct key_matcher m;
 	const char *chars;
 	size_t len;
 };
 
 static bool __match(const void *a, struct key_matcher *m);
-static struct object_str_matcher __create_matcher(const char *chars,
-						  size_t len);
-static struct object_str *__create_object_str(const char *, size_t);
-static struct object *__allocate_object(size_t, enum object_type);
-static struct object_str *__intern_string(const char *chars, size_t len);
-static void __print_function(struct object_fn *fn);
+static struct lox_str_t_matcher __create_matcher(const char *chars, size_t len);
+static lox_str_t *__create_object_str(const char *, size_t);
+static lox_obj_t *__allocate_object(size_t, enum object_type);
+static lox_str_t *__intern_string(const char *chars, size_t len);
+static void __print_function(lox_fn_t *fn);
 
 static hashset_t interner = hashset_new((hash_fn)&obj_str_gen_hash);
 
-struct object_str *object_str_new(const char *chars, size_t len)
+lox_str_t *object_str_new(const char *chars, size_t len)
 {
 	return __intern_string(chars, len);
 }
 
-struct object_fn *object_fn_new(struct object_str *name)
+lox_fn_t *object_fn_new(lox_str_t *name)
 {
-	struct object_fn *fn = ALLOCATE_OBJECT(struct object_fn, OBJ_FN);
+	lox_fn_t *fn = ALLOCATE_OBJECT(lox_fn_t, OBJ_FN);
 
 	fn->arity = 0;
 	fn->upval_cnt = 0;
@@ -55,8 +54,7 @@ struct object_fn *object_fn_new(struct object_str *name)
 	return fn;
 }
 
-struct object_str *object_str_concat(const struct object_str *a,
-				     const struct object_str *b)
+lox_str_t *object_str_concat(const lox_str_t *a, const lox_str_t *b)
 {
 	size_t concat_len = a->len + b->len;
 	char *concat_str = reallocate(NULL, 0, concat_len);
@@ -65,26 +63,23 @@ struct object_str *object_str_concat(const struct object_str *a,
 	memcpy(concat_str + a->len, b->chars, b->len);
 	concat_str[concat_len] = '\0';
 
-	struct object_str *concat = __intern_string(concat_str, concat_len);
+	lox_str_t *concat = __intern_string(concat_str, concat_len);
 	reallocate(concat_str, concat_len, 0);
 
 	return concat;
 }
 
-struct object_native_fn *
-object_native_fn_new(const struct native_import native_import)
+lox_native_t *object_native_fn_new(const native_import_t native_import)
 {
-	struct object_native_fn *native =
-		ALLOCATE_OBJECT(struct object_native_fn, OBJ_NATIVE);
+	lox_native_t *native = ALLOCATE_OBJECT(lox_native_t, OBJ_NATIVE);
 	native->import = native_import;
 
 	return native;
 }
 
-struct object_closure *object_closure_new(struct object_fn *fn)
+lox_closure_t *object_closure_new(lox_fn_t *fn)
 {
-	struct object_closure *closure =
-		ALLOCATE_OBJECT(struct object_closure, OBJ_CLOSURE);
+	lox_closure_t *closure = ALLOCATE_OBJECT(lox_closure_t, OBJ_CLOSURE);
 
 	closure->fn = fn;
 	closure->upvalues = list_of_type(lox_upval_t);
@@ -93,10 +88,9 @@ struct object_closure *object_closure_new(struct object_fn *fn)
 	return closure;
 }
 
-struct object_class *object_class_new(struct object_str *cls_name)
+lox_class_t *object_class_new(lox_str_t *cls_name)
 {
-	struct object_class *cls =
-		ALLOCATE_OBJECT(struct object_class, OBJ_CLASS);
+	lox_class_t *cls = ALLOCATE_OBJECT(lox_class_t, OBJ_CLASS);
 
 	cls->name = cls_name;
 
@@ -110,9 +104,9 @@ struct object_class *object_class_new(struct object_str *cls_name)
 	return cls;
 }
 
-struct object_instance *object_instance_new(struct object_class *cls)
+lox_instance_t *object_instance_new(lox_class_t *cls)
 {
-	struct object_instance *instance =
+	lox_instance_t *instance =
 		ALLOCATE_OBJECT(lox_instance_t, OBJ_INSTANCE);
 
 	instance->cls = cls;
@@ -123,10 +117,9 @@ struct object_instance *object_instance_new(struct object_class *cls)
 	return instance;
 }
 
-struct object_upval *object_upval_new(lox_val_t *slot)
+lox_upval_t *object_upval_new(lox_val_t *slot)
 {
-	struct object_upval *upval =
-		ALLOCATE_OBJECT(struct object_upval, OBJ_UPVALUE);
+	lox_upval_t *upval = ALLOCATE_OBJECT(lox_upval_t, OBJ_UPVALUE);
 
 	upval->location = slot;
 	upval->closed = VAL_CREATE_NIL;
@@ -139,39 +132,36 @@ void object_free(struct object *obj)
 {
 	switch (obj->type) {
 	case OBJ_STRING: {
-		struct object_str *str = (struct object_str *)obj;
-		reallocate(str,
-			   sizeof(struct object_str) +
-				   (sizeof(char) * str->len),
+		lox_str_t *str = (lox_str_t *)obj;
+		reallocate(str, sizeof(lox_str_t) + (sizeof(char) * str->len),
 			   0);
 	} break;
 
 	case OBJ_FN: {
-		struct object_fn *fn = (struct object_fn *)obj;
+		lox_fn_t *fn = (lox_fn_t *)obj;
 		chunk_free(&fn->chunk);
-		FREE(struct object_fn, fn);
+		FREE(lox_fn_t, fn);
 	} break;
 
 	case OBJ_NATIVE:
-		FREE(struct object_native_fn, obj);
+		FREE(lox_native_t, obj);
 		break;
 
 	case OBJ_CLOSURE: {
-		struct object_closure *closure = (struct object_closure *)obj;
+		lox_closure_t *closure = (lox_closure_t *)obj;
 		list_free(&closure->upvalues);
-		FREE(struct object_closure, obj);
+		FREE(lox_closure_t, obj);
 	} break;
 
 	case OBJ_UPVALUE:
-		FREE(struct object_upval, obj);
+		FREE(lox_upval_t, obj);
 		break;
 
 	case OBJ_INSTANCE: {
-		struct object_instance *instance =
-			(struct object_instance *)obj;
+		lox_instance_t *instance = (lox_instance_t *)obj;
 
 		list_free(&instance->fields);
-		FREE(struct object_instance, obj);
+		FREE(lox_instance_t, obj);
 		break;
 	}
 
@@ -192,7 +182,7 @@ void object_print(lox_val_t val)
 		break;
 
 	case OBJ_NATIVE: {
-		struct object_native_fn *fn = OBJECT_AS_NATIVE(val);
+		lox_native_t *fn = OBJECT_AS_NATIVE(val);
 		printf("<native_fn %s>", fn->import.fn_name);
 	} break;
 
@@ -218,7 +208,7 @@ void object_print(lox_val_t val)
 	}
 }
 
-static void __print_function(struct object_fn *fn)
+static void __print_function(lox_fn_t *fn)
 {
 	if (fn->name == NULL) {
 		printf(SCRIPT_STR);
@@ -234,8 +224,8 @@ lox_val_t object_to_string(lox_val_t val)
 		return val;
 
 	case OBJ_FN: {
-		struct object_fn *fn = OBJECT_AS_FN(val);
-		struct object_str *string;
+		lox_fn_t *fn = OBJECT_AS_FN(val);
+		lox_str_t *string;
 
 		if (fn->name == NULL) {
 			string = object_str_new(SCRIPT_STR,
@@ -264,8 +254,7 @@ lox_val_t object_to_string(lox_val_t val)
 			snprintf(concat_str, len, "<native_fn %s>",
 				 OBJECT_AS_NATIVE(val)->import.fn_name);
 
-			struct object_str *string =
-				object_str_new(concat_str, len);
+			lox_str_t *string = object_str_new(concat_str, len);
 
 			reallocate(concat_str, len, 0);
 
@@ -304,14 +293,14 @@ bool object_equals(const struct object *a, const struct object *b)
 	}
 }
 
-hash_t obj_str_gen_hash(const struct object_str *str)
+hash_t obj_str_gen_hash(const lox_str_t *str)
 {
 	return c_str_gen_hash(str->chars, str->len);
 }
 
-static struct object_str *__create_object_str(const char *chars, size_t str_sz)
+static lox_str_t *__create_object_str(const char *chars, size_t str_sz)
 {
-	struct object_str *string = ALLOCATE_OBJECT_STR(str_sz);
+	lox_str_t *string = ALLOCATE_OBJECT_STR(str_sz);
 
 	string->len = str_sz;
 	memcpy(string->chars, chars, str_sz);
@@ -331,17 +320,17 @@ static struct object *__allocate_object(size_t obj_sz,
 
 static bool __match(const void *a, struct key_matcher *m)
 {
-	const struct object_str *str = (const struct object_str *)a;
-	const struct object_str_matcher *matcher =
-		(const struct object_str_matcher *)m;
+	const lox_str_t *str = (const lox_str_t *)a;
+	const struct lox_str_t_matcher *matcher =
+		(const struct lox_str_t_matcher *)m;
 
 	return str->len == matcher->len &&
 	       memcmp(str->chars, matcher->chars, matcher->len) == 0;
 }
 
-static struct object_str_matcher __create_matcher(const char *chars, size_t len)
+static struct lox_str_t_matcher __create_matcher(const char *chars, size_t len)
 {
-	return (struct object_str_matcher){
+	return (struct lox_str_t_matcher){
 		.m = { .is_match = &__match,
 		       .hash = c_str_gen_hash(chars, len) },
 		.len = len,
@@ -349,10 +338,10 @@ static struct object_str_matcher __create_matcher(const char *chars, size_t len)
 	};
 }
 
-static struct object_str *__intern_string(const char *chars, size_t len)
+static lox_str_t *__intern_string(const char *chars, size_t len)
 {
-	struct object_str_matcher matcher = __create_matcher(chars, len);
-	struct object_str *interned =
+	struct lox_str_t_matcher matcher = __create_matcher(chars, len);
+	lox_str_t *interned =
 		hashset_find(&interner, (struct key_matcher *)&matcher);
 
 	if (!interned) {

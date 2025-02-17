@@ -20,7 +20,7 @@ typedef uint8_t code_t;
  * Created using chunk_new(). Must be freed after use by using chunk_free()
  *
  */
-typedef struct __chunk {
+typedef struct {
 	list_t code;
 	list_t lines;
 	list_t consts;

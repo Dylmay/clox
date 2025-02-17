@@ -10,10 +10,10 @@
 #include "val/val.h"
 
 //! @brief import list struct
-struct import_list {
+typedef struct {
 	const char *import_name;
 	size_t import_cnt;
-	struct native_import *import_arr;
-};
+	native_import_t *import_arr;
+} native_import_list_t;
 
 #endif // __CLOX_API_IMPORT_H__

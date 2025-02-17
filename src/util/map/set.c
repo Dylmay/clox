@@ -1,7 +1,7 @@
 #include "set.h"
 
 struct __for_each_k_wrapper {
-	void (*func)(struct map_entry entry, struct map_for_each_entry *data);
+	void (*func)(map_entry_t entry, struct map_for_each_entry *data);
 	struct hashset_for_each *key_data;
 };
 
@@ -9,7 +9,7 @@ struct __for_each_k_wrapper {
  * @brief wrapper function used to convert hashset for each calls in to map for each calls
  * and allow correct processing
  */
-static void __keys_for_each_wrapper(struct map_entry entry,
+static void __keys_for_each_wrapper(map_entry_t entry,
 				    struct map_for_each_entry *data)
 {
 	struct __for_each_k_wrapper *unwrapped_data =

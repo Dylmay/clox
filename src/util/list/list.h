@@ -19,7 +19,7 @@
  * @see list_free()
  *
  */
-typedef struct __list {
+typedef struct {
 	size_t cnt;
 	size_t cap;
 	size_t type_sz;
@@ -179,6 +179,6 @@ static inline size_t list_size(const list_t *lst)
  * @param lst the list to process
  * @param fn list for each function
  */
-void list_for_each (list_t *lst, for_each_fn fn);
+void list_for_each(list_t *lst, for_each_fn fn);
 
 #endif // __CLOX_UTIL_LIST_H__

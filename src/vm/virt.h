@@ -17,16 +17,16 @@
 #define STACK_MAIN_IDX 0
 
 //! @brief call frame for lox functions
-struct vm_call_frame {
+typedef struct {
 	lox_closure_t *closure;
 	uint8_t *ip;
 	size_t stack_snapshot;
-};
+} vm_call_frame_t;
 
 //! @brief vm struct
-typedef struct __vm {
+typedef struct {
 	list_t frames;
-	struct state state;
+	vm_state_t state;
 	list_t globals;
 	list_t stack;
 	lox_upval_t *open_upvals;

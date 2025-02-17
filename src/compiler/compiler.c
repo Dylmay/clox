@@ -28,7 +28,7 @@ enum define_state {
 
 struct compiler {
 	struct compiler *enclosing;
-	struct state *global_state;
+	vm_state_t *global_state;
 	parser_t *prsr;
 	struct {
 		list_t scopes;
@@ -85,7 +85,7 @@ static void __parse_return_stmt(struct compiler *);
 static void __parse_dot(struct compiler *);
 static uint8_t __parse_arglist(struct compiler *);
 static bool __compiler_has_defined(struct compiler *, const char *, size_t);
-static void __compiler_import(struct compiler *, struct import_list);
+static void __compiler_import(struct compiler *, native_import_list_t);
 static lookup_var_t __compiler_find_name(struct compiler *compiler,
 					 const char *name, size_t name_sz);
 static lookup_var_t __compiler_find_name_local(struct compiler *compiler,
@@ -152,7 +152,7 @@ static const struct parse_rule *__compiler_get_rule(enum tkn_type tkn)
 }
 
 static struct compiler __compiler_new(struct compiler *enclosing,
-				      parser_t *prsr, struct state *state,
+				      parser_t *prsr, vm_state_t *state,
 				      lox_str_t *name)
 {
 	lox_fn_t *fn = object_fn_new(name);
@@ -216,7 +216,7 @@ static lox_fn_t *__compiler_run(struct compiler *compiler, bool is_main)
 	}
 }
 
-lox_fn_t *compile(const char *src, struct state *state)
+lox_fn_t *compile(const char *src, vm_state_t *state)
 {
 	parser_t prsr = parser_new(src);
 	uint32_t global_sz = lookup_get_size(&state->globals);
@@ -403,9 +403,8 @@ static void __parse_lit(struct compiler *compiler)
 
 static void __parse_string(struct compiler *compiler)
 {
-	struct object_str *string =
-		object_str_new(compiler->prsr->previous.start + 1,
-			       compiler->prsr->previous.len - 2);
+	lox_str_t *string = object_str_new(compiler->prsr->previous.start + 1,
+					   compiler->prsr->previous.len - 2);
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_OBJ(string),
 		       compiler->prsr->previous.line);
 }
@@ -1030,10 +1029,10 @@ static uint8_t __parse_arglist(struct compiler *compiler)
 }
 
 static void __compiler_import(struct compiler *compiler,
-			      struct import_list imports)
+			      native_import_list_t imports)
 {
 	for (size_t i = 0; i < imports.import_cnt; i++) {
-		struct native_import native_fn = imports.import_arr[i];
+		native_import_t native_fn = imports.import_arr[i];
 
 		if (__compiler_has_defined(compiler, native_fn.fn_name,
 					   native_fn.name_sz)) {

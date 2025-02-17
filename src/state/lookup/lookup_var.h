@@ -123,7 +123,7 @@ typedef uint8_t var_flags_t;
 #pragma endregion
 
 //! @brief lookup variable
-typedef struct __lookup_var {
+typedef struct {
 	uint32_t idx;
 	var_flags_t var_flags;
 } lookup_var_t;

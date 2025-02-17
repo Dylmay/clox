@@ -39,6 +39,14 @@ void *reallocate(void *pointer, size_t old_sz, size_t new_sz)
 		log_debug("fetching metadata\n");
 		metadata = pointer - sizeof(struct mem_metadata);
 	}
+	/*
+	we need:
+	1. some metadata to allow marking, etc.
+	2. to understand when the VM is done with an object
+	3. a list of all objects, with the ability to track if they're reachable
+	4. the above is why it makes sense for it to live within the VM
+	5. a generic GC is likely not worth the effort
+	 */
 
 	void *offset_pointer =
 		pointer - (metadata != NULL ? sizeof(struct mem_metadata) : 0);

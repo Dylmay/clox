@@ -18,7 +18,7 @@
  * @see parser_free()
  *
  */
-typedef struct __parser {
+typedef struct {
 	lexer_t lexer;
 	token_t current;
 	token_t previous;

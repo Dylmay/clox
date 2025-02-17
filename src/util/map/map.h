@@ -16,7 +16,7 @@
  * @see map_new()
  * @see map_free()
  */
-typedef struct __hashmap {
+typedef struct {
 	size_t cnt;
 	size_t tomb_cnt;
 	size_t cap;
@@ -26,10 +26,10 @@ typedef struct __hashmap {
 } hashmap_t;
 
 //! @brief map entry struct
-struct map_entry {
+typedef struct {
 	void *key;
 	void *value;
-};
+} map_entry_t;
 
 /**
  * @brief key matcher struct for finding map entries by key
@@ -54,7 +54,7 @@ struct val_matcher {
  *
  */
 struct map_for_each_entry {
-	void (*func)(struct map_entry entry, struct map_for_each_entry *data);
+	void (*func)(map_entry_t entry, struct map_for_each_entry *data);
 };
 
 //! @brief hash map max load value. The backing array expands when met
@@ -172,20 +172,19 @@ bool map_has(const hashmap_t *map, const void *key);
  *
  * @param map the hashmap to search
  * @param matcher the the key matcher to validate the passed key
- * @return struct map_entry the found entry. entry.key will be NULL if no match is found
+ * @return map_entry_t the found entry. entry.key will be NULL if no match is found
  */
-struct map_entry map_find_by_key(const hashmap_t *map,
-				 struct key_matcher *matcher);
+map_entry_t map_find_by_key(const hashmap_t *map, struct key_matcher *matcher);
 
 /**
  * @brief finds an entry matching by value
  *
  * @param map the hashmap to search
  * @param matcher the value matcher to validate the passed key
- * @return struct map_entry the found entyr. entry.key will be NULL if no match is found
+ * @return map_entry_t the found entyr. entry.key will be NULL if no match is found
  */
-struct map_entry map_find_by_value(const hashmap_t *map,
-				   struct val_matcher *matcher);
+map_entry_t map_find_by_value(const hashmap_t *map,
+			      struct val_matcher *matcher);
 
 /**
  * @brief runs the given function within map_for_each_entry on each map entry

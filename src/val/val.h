@@ -26,7 +26,7 @@ typedef struct object {
 } lox_obj_t;
 
 //! @brief lox base value
-typedef struct __lox_val {
+typedef struct {
 	enum value_type type;
 	union {
 		lox_bool_t boolean;
@@ -36,44 +36,44 @@ typedef struct __lox_val {
 } lox_val_t;
 
 //! @brief lox string object
-typedef struct object_str {
+typedef struct {
 	struct object obj;
 	size_t len;
 	char chars[];
 } lox_str_t;
 
 //! @brief lox function object
-typedef struct object_fn {
+typedef struct {
 	struct object obj;
 	int arity;
 	uint32_t upval_cnt;
 	chunk_t chunk;
-	struct object_str *name;
+	lox_str_t *name;
 } lox_fn_t;
 
 typedef lox_val_t (*native_fn)(int arg_cnt, lox_val_t *args);
 
 //! @brief native function import
-struct native_import {
+typedef struct {
 	const char *fn_name;
 	size_t name_sz;
 	native_fn fn;
-};
+} native_import_t;
 
-typedef struct object_native_fn {
+typedef struct {
 	struct object obj;
-	struct native_import import;
+	native_import_t import;
 } lox_native_t;
 
-typedef struct object_closure {
+typedef struct {
 	struct object obj;
 	list_t upvalues;
 	lox_fn_t *fn;
 } lox_closure_t;
 
-typedef struct object_class {
+typedef struct {
 	struct object obj;
-	struct object_str *name;
+	lox_str_t *name;
 	struct {
 		lookup_t table;
 		uint32_t idx;
@@ -85,17 +85,17 @@ typedef struct object_class {
 	list_t statics;
 } lox_class_t;
 
-typedef struct object_instance {
+typedef struct {
 	struct object obj;
-	struct object_class *cls;
+	lox_class_t *cls;
 	list_t fields;
 } lox_instance_t;
 
-typedef struct object_upval {
+typedef struct lox_upval_t {
 	struct object obj;
 	lox_val_t *location;
 	lox_val_t closed;
-	struct object_upval *next;
+	struct lox_upval_t *next;
 } lox_upval_t;
 
 #endif // __CLOX_UTIL_VALUE_H__

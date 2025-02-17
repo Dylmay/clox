@@ -61,7 +61,7 @@ enum tkn_type {
 };
 
 //! @brief item representing a lexed token
-typedef struct __token {
+typedef struct {
 	enum tkn_type type;
 	const char *start;
 	size_t len;

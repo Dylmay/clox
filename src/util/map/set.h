@@ -79,7 +79,7 @@ typedef hashmap_t hashset_t;
  *
  * @param map the hashmap to search
  * @param matcher the the key matcher to validate the passed key
- * @return struct map_entry the found entry. entry.key will be NULL if no match is found
+ * @return map_entry_t the found entry. entry.key will be NULL if no match is found
  */
 #define hashset_find(set, matcher) (map_find_by_key((set), (matcher)).key)
 
