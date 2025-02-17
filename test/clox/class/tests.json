@@ -55,5 +55,17 @@
     "reason": "To check that classes can define methodss",
     "file": "class_with_methods.lox",
     "expect": {}
+  },
+  {
+    "name": "Linked list test",
+    "description": "Expect a linked list can be implemented using a class, and functions",
+    "reason": "To check that classes are effective",
+    "file": "linked_list.lox",
+    "expect": {
+      "to_output": [
+        "[Hi; , ; my ; name ; is ; Dylan; ]",
+        "Hi, my name is Dylan"
+      ]
+    }
   }
 ]
