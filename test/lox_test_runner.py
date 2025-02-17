@@ -34,26 +34,32 @@ def __get_tests(test_path: str) -> List[Test]:
         try:
             return [Test(**t) for t in json.load(test_info)]
         except (TypeError, ValidationError, json.JSONDecodeError) as exc:
-            raise JSONSchemaError(f"{test_path} failed to validate", exc) from exc
+            raise JSONSchemaError(f"{test_path} failed to validate") from exc
 
 
 def record_tests(
-    clox_path: str, directory: str, test_file: str, use_valgrind: bool, test_regex: str,
+    clox_path: str,
+    directory: str,
+    test_file: str,
+    use_valgrind: bool,
+    test_regex: str,
 ) -> Recordings:
     tests = __get_tests(f"{directory}/{test_file}")
 
     if test_regex:
         regex = re.compile(test_regex, flags=re.IGNORECASE)
 
-        Printer.print(Ps(f"Running tests matching regex: \"{test_regex}\"").bold())
+        Printer.print(Ps(f'Running tests matching regex: "{test_regex}"').bold())
 
-        filtered_tests = [
-            test for test in tests if regex.search(test.name)
-        ]
+        filtered_tests = [test for test in tests if regex.search(test.name)]
 
         test_or_tests = "test" if len(filtered_tests) == 1 else "tests"
 
-        Printer.print(Ps(f"Found {len(filtered_tests)} {test_or_tests} out of {len(tests)} which match the given regex").italic())
+        Printer.print(
+            Ps(
+                f"Found {len(filtered_tests)} {test_or_tests} out of {len(tests)} which match the given regex"
+            ).italic()
+        )
 
         tests = filtered_tests
     else:
@@ -68,7 +74,7 @@ def record_tests(
 
     if len(tests) > 0:
         Printer.print(Ps(directory).bold())
-        for (idx, test) in enumerate(tests):
+        for idx, test in enumerate(tests):
             text = f"Running {test.name} - {test.file}"
 
             with yaspin.yaspin(text=text, color="yellow"):
@@ -107,9 +113,11 @@ def run_clox_tests(
 ) -> List[Recordings]:
     test_list: List[Recordings] = []
 
-    for (cur_folder, _, _) in os.walk(directory):
+    for cur_folder, _, _ in os.walk(directory):
         try:
-            test = record_tests(clox_path, cur_folder, test_file, use_valgrind, test_regex)
+            test = record_tests(
+                clox_path, cur_folder, test_file, use_valgrind, test_regex
+            )
             test_list.append(test)
         except FileNotFoundError:
             Printer.print(

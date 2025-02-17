@@ -52,9 +52,17 @@ typedef struct object_fn {
 } lox_fn_t;
 
 typedef lox_val_t (*native_fn)(int arg_cnt, lox_val_t *args);
+
+//! @brief native function import
+struct native_import {
+	const char *fn_name;
+	size_t name_sz;
+	native_fn fn;
+};
+
 typedef struct object_native_fn {
 	struct object obj;
-	native_fn fn;
+	struct native_import import;
 } lox_native_t;
 
 typedef struct object_closure {

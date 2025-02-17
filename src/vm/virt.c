@@ -10,6 +10,7 @@
 #include "chunk/func/chunk_func.h"
 #include "val/func/val_func.h"
 #include "val/func/object_func.h"
+#include "val/val_name.h"
 #include "compiler/compiler.h"
 #include "util/map/hash_util.h"
 #include "util/string/string_util.h"
@@ -558,8 +559,19 @@ static enum vm_res __vm_run(vm_t *vm)
 			lox_str_t *prop_name = OBJECT_AS_STRING(
 				chunk_get_const(&cur_frame->closure->fn->chunk,
 						__frame_proc_idx(cur_frame)));
-			lox_instance_t *instance =
-				OBJECT_AS_INSTANCE(__vm_pop_const(vm));
+
+			lox_val_t lox_val = __vm_pop_const(vm);
+
+			if (!OBJECT_IS_INSTANCE(lox_val)) {
+				// TODO(dmayor): print a friendlier type
+				__vm_runtime_error(
+					vm,
+					"Object is not an instance, it's of type %s",
+					val_type_name(lox_val.type));
+				return INTERPRET_RUNTIME_ERROR;
+			}
+
+			lox_instance_t *instance = OBJECT_AS_INSTANCE(lox_val);
 
 			lookup_var_t var = lookup_find_name(
 				&instance->cls->field_lookup.table,
@@ -567,6 +579,7 @@ static enum vm_res __vm_run(vm_t *vm)
 
 			if (!lookup_var_is_valid(var)) {
 				__vm_runtime_error(vm, "Undefined property");
+				return INTERPRET_RUNTIME_ERROR;
 			}
 
 			lox_val_t *val = list_get(&instance->fields, var.idx);
@@ -950,7 +963,7 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 		case OBJ_NATIVE: {
 			const lox_native_t *native = OBJECT_AS_NATIVE(callee);
 
-			lox_val_t res = native->fn(
+			lox_val_t res = native->import.fn(
 				call_arity,
 				call_arity ? list_peek_offset(&vm->stack,
 							      call_arity - 1) :

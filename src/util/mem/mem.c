@@ -4,13 +4,10 @@
 
 #include "mem.h"
 
-#define DEBUG_LOG_GC
-#define DEBUG_STRESS_GC
-
 #ifdef DEBUG_LOG_GC
 #define log_debug(args...) (printf(args))
 #else
-#define log_debug(args...) ()
+#define log_debug(args...) (true)
 #endif
 
 typedef uint8_t memory_flags_t;
@@ -48,14 +45,14 @@ void *reallocate(void *pointer, size_t old_sz, size_t new_sz)
 
 	if (new_sz > old_sz) {
 #ifdef DEBUG_STRESS_GC
-		printf("Rlox Memory: Reallocating %lu -> %lu\n", old_sz,
-		       new_sz);
+		log_debug("Rlox Memory: Reallocating %lu -> %lu\n", old_sz,
+			  new_sz);
 		_collect_garbage();
 #endif
 	}
 
 	if (new_sz == 0) {
-		printf("Rlox Memory: Freeing %lu -> %lu\n", old_sz, new_sz);
+		log_debug("Rlox Memory: Freeing %lu -> %lu\n", old_sz, new_sz);
 
 		assert((pointer, "Pointer does not exist"));
 

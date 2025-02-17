@@ -17,7 +17,6 @@
 		sizeof(struct object_str) + (sizeof(char) * (str_sz + 1)),     \
 		OBJ_STRING))
 
-#define NATIVE_FN_STR "<native fn>"
 #define UNKNOWN_STR "<unknown>"
 #define SCRIPT_STR "<script>"
 #define CLASS_STR "<class %s>"
@@ -44,13 +43,13 @@ struct object_str *object_str_new(const char *chars, size_t len)
 	return __intern_string(chars, len);
 }
 
-struct object_fn *object_fn_new()
+struct object_fn *object_fn_new(struct object_str *name)
 {
 	struct object_fn *fn = ALLOCATE_OBJECT(struct object_fn, OBJ_FN);
 
 	fn->arity = 0;
 	fn->upval_cnt = 0;
-	fn->name = NULL;
+	fn->name = name;
 	fn->chunk = chunk_new();
 
 	return fn;
@@ -72,11 +71,12 @@ struct object_str *object_str_concat(const struct object_str *a,
 	return concat;
 }
 
-struct object_native_fn *object_native_fn_new(native_fn native_fn)
+struct object_native_fn *
+object_native_fn_new(const struct native_import native_import)
 {
 	struct object_native_fn *native =
 		ALLOCATE_OBJECT(struct object_native_fn, OBJ_NATIVE);
-	native->fn = native_fn;
+	native->import = native_import;
 
 	return native;
 }
@@ -191,9 +191,10 @@ void object_print(lox_val_t val)
 		__print_function(OBJECT_AS_FN(val));
 		break;
 
-	case OBJ_NATIVE:
-		printf(NATIVE_FN_STR);
-		break;
+	case OBJ_NATIVE: {
+		struct object_native_fn *fn = OBJECT_AS_NATIVE(val);
+		printf("<native_fn %s>", fn->import.fn_name);
+	} break;
 
 	case OBJ_CLOSURE:
 		__print_function(OBJECT_AS_CLOSURE(val)->fn);
@@ -243,9 +244,9 @@ lox_val_t object_to_string(lox_val_t val)
 			size_t len = (sizeof("<fn >") - 1) + fn->name->len;
 			char *concat_str = reallocate(NULL, 0, len);
 			snprintf(concat_str, len, "<fn %s>", fn->name->chars);
-			reallocate(concat_str, len, 0);
-
 			string = object_str_new(concat_str, len);
+
+			reallocate(concat_str, len, 0);
 		}
 
 		return VAL_CREATE_OBJ(string);
@@ -254,12 +255,29 @@ lox_val_t object_to_string(lox_val_t val)
 	case OBJ_CLASS:
 		return VAL_CREATE_OBJ(OBJECT_AS_CLASS(val)->name);
 
-	case OBJ_NATIVE:
-		return VAL_CREATE_OBJ(object_str_new(
-			NATIVE_FN_STR, sizeof(NATIVE_FN_STR) - 1));
+	case OBJ_NATIVE: {
+		{
+			size_t len = (sizeof("<native_fn >") - 1) +
+				     OBJECT_AS_NATIVE(val)->import.name_sz;
+
+			char *concat_str = reallocate(NULL, 0, len);
+			snprintf(concat_str, len, "<native_fn %s>",
+				 OBJECT_AS_NATIVE(val)->import.fn_name);
+
+			struct object_str *string =
+				object_str_new(concat_str, len);
+
+			reallocate(concat_str, len, 0);
+
+			return VAL_CREATE_OBJ(string);
+		}
+	} break;
 
 	case OBJ_UPVALUE:
 		return object_to_string(*OBJECT_AS_UPVALUE(val)->location);
+
+	case OBJ_INSTANCE:
+		return VAL_CREATE_OBJ(OBJECT_AS_INSTANCE(val)->cls->name);
 
 	default:
 		assert(("Unknown object type", 0));

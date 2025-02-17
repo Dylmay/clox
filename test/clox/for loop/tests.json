@@ -50,7 +50,7 @@
     "expect": {
       "to_fail": true,
       "on_line": 4,
-      "has_return_code":65,
+      "has_return_code": 65,
       "to_error": ["Variable isn't mutable"]
     }
   },
@@ -60,6 +60,25 @@
     "file": "closured.lox",
     "expect": {
       "to_output": [1, 2]
+    }
+  },
+  {
+    "name": "For loop can iterate on negatives",
+    "description": "Expect the for loop to iterate over negative values",
+    "file": "negative.lox",
+    "expect": {
+      "to_output": [-10, -9 , -8, -7 ,-6, -5, -4, -3, -2, -1]
+    }
+  },
+  {
+    "name": "For loop will fail on doubles",
+    "description": "Expect the for loop to fail on negative values",
+    "file": "no_doubles.lox",
+    "expect": {
+      "to_fail": true,
+      "on_line": 1,
+      "has_return_code": 65,
+      "to_error": ["Doubles cannot be used within a range"]
     }
   }
 ]

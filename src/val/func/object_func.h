@@ -232,7 +232,7 @@ void object_free(struct object *obj);
  *
  * @return struct object_fn* the newly allocated lox function object
  */
-struct object_fn *object_fn_new();
+struct object_fn *object_fn_new(struct object_str *name);
 
 /**
  * @brief creates a new lox string object
@@ -267,7 +267,8 @@ hash_t obj_str_gen_hash(const struct object_str *str);
  * @param native_fn the native function to wrap
  * @return struct object_native_fn* the wrapped function
  */
-struct object_native_fn *object_native_fn_new(native_fn native_fn);
+struct object_native_fn *
+object_native_fn_new(const struct native_import native_import);
 
 /**
  * @brief creates a new closure over the given function

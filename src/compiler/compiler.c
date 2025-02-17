@@ -64,7 +64,7 @@ static void __parse_precedence(struct compiler *, enum precedence);
 static void __parse_unary(struct compiler *);
 static void __parse_binary(struct compiler *);
 static void __parse_grouping(struct compiler *);
-static void __parse_number(struct compiler *);
+static double __parse_number(struct compiler *);
 static void __parse_lit(struct compiler *);
 static void __parse_string(struct compiler *);
 static void __parse_class_decl(struct compiler *);
@@ -124,7 +124,8 @@ static struct parse_rule PARSE_RULES[] = {
 	// Literals
 	[TKN_ID] = { __parse_var, NULL, PREC_NONE },
 	[TKN_STR] = { __parse_string, NULL, PREC_NONE },
-	[TKN_NUM] = { __parse_number, NULL, PREC_NONE },
+	[TKN_NUM] = { (void (*)(struct compiler *))__parse_number, NULL,
+		      PREC_NONE },
 	// Keywords - 1
 	[TKN_AND] = { NULL, __parse_and, PREC_AND },
 	[TKN_CLS] = { NULL, NULL, PREC_NONE },
@@ -154,8 +155,7 @@ static struct compiler __compiler_new(struct compiler *enclosing,
 				      parser_t *prsr, struct state *state,
 				      lox_str_t *name)
 {
-	lox_fn_t *fn = object_fn_new();
-	fn->name = name;
+	lox_fn_t *fn = object_fn_new(name);
 
 	return (struct compiler){
 		.enclosing = enclosing,
@@ -241,7 +241,7 @@ static void __parse_expr(struct compiler *compiler)
 	__parse_precedence(compiler, PREC_ASSIGNMENT);
 }
 
-static void __parse_number(struct compiler *compiler)
+static double __parse_number(struct compiler *compiler)
 {
 	char *end_ptr = NULL;
 	errno = 0; // Reset errno before calling strtod
@@ -252,13 +252,17 @@ static void __parse_number(struct compiler *compiler)
 		errno = 0;
 	}
 
-	if (end_ptr != NULL && end_ptr - compiler->prsr->previous.start !=
-				       compiler->prsr->previous.len) {
-		parser_error_at_previous(compiler->prsr, "Invalid number");
-	}
+	// TODO(dmayor): do we need this? This will throw if the size of the string does not match the number
+	//  but, it's expected that this validation is done earlier
+	// if (end_ptr != NULL && end_ptr - compiler->prsr->previous.start !=
+	// 			       compiler->prsr->previous.len) {
+	// 	parser_error_at_previous(compiler->prsr, "Invalid number");
+	// }
 
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_NUMBER(val),
 		       compiler->prsr->previous.line);
+
+	return val;
 }
 
 static void __parse_grouping(struct compiler *compiler)
@@ -633,9 +637,15 @@ static void __parse_for_stmt(struct compiler *compiler)
 	parser_consume(compiler->prsr, TKN_IN, "Expected 'in'");
 	parser_consume(compiler->prsr, TKN_NUM, "Expected range start");
 	// write start of range
-	double range_start = strtod(compiler->prsr->previous.start, NULL);
-	OP_CONST_WRITE(compiler->fn, VAL_CREATE_NUMBER(range_start),
-		       compiler->prsr->previous.line);
+
+	// TODO(dmayor): add support for statements
+	double start_val = __parse_number(compiler);
+
+	if (start_val != floor(start_val)) {
+		parser_error_at_previous(compiler->prsr,
+					 "range number cannot be a decimal");
+	}
+
 	lookup_var_t glbl_idx =
 		__compiler_define_var(compiler, name, len, def_ln, false);
 
@@ -644,12 +654,15 @@ static void __parse_for_stmt(struct compiler *compiler)
 	parser_consume(compiler->prsr, TKN_NUM, "Expected range end");
 
 	//condition
-	double range_end = strtod(compiler->prsr->previous.start, NULL);
 
 	size_t inc_start = chunk_cur_instr(&compiler->fn->chunk);
 	OP_VAR_GET_WRITE(compiler->fn, glbl_idx.idx, def_ln);
-	OP_CONST_WRITE(compiler->fn, VAL_CREATE_NUMBER(range_end),
-		       compiler->prsr->previous.line);
+	double end_val = __parse_number(compiler);
+
+	if (start_val != floor(start_val)) {
+		parser_error_at_previous(compiler->prsr,
+					 "range number cannot be a decimal");
+	}
 	//LESS_EQ
 	OP_LESS_WRITE(compiler->fn, compiler->prsr->previous.line);
 	size_t exit_jump = OP_JUMP_IF_FALSE_WRITE(compiler->fn, def_ln);
@@ -990,6 +1003,7 @@ static void __parse_dot(struct compiler *compiler)
 		// }
 		OP_PROPERTY_SET_WRITE(compiler->fn, VAL_CREATE_OBJ(prop_name),
 				      name_tkn.line);
+		OP_POP_WRITE(compiler->fn, name_tkn.line);
 	} else {
 		OP_PROPERTY_GET_WRITE(compiler->fn, VAL_CREATE_OBJ(prop_name),
 				      name_tkn.line);
@@ -1032,10 +1046,9 @@ static void __compiler_import(struct compiler *compiler,
 					compiler->prsr->previous.line :
 					1;
 
-		OP_CONST_WRITE(
-			compiler->fn,
-			VAL_CREATE_OBJ(object_native_fn_new(native_fn.fn)),
-			line);
+		OP_CONST_WRITE(compiler->fn,
+			       VAL_CREATE_OBJ(object_native_fn_new(native_fn)),
+			       line);
 
 		__compiler_define_var(compiler, native_fn.fn_name,
 				      native_fn.name_sz, line, false);

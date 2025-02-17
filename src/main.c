@@ -64,11 +64,46 @@ static void __run_repl(vm_t *vm)
 
 			switch (line_buf[i]) {
 			case '{':
+			case '(':
+			case '[':
 				list_push(&scope_stack, &line_buf[i]);
 				break;
+			case ']':
 			case '}':
-				list_pop(&scope_stack);
-				break;
+			case ')': {
+				char *chara = list_peek(&scope_stack);
+
+				bool does_match;
+
+				switch (*chara) {
+				case '[':
+					does_match = line_buf[i] == ']';
+					break;
+				case '{':
+					does_match = line_buf[i] == '}';
+					break;
+				case '(':
+					does_match = line_buf[i] == ')';
+					break;
+
+				default:
+					fprintf(stderr,
+						"Unknown character: %c\n",
+						*chara);
+					continue;
+				}
+
+				if (does_match) {
+					list_pop(&scope_stack);
+				} else {
+					fprintf(stderr,
+						"Unmatched scope character: %c\n",
+						line_buf[i]);
+					continue;
+				}
+
+			} break;
+
 			default:
 				break;
 			}
@@ -148,6 +183,7 @@ static char *__read_file(const char *path)
 
 	if (bytes_rd < file_sz) {
 		fprintf(stderr, "Could not read file \"%s\".\n", path);
+		__program_quit(EXIT_FILE_ERROR);
 	}
 
 	file_buf[bytes_rd] = '\0';

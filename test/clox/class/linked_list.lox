@@ -4,43 +4,51 @@ class LinkedListNode {
 }
 
 class LinkedList {
-    let start_node;
+    let mut start_node;
+    let mut end_node;
+    let mut sz;
 }
 
 fn get(list, index) {
+    if is_empty(list) {
+        return;
+    }
 
+    if index >= list.sz {
+        return;
+    }
+
+    let mut idx = index;
+    let mut node = list.start_node;
+    while idx != 0 {
+        node = node.next_node;
+        idx = idx - 1;
+    }
+
+    return node.data;
 }
 
 fn is_empty(list) {
     return list.start_node == nil;
 }
 
-fn get_last(list) {
-    if (is_empty(list)) {
-        return nil;
-    }
-
-    let mut cur_node = list.start_node;
-    let mut next_node = cur_node.next_node;
-
-    while (next_node != nil) {
-        cur_node = cur_node.next_node;
-        next_node = cur_node.new_node;
-    }
-
-    return cur_node;
-}
-
-fn add(list, item) {
+fn add(list, content) {
     let new_node = LinkedListNode();
-    new_node.data = item;
+    // TODO(dmayor): need to figure this out. It's causing the index to be off
+    // due to clean up not being done properly
+    // added a pop afterwards, need to confirm side effects
+    new_node.data = content;
 
-    if (is_empty(list)) {
+    if is_empty(list) {
         list.start_node = new_node;
+        list.end_node = new_node;
+        list.sz = 1;
+        return;
     }
 
-    let last_node = get_last(list);
-    last_node.next_node = new_node;
+    list.end_node.next_node = new_node;
+    list.sz = list.sz + 1;
+    list.end_node = new_node;
 }
 
 fn remove(list, index) {
@@ -51,10 +59,15 @@ fn clear(list) {
 
 }
 
+fn node_to_string(node) {
+    let has_child = node.next_node != nil;
+    return "data: " + str(node.data) + "; has child: " + str(has_child);
+}
+
 fn to_string(list) {
     let mut list_str = "[";
     let mut cur_node = list.start_node;
-    while (cur_node != nil)  {
+    while cur_node != nil  {
         list_str = list_str + str(cur_node.data) + "; ";
         cur_node = cur_node.next_node;
     }
@@ -65,7 +78,23 @@ fn to_string(list) {
 
 
 let linked_list = LinkedList();
-print(linked_list.start_node);
-// add(linked_list, "hi");
 
-// print(to_string(linked_list));
+add(linked_list, "Hi");
+add(linked_list, ", ");
+add(linked_list, "my ");
+add(linked_list, "name ");
+add(linked_list, "is ");
+add(linked_list, "Dylan");
+
+print(to_string(linked_list));
+
+let mut i = 0;
+let mut print_str = "";
+
+while i < linked_list.sz {
+    print_str = print_str + str(get(linked_list, i));
+
+    i = i + 1;
+}
+
+print(print_str);
