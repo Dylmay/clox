@@ -21,7 +21,7 @@
 
 #ifdef DEBUG_BENCH
 #include "ops/ops_name.h"
-void _vm_print_time(map_entry_t entry, struct map_for_each_entry *_)
+void vm_print_time(map_entry_t entry, struct map_for_each_entry *_)
 {
 	const char *name = entry.key;
 	const struct timespec *avg_time = entry.value;
@@ -32,38 +32,38 @@ void _vm_print_time(map_entry_t entry, struct map_for_each_entry *_)
 }
 #endif
 
-static enum vm_res __vm_run(vm_t *vm);
-static void __vm_push_const(vm_t *vm, lox_val_t val);
-static lox_val_t __vm_pop_const(vm_t *vm);
-static void __vm_proc_negate_in_place(vm_t *vm);
-static lox_val_t __vm_peek_const(vm_t *vm, size_t dist);
-static lox_val_t *__vm_peek_const_ptr(vm_t *vm, size_t dist);
-static void __vm_runtime_error(vm_t *vm, const char *fmt, ...);
-static void __vm_str_concat(vm_t *vm);
-static void __vm_define_global(vm_t *vm, lox_val_t *val, size_t idx);
-static lox_val_t *__vm_get_global(vm_t *vm, uint32_t glbl);
-static bool __vm_set_global(vm_t *vm, uint32_t glbl, lox_val_t *val);
-static void __vm_define_var(vm_t *vm, lox_val_t *val);
-static void __vm_define_prop(vm_t *vm, lox_val_t *val);
-static lox_val_t *__vm_get_var(vm_t *vm, uint32_t glbl);
-static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val);
-static void __vm_set_main(vm_t *vm, lox_fn_t *main);
-static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t arity);
-static bool __vm_call(vm_t *vm, lox_closure_t *closure);
+static enum vm_res vm_run(vm_t *vm);
+static void vm_push_const(vm_t *vm, lox_val_t val);
+static lox_val_t vm_pop_const(vm_t *vm);
+static void vm_proc_negate_in_place(vm_t *vm);
+static lox_val_t vm_peek_const(vm_t *vm, size_t dist);
+static lox_val_t *vm_peek_const_ptr(vm_t *vm, size_t dist);
+static void vm_runtime_error(vm_t *vm, const char *fmt, ...);
+static void vm_str_concat(vm_t *vm);
+static void vm_define_global(vm_t *vm, lox_val_t *val, size_t idx);
+static lox_val_t *vm_get_global(vm_t *vm, uint32_t glbl);
+static bool vm_set_global(vm_t *vm, uint32_t glbl, lox_val_t *val);
+static void vm_define_var(vm_t *vm, lox_val_t *val);
+static void vm_define_prop(vm_t *vm, lox_val_t *val);
+static lox_val_t *vm_get_var(vm_t *vm, uint32_t glbl);
+static bool vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val);
+static void vm_set_main(vm_t *vm, lox_fn_t *main);
+static bool vm_call_val(vm_t *vm, lox_val_t callee, uint8_t arity);
+static bool vm_call(vm_t *vm, lox_closure_t *closure);
 
-static void __vm_proc_const(vm_t *vm, vm_call_frame_t *frame, uint32_t idx);
-static inline void __frame_assert_inst_ptr_valid(const vm_call_frame_t *);
-static inline char __frame_read_byte(vm_call_frame_t *);
-static inline int __frame_instr_offset(const vm_call_frame_t *);
-static uint32_t __frame_proc_idx(vm_call_frame_t *);
-static uint32_t __frame_proc_idx_ext(vm_call_frame_t *);
-static int16_t __frame_proc_jump_offset(vm_call_frame_t *);
-static void __vm_discard(vm_t *vm, uint32_t discard_cnt);
-static lox_upval_t *__vm_capture_upval(vm_t *vm, size_t idx);
-static void __vm_close_upvalues(vm_t *vm, size_t frame_idx);
+static void vm_proc_const(vm_t *vm, vm_call_frame_t *frame, uint32_t idx);
+static inline void frame_assert_inst_ptr_valid(const vm_call_frame_t *);
+static inline char frame_read_byte(vm_call_frame_t *);
+static inline int frame_instr_offset(const vm_call_frame_t *);
+static uint32_t frame_proc_idx(vm_call_frame_t *);
+static uint32_t frame_proc_idx_ext(vm_call_frame_t *);
+static int16_t frame_proc_jump_offset(vm_call_frame_t *);
+static void vm_discard(vm_t *vm, uint32_t discard_cnt);
+static lox_upval_t *vm_capture_upval(vm_t *vm, size_t idx);
+static void vm_close_upvalues(vm_t *vm, size_t frame_idx);
 
-#define VM_PEEK_NUM(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.number)
-#define VM_PEEK_BOOL(vm, dist) (__vm_peek_const_ptr(vm, dist)->as.boolean)
+#define VM_PEEK_NUM(vm, dist) (vm_peek_const_ptr(vm, dist)->as.number)
+#define VM_PEEK_BOOL(vm, dist) (vm_peek_const_ptr(vm, dist)->as.boolean)
 
 struct var_printer {
 	struct map_for_each_entry for_each;
@@ -71,7 +71,7 @@ struct var_printer {
 	size_t depth;
 };
 
-static void __vm_reset(vm_t *vm)
+static void vm_reset(vm_t *vm)
 {
 	list_reset(&vm->stack);
 	list_reset(&vm->frames);
@@ -105,14 +105,14 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 		return INTERPRET_COMPILE_ERROR;
 	}
 
-	__vm_set_main(vm, fn);
+	vm_set_main(vm, fn);
 
 #ifdef DEBUG_BENCH
 	struct timespec timer;
 	timer_start(&timer);
 #endif
 
-	res = __vm_run(vm);
+	res = vm_run(vm);
 
 #ifdef DEBUG_BENCH
 	printf("Time taken to execute: ");
@@ -149,7 +149,7 @@ void vm_free(vm_t *vm)
 #endif
 }
 
-void _var_prnt(map_entry_t entry, struct map_for_each_entry *d)
+static void var_prnt(map_entry_t entry, struct map_for_each_entry *d)
 {
 	struct var_printer *data = (struct var_printer *)d;
 	string_t *name = (string_t *)entry.key;
@@ -183,9 +183,9 @@ void vm_print_vars(vm_t *vm)
 		}                                                              \
 	} while (false)
 
-	struct var_printer var_prnt = (struct var_printer){
+	struct var_printer printer = (struct var_printer){
 		.for_each = {
-			.func = &_var_prnt,
+			.func = &var_prnt,
 	},
 		.vm_vars = &vm->globals,
 		.depth = 1,
@@ -193,7 +193,7 @@ void vm_print_vars(vm_t *vm)
 
 	puts("Globals: {");
 	map_entries_for_each(&vm->state.globals.table,
-			     (struct map_for_each_entry *)&var_prnt);
+			     (struct map_for_each_entry *)&printer);
 	puts("}");
 #undef INDENT_BY
 }
@@ -208,18 +208,18 @@ void vm_print_stack(vm_t *vm)
 	puts("]");
 }
 
-static enum vm_res __vm_run(vm_t *vm)
+static enum vm_res vm_run(vm_t *vm)
 {
 #define BINARY_OP(vm, val_type, op)                                            \
 	do {                                                                   \
-		if (!VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 0))) ||           \
-		    !VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 1)))) {           \
-			__vm_runtime_error(vm, "Operand types must match");    \
+		if (!VAL_IS_NUMBER(*(vm_peek_const_ptr(vm, 0))) ||             \
+		    !VAL_IS_NUMBER(*(vm_peek_const_ptr(vm, 1)))) {             \
+			vm_runtime_error(vm, "Operand types must match");      \
 			return INTERPRET_RUNTIME_ERROR;                        \
 		}                                                              \
-		lox_num_t b = __vm_pop_const(vm).as.number;                    \
-		lox_num_t a = __vm_pop_const(vm).as.number;                    \
-		__vm_push_const(vm, val_type(a op b));                         \
+		lox_num_t b = vm_pop_const(vm).as.number;                      \
+		lox_num_t a = vm_pop_const(vm).as.number;                      \
+		vm_push_const(vm, val_type(a op b));                           \
 	} while (false)
 
 #define NUMERICAL_OP(vm, op) BINARY_OP(vm, VAL_CREATE_NUMBER, op)
@@ -233,31 +233,30 @@ static enum vm_res __vm_run(vm_t *vm)
 		printf("\t\t");
 		vm_print_stack(vm);
 		disassem_inst(&cur_frame->closure->fn->chunk,
-			      __frame_instr_offset(cur_frame));
+			      frame_instr_offset(cur_frame));
 #endif // DEBUG_TRACE_EXECUTION
 #ifdef DEBUG_BENCH
 		struct timespec timer;
 		timer_start(&timer);
 #endif
 
-		switch (instr = __frame_read_byte(cur_frame)) {
+		switch (instr = frame_read_byte(cur_frame)) {
 		case OP_NOP:
 			break;
 
 		case OP_CONSTANT:
-			__vm_proc_const(vm, cur_frame,
-					__frame_proc_idx(cur_frame));
+			vm_proc_const(vm, cur_frame, frame_proc_idx(cur_frame));
 			break;
 
 		case OP_CONSTANT_LONG:
-			__vm_proc_const(vm, cur_frame,
-					__frame_proc_idx_ext(cur_frame));
+			vm_proc_const(vm, cur_frame,
+				      frame_proc_idx_ext(cur_frame));
 			break;
 
 		case OP_CLOSURE: {
 			lox_val_t fn =
 				chunk_get_const(&cur_frame->closure->fn->chunk,
-						__frame_proc_idx(cur_frame));
+						frame_proc_idx(cur_frame));
 
 			assert(("closure object is not a function",
 				OBJECT_IS_FN(fn)));
@@ -265,21 +264,21 @@ static enum vm_res __vm_run(vm_t *vm)
 			lox_closure_t *closure =
 				object_closure_new(OBJECT_AS_FN(fn));
 
-			__vm_push_const(vm, VAL_CREATE_OBJ(closure));
+			vm_push_const(vm, VAL_CREATE_OBJ(closure));
 			for (size_t i = 0; i < closure->fn->upval_cnt; i++) {
 				lox_upval_t *upval;
-				op_code_t opcode = __frame_read_byte(cur_frame);
+				op_code_t opcode = frame_read_byte(cur_frame);
 				assert(("expected upval define indicator",
 					opcode == OP_UPVALUE_DEFINE ||
 						opcode ==
 							OP_UPVALUE_DEFINE_LONG));
 
-				uint32_t idx = __frame_proc_idx(
+				uint32_t idx = frame_proc_idx(
 					cur_frame); // TODO: add support for wide commands
-				bool is_local = __frame_read_byte(cur_frame);
+				bool is_local = frame_read_byte(cur_frame);
 
 				if (is_local) {
-					upval = __vm_capture_upval(
+					upval = vm_capture_upval(
 						vm, cur_frame->stack_snapshot +
 							    idx);
 				} else {
@@ -291,9 +290,9 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_CLOSURE_LONG: {
-			lox_val_t fn = chunk_get_const(
-				&cur_frame->closure->fn->chunk,
-				__frame_proc_idx_ext(cur_frame));
+			lox_val_t fn =
+				chunk_get_const(&cur_frame->closure->fn->chunk,
+						frame_proc_idx_ext(cur_frame));
 
 			assert(("closure object is not a function",
 				OBJECT_IS_FN(fn)));
@@ -301,51 +300,51 @@ static enum vm_res __vm_run(vm_t *vm)
 			lox_closure_t *closure =
 				object_closure_new(OBJECT_AS_FN(fn));
 
-			__vm_push_const(vm, VAL_CREATE_OBJ(closure));
+			vm_push_const(vm, VAL_CREATE_OBJ(closure));
 		} break;
 
 		case OP_CLOSE_UPVALUE:
-			__vm_close_upvalues(vm, list_size(&vm->stack) - 1);
-			__vm_pop_const(vm);
+			vm_close_upvalues(vm, list_size(&vm->stack) - 1);
+			vm_pop_const(vm);
 			break;
 
 		case OP_NIL:
-			__vm_push_const(vm, VAL_CREATE_NIL);
+			vm_push_const(vm, VAL_CREATE_NIL);
 			break;
 
 		case OP_TRUE:
-			__vm_push_const(vm, VAL_CREATE_BOOL(true));
+			vm_push_const(vm, VAL_CREATE_BOOL(true));
 			break;
 
 		case OP_FALSE:
-			__vm_push_const(vm, VAL_CREATE_BOOL(false));
+			vm_push_const(vm, VAL_CREATE_BOOL(false));
 			break;
 
 		case OP_ADD:
-			if (OBJECT_IS_STRING(__vm_peek_const(vm, 0)) &&
-			    OBJECT_IS_STRING(__vm_peek_const(vm, 1))) {
-				__vm_str_concat(vm);
-			} else if (VAL_IS_NUMBER(__vm_peek_const(vm, 0)) &&
-				   VAL_IS_NUMBER(__vm_peek_const(vm, 1))) {
+			if (OBJECT_IS_STRING(vm_peek_const(vm, 0)) &&
+			    OBJECT_IS_STRING(vm_peek_const(vm, 1))) {
+				vm_str_concat(vm);
+			} else if (VAL_IS_NUMBER(vm_peek_const(vm, 0)) &&
+				   VAL_IS_NUMBER(vm_peek_const(vm, 1))) {
 				NUMERICAL_OP(vm, +);
 			} else {
-				__vm_runtime_error(vm,
-						   "Operand types must match");
+				vm_runtime_error(vm,
+						 "Operand types must match");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 			break;
 
 		case OP_MOD: {
-			if (!VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 0))) ||
-			    !VAL_IS_NUMBER(*(__vm_peek_const_ptr(vm, 1)))) {
-				__vm_runtime_error(vm,
-						   "Operand types must match");
+			if (!VAL_IS_NUMBER(*(vm_peek_const_ptr(vm, 0))) ||
+			    !VAL_IS_NUMBER(*(vm_peek_const_ptr(vm, 1)))) {
+				vm_runtime_error(vm,
+						 "Operand types must match");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
-			lox_num_t b = __vm_pop_const(vm).as.number;
-			lox_num_t a = __vm_pop_const(vm).as.number;
-			__vm_push_const(vm, VAL_CREATE_NUMBER(fmod(a, b)));
+			lox_num_t b = vm_pop_const(vm).as.number;
+			lox_num_t a = vm_pop_const(vm).as.number;
+			vm_push_const(vm, VAL_CREATE_NUMBER(fmod(a, b)));
 		} break;
 
 		case OP_SUBTRACT:
@@ -369,201 +368,201 @@ static enum vm_res __vm_run(vm_t *vm)
 			break;
 
 		case OP_EQUAL: {
-			lox_val_t b = __vm_pop_const(vm);
-			lox_val_t a = __vm_pop_const(vm);
+			lox_val_t b = vm_pop_const(vm);
+			lox_val_t a = vm_pop_const(vm);
 
-			__vm_push_const(vm, VAL_CREATE_BOOL(val_equals(a, b)));
+			vm_push_const(vm, VAL_CREATE_BOOL(val_equals(a, b)));
 		} break;
 
 		case OP_POP:
-			__vm_pop_const(vm);
+			vm_pop_const(vm);
 			break;
 
 		case OP_POP_COUNT:
-			__vm_discard(vm, __frame_proc_idx(cur_frame));
+			vm_discard(vm, frame_proc_idx(cur_frame));
 			break;
 
 		case OP_NEGATE:
-			if (!VAL_IS_NUMBER(__vm_peek_const(vm, 0))) {
-				__vm_runtime_error(vm,
-						   "Operand must be a number");
+			if (!VAL_IS_NUMBER(vm_peek_const(vm, 0))) {
+				vm_runtime_error(vm,
+						 "Operand must be a number");
 				return INTERPRET_RUNTIME_ERROR;
 			}
-			__vm_proc_negate_in_place(vm);
+			vm_proc_negate_in_place(vm);
 			break;
 
 		case OP_NOT:
-			__vm_push_const(vm, VAL_CREATE_BOOL(val_is_falsey(
-						    __vm_pop_const(vm))));
+			vm_push_const(vm, VAL_CREATE_BOOL(val_is_falsey(
+						  vm_pop_const(vm))));
 			break;
 
 		case OP_UPVALUE_GET: {
-			uint32_t slot = __frame_proc_idx(cur_frame);
+			uint32_t slot = frame_proc_idx(cur_frame);
 			const lox_upval_t *upval = object_closure_get_upval(
 				cur_frame->closure, slot);
 
 			if (!upval) {
-				__vm_runtime_error(vm, "Unknown upvalue");
+				vm_runtime_error(vm, "Unknown upvalue");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
-			__vm_push_const(vm, *upval->location);
+			vm_push_const(vm, *upval->location);
 		} break;
 
 		case OP_UPVALUE_GET_LONG: {
-			uint32_t slot = __frame_proc_idx_ext(cur_frame);
+			uint32_t slot = frame_proc_idx_ext(cur_frame);
 			const lox_upval_t *upval = object_closure_get_upval(
 				cur_frame->closure, slot);
 
-			__vm_push_const(vm, *upval->location);
+			vm_push_const(vm, *upval->location);
 		} break;
 
 		case OP_UPVALUE_SET: {
-			uint32_t slot = __frame_proc_idx(cur_frame);
-			lox_val_t *new_val = __vm_peek_const_ptr(vm, 0);
+			uint32_t slot = frame_proc_idx(cur_frame);
+			lox_val_t *new_val = vm_peek_const_ptr(vm, 0);
 
 			object_closure_set_upval(cur_frame->closure, slot,
 						 new_val);
 		} break;
 
 		case OP_UPVALUE_SET_LONG: {
-			uint32_t slot = __frame_proc_idx_ext(cur_frame);
-			lox_val_t *new_val = __vm_peek_const_ptr(vm, 0);
+			uint32_t slot = frame_proc_idx_ext(cur_frame);
+			lox_val_t *new_val = vm_peek_const_ptr(vm, 0);
 
 			object_closure_set_upval(cur_frame->closure, slot,
 						 new_val);
 		} break;
 
 		case OP_GLOBAL_DEFINE: {
-			uint32_t idx = __frame_proc_idx(cur_frame);
-			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+			uint32_t idx = frame_proc_idx(cur_frame);
+			lox_val_t *val = vm_peek_const_ptr(vm, 0);
 
-			__vm_define_global(vm, val, idx);
-			__vm_pop_const(vm);
+			vm_define_global(vm, val, idx);
+			vm_pop_const(vm);
 		} break;
 
 		case OP_GLOBAL_DEFINE_LONG: {
-			uint32_t idx = __frame_proc_idx(cur_frame);
-			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+			uint32_t idx = frame_proc_idx(cur_frame);
+			lox_val_t *val = vm_peek_const_ptr(vm, 0);
 
-			__vm_define_global(vm, val, idx);
-			__vm_pop_const(vm);
+			vm_define_global(vm, val, idx);
+			vm_pop_const(vm);
 		} break;
 
 		case OP_GLOBAL_GET: {
-			uint32_t idx = __frame_proc_idx(cur_frame);
-			lox_val_t *val = __vm_get_global(vm, idx);
+			uint32_t idx = frame_proc_idx(cur_frame);
+			lox_val_t *val = vm_get_global(vm, idx);
 
 			if (!val) {
-				__vm_runtime_error(vm, "undefined global.");
+				vm_runtime_error(vm, "undefined global.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
-			__vm_push_const(vm, *val);
+			vm_push_const(vm, *val);
 		} break;
 
 		case OP_GLOBAL_GET_LONG: {
-			uint32_t idx = __frame_proc_idx_ext(cur_frame);
-			lox_val_t *val = __vm_get_global(vm, idx);
+			uint32_t idx = frame_proc_idx_ext(cur_frame);
+			lox_val_t *val = vm_get_global(vm, idx);
 
 			if (!val) {
-				__vm_runtime_error(vm, "undefined global.");
+				vm_runtime_error(vm, "undefined global.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
-			__vm_push_const(vm, *val);
+			vm_push_const(vm, *val);
 		} break;
 
 		case OP_GLOBAL_SET: {
-			uint32_t idx = __frame_proc_idx(cur_frame);
-			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+			uint32_t idx = frame_proc_idx(cur_frame);
+			lox_val_t *val = vm_peek_const_ptr(vm, 0);
 
-			if (!__vm_set_global(vm, idx, val)) {
-				__vm_runtime_error(vm, "Undefined global.");
+			if (!vm_set_global(vm, idx, val)) {
+				vm_runtime_error(vm, "Undefined global.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 		} break;
 
 		case OP_GLOBAL_SET_LONG: {
-			uint32_t idx = __frame_proc_idx_ext(cur_frame);
-			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+			uint32_t idx = frame_proc_idx_ext(cur_frame);
+			lox_val_t *val = vm_peek_const_ptr(vm, 0);
 
-			if (!__vm_set_global(vm, idx, val)) {
-				__vm_runtime_error(vm, "Undefined global.");
+			if (!vm_set_global(vm, idx, val)) {
+				vm_runtime_error(vm, "Undefined global.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 		} break;
 
 		case OP_VAR_DEFINE: {
-			__frame_proc_idx(cur_frame);
-			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+			frame_proc_idx(cur_frame);
+			lox_val_t *val = vm_peek_const_ptr(vm, 0);
 
-			__vm_define_var(vm, val);
-			__vm_pop_const(vm);
+			vm_define_var(vm, val);
+			vm_pop_const(vm);
 		} break;
 
 		case OP_VAR_DEFINE_LONG: {
-			__frame_proc_idx_ext(cur_frame);
-			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+			frame_proc_idx_ext(cur_frame);
+			lox_val_t *val = vm_peek_const_ptr(vm, 0);
 
-			__vm_define_var(vm, val);
-			__vm_pop_const(vm);
+			vm_define_var(vm, val);
+			vm_pop_const(vm);
 		} break;
 
 		case OP_VAR_GET: {
 			uint32_t idx = cur_frame->stack_snapshot +
-				       __frame_proc_idx(cur_frame);
-			lox_val_t *val = __vm_get_var(vm, idx);
+				       frame_proc_idx(cur_frame);
+			lox_val_t *val = vm_get_var(vm, idx);
 
 			if (!val) {
-				__vm_runtime_error(vm, "Undefined variable.");
+				vm_runtime_error(vm, "Undefined variable.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
-			__vm_push_const(vm, *val);
+			vm_push_const(vm, *val);
 		} break;
 
 		case OP_VAR_GET_LONG: {
 			uint32_t idx = cur_frame->stack_snapshot +
-				       __frame_proc_idx_ext(cur_frame);
-			lox_val_t *val = __vm_get_var(vm, idx);
+				       frame_proc_idx_ext(cur_frame);
+			lox_val_t *val = vm_get_var(vm, idx);
 
 			if (!val) {
-				__vm_runtime_error(vm, "Undefined variable.");
+				vm_runtime_error(vm, "Undefined variable.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
-			__vm_push_const(vm, *val);
+			vm_push_const(vm, *val);
 		} break;
 
 		case OP_VAR_SET: {
 			uint32_t idx = cur_frame->stack_snapshot +
-				       __frame_proc_idx(cur_frame);
-			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+				       frame_proc_idx(cur_frame);
+			lox_val_t *val = vm_peek_const_ptr(vm, 0);
 
-			if (!__vm_set_var(vm, idx, val)) {
-				__vm_runtime_error(vm, "Undefined variable.");
+			if (!vm_set_var(vm, idx, val)) {
+				vm_runtime_error(vm, "Undefined variable.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 		} break;
 
 		case OP_PROPERTY_DEFINE: {
-			__frame_proc_idx(cur_frame);
-			__vm_pop_const(vm);
+			frame_proc_idx(cur_frame);
+			vm_pop_const(vm);
 		} break;
 
 		case OP_PROPERTY_DEFINE_LONG: {
-			__frame_proc_idx_ext(cur_frame);
-			__vm_pop_const(vm);
+			frame_proc_idx_ext(cur_frame);
+			vm_pop_const(vm);
 		} break;
 
 		case OP_PROPERTY_GET: {
 			// TODO: refactor to share between props
 			lox_str_t *prop_name = OBJECT_AS_STRING(
 				chunk_get_const(&cur_frame->closure->fn->chunk,
-						__frame_proc_idx(cur_frame)));
+						frame_proc_idx(cur_frame)));
 
-			lox_val_t lox_val = __vm_pop_const(vm);
+			lox_val_t lox_val = vm_pop_const(vm);
 
 			if (!OBJECT_IS_INSTANCE(lox_val)) {
 				// TODO(dmayor): print a friendlier type
-				__vm_runtime_error(
+				vm_runtime_error(
 					vm,
 					"Object is not an instance, it's of type %s",
 					val_type_name(lox_val.type));
@@ -577,41 +576,41 @@ static enum vm_res __vm_run(vm_t *vm)
 				prop_name->chars, prop_name->len);
 
 			if (!lookup_var_is_valid(var)) {
-				__vm_runtime_error(vm, "Undefined property");
+				vm_runtime_error(vm, "Undefined property");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
 			lox_val_t *val = list_get(&instance->fields, var.idx);
-			__vm_push_const(vm, *val);
+			vm_push_const(vm, *val);
 		} break;
 
 		case OP_PROPERTY_GET_LONG: {
-			lox_str_t *prop_name = OBJECT_AS_STRING(chunk_get_const(
-				&cur_frame->closure->fn->chunk,
-				__frame_proc_idx_ext(cur_frame)));
+			lox_str_t *prop_name = OBJECT_AS_STRING(
+				chunk_get_const(&cur_frame->closure->fn->chunk,
+						frame_proc_idx_ext(cur_frame)));
 			lox_instance_t *instance =
-				OBJECT_AS_INSTANCE(__vm_pop_const(vm));
+				OBJECT_AS_INSTANCE(vm_pop_const(vm));
 
 			lookup_var_t var = lookup_find_name(
 				&instance->cls->field_lookup.table,
 				prop_name->chars, prop_name->len);
 
 			if (!lookup_var_is_valid(var)) {
-				__vm_runtime_error(vm, "Undefined property");
+				vm_runtime_error(vm, "Undefined property");
 			}
 
 			lox_val_t *val = list_get(&instance->fields, var.idx);
-			__vm_push_const(vm, *val);
+			vm_push_const(vm, *val);
 		} break;
 
 		case OP_PROPERTY_SET: {
 			// TODO: refactor to share between props
 			lox_str_t *prop_name = OBJECT_AS_STRING(
 				chunk_get_const(&cur_frame->closure->fn->chunk,
-						__frame_proc_idx(cur_frame)));
-			lox_val_t *new_val = __vm_peek_const_ptr(vm, 0);
+						frame_proc_idx(cur_frame)));
+			lox_val_t *new_val = vm_peek_const_ptr(vm, 0);
 			lox_instance_t *instance =
-				OBJECT_AS_INSTANCE(*__vm_peek_const_ptr(vm, 1));
+				OBJECT_AS_INSTANCE(*vm_peek_const_ptr(vm, 1));
 
 			// TODO: verify if sanity checks are needed
 			lookup_var_t var = lookup_find_name(
@@ -619,7 +618,7 @@ static enum vm_res __vm_run(vm_t *vm)
 				prop_name->chars, prop_name->len);
 
 			if (!lookup_var_is_valid(var)) {
-				__vm_runtime_error(vm, "Undefined property");
+				vm_runtime_error(vm, "Undefined property");
 			}
 
 			// shouldn't be empty
@@ -630,12 +629,12 @@ static enum vm_res __vm_run(vm_t *vm)
 		} break;
 
 		case OP_PROPERTY_SET_LONG: {
-			lox_str_t *prop_name = OBJECT_AS_STRING(chunk_get_const(
-				&cur_frame->closure->fn->chunk,
-				__frame_proc_idx_ext(cur_frame)));
-			lox_val_t *new_val = __vm_peek_const_ptr(vm, 0);
+			lox_str_t *prop_name = OBJECT_AS_STRING(
+				chunk_get_const(&cur_frame->closure->fn->chunk,
+						frame_proc_idx_ext(cur_frame)));
+			lox_val_t *new_val = vm_peek_const_ptr(vm, 0);
 			lox_instance_t *instance =
-				OBJECT_AS_INSTANCE(*__vm_peek_const_ptr(vm, 1));
+				OBJECT_AS_INSTANCE(*vm_peek_const_ptr(vm, 1));
 
 			// TODO: verify if sanity checks are needed
 			lookup_var_t var = lookup_find_name(
@@ -643,7 +642,7 @@ static enum vm_res __vm_run(vm_t *vm)
 				prop_name->chars, prop_name->len);
 
 			if (!lookup_var_is_valid(var)) {
-				__vm_runtime_error(vm, "Undefined property");
+				vm_runtime_error(vm, "Undefined property");
 			}
 
 			lox_val_t *val_ptr =
@@ -653,33 +652,33 @@ static enum vm_res __vm_run(vm_t *vm)
 
 		case OP_VAR_SET_LONG: {
 			uint32_t idx = cur_frame->stack_snapshot +
-				       __frame_proc_idx_ext(cur_frame);
-			lox_val_t *val = __vm_peek_const_ptr(vm, 0);
+				       frame_proc_idx_ext(cur_frame);
+			lox_val_t *val = vm_peek_const_ptr(vm, 0);
 
-			if (!__vm_set_var(vm, idx, val)) {
-				__vm_runtime_error(vm, "Undefined variable.");
+			if (!vm_set_var(vm, idx, val)) {
+				vm_runtime_error(vm, "Undefined variable.");
 				return INTERPRET_RUNTIME_ERROR;
 			}
 		} break;
 
 		case OP_JUMP: {
-			int16_t offset = __frame_proc_jump_offset(cur_frame);
+			int16_t offset = frame_proc_jump_offset(cur_frame);
 			cur_frame->ip += offset;
 		} break;
 
 		case OP_JUMP_IF_FALSE: {
-			int16_t offset = __frame_proc_jump_offset(cur_frame);
+			int16_t offset = frame_proc_jump_offset(cur_frame);
 
-			if (val_is_falsey(__vm_peek_const(vm, 0))) {
+			if (val_is_falsey(vm_peek_const(vm, 0))) {
 				cur_frame->ip += offset;
 			}
 		} break;
 
 		case OP_CALL: {
-			uint8_t arg_cnt = __frame_proc_idx(cur_frame);
+			uint8_t arg_cnt = frame_proc_idx(cur_frame);
 
-			if (!__vm_call_val(vm, __vm_peek_const(vm, arg_cnt),
-					   arg_cnt)) {
+			if (!vm_call_val(vm, vm_peek_const(vm, arg_cnt),
+					 arg_cnt)) {
 				return INTERPRET_RUNTIME_ERROR;
 			}
 
@@ -691,15 +690,15 @@ static enum vm_res __vm_run(vm_t *vm)
 			list_pop(&vm->frames);
 
 			if (!list_size(&vm->frames)) {
-				__vm_pop_const(vm);
+				vm_pop_const(vm);
 				return INTERPRET_OK;
 			}
 
-			lox_val_t retval = __vm_pop_const(vm);
-			__vm_close_upvalues(vm, cur_frame->stack_snapshot - 1);
+			lox_val_t retval = vm_pop_const(vm);
+			vm_close_upvalues(vm, cur_frame->stack_snapshot - 1);
 			list_set_cnt(&vm->stack, cur_frame->stack_snapshot - 1);
 
-			__vm_push_const(vm, retval);
+			vm_push_const(vm, retval);
 			cur_frame = list_peek(&vm->frames);
 		} break;
 
@@ -724,7 +723,7 @@ static enum vm_res __vm_run(vm_t *vm)
 #undef COMPARISON_OP
 }
 
-static void __vm_define_global(vm_t *vm, lox_val_t *val, size_t idx)
+static void vm_define_global(vm_t *vm, lox_val_t *val, size_t idx)
 {
 	if (idx >= list_size(&vm->globals)) {
 		list_set_cnt(&vm->globals, idx + 1);
@@ -733,7 +732,7 @@ static void __vm_define_global(vm_t *vm, lox_val_t *val, size_t idx)
 	*((lox_val_t *)list_get(&vm->globals, idx)) = *val;
 }
 
-static lox_val_t *__vm_get_global(vm_t *vm, uint32_t glbl)
+static lox_val_t *vm_get_global(vm_t *vm, uint32_t glbl)
 {
 	if (glbl >= vm->globals.cnt) {
 		return NULL;
@@ -742,7 +741,7 @@ static lox_val_t *__vm_get_global(vm_t *vm, uint32_t glbl)
 	return (lox_val_t *)list_get(&vm->globals, glbl);
 }
 
-static bool __vm_set_global(vm_t *vm, uint32_t glbl, lox_val_t *val)
+static bool vm_set_global(vm_t *vm, uint32_t glbl, lox_val_t *val)
 {
 	if (glbl >= vm->globals.cnt) {
 		return false;
@@ -752,17 +751,17 @@ static bool __vm_set_global(vm_t *vm, uint32_t glbl, lox_val_t *val)
 	memcpy(val_ptr, val, sizeof(lox_val_t));
 	return true;
 }
-static void __vm_define_var(vm_t *vm, lox_val_t *val)
+static void vm_define_var(vm_t *vm, lox_val_t *val)
 {
 	list_push(&vm->stack, val);
 }
 
-static void __vm_define_prop(vm_t *vm, lox_val_t *val)
+static void vm_define_prop(vm_t *vm, lox_val_t *val)
 {
 	// TODO: check for statics
 }
 
-static lox_val_t *__vm_get_var(vm_t *vm, uint32_t glbl)
+static lox_val_t *vm_get_var(vm_t *vm, uint32_t glbl)
 {
 	if (glbl >= vm->stack.cnt) {
 		return NULL;
@@ -771,7 +770,7 @@ static lox_val_t *__vm_get_var(vm_t *vm, uint32_t glbl)
 	return (lox_val_t *)list_get(&vm->stack, glbl);
 }
 
-static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val)
+static bool vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val)
 {
 	if (glbl >= vm->stack.cnt) {
 		return false;
@@ -782,7 +781,7 @@ static bool __vm_set_var(vm_t *vm, uint32_t glbl, lox_val_t *val)
 	return true;
 }
 
-static void __vm_set_main(vm_t *vm, lox_fn_t *main)
+static void vm_set_main(vm_t *vm, lox_fn_t *main)
 {
 	lox_val_t main_obj = VAL_CREATE_OBJ(main);
 	lox_closure_t *main_closure = object_closure_new(main);
@@ -802,24 +801,24 @@ static void __vm_set_main(vm_t *vm, lox_fn_t *main)
 	list_push(&vm->frames, &main_frame);
 }
 
-static uint32_t __frame_proc_idx(vm_call_frame_t *frame)
+static uint32_t frame_proc_idx(vm_call_frame_t *frame)
 {
-	__frame_assert_inst_ptr_valid(frame);
-	return __frame_read_byte(frame);
+	frame_assert_inst_ptr_valid(frame);
+	return frame_read_byte(frame);
 }
 
-static uint32_t __frame_proc_idx_ext(vm_call_frame_t *frame)
+static uint32_t frame_proc_idx_ext(vm_call_frame_t *frame)
 {
-	__frame_assert_inst_ptr_valid(frame);
+	frame_assert_inst_ptr_valid(frame);
 	uint32_t idx = *((uint32_t *)frame->ip) & EXT_CODE_MASK;
 	frame->ip += EXT_CODE_SZ;
 
 	return idx;
 }
 
-static int16_t __frame_proc_jump_offset(vm_call_frame_t *frame)
+static int16_t frame_proc_jump_offset(vm_call_frame_t *frame)
 {
-	__frame_assert_inst_ptr_valid(frame);
+	frame_assert_inst_ptr_valid(frame);
 	int16_t idx = *((int16_t *)frame->ip);
 
 	frame->ip += 2;
@@ -827,42 +826,42 @@ static int16_t __frame_proc_jump_offset(vm_call_frame_t *frame)
 	return idx;
 }
 
-static void __vm_proc_const(vm_t *vm, vm_call_frame_t *frame, uint32_t idx)
+static void vm_proc_const(vm_t *vm, vm_call_frame_t *frame, uint32_t idx)
 {
-	__frame_assert_inst_ptr_valid(frame);
-	__vm_push_const(vm, chunk_get_const(&frame->closure->fn->chunk, idx));
+	frame_assert_inst_ptr_valid(frame);
+	vm_push_const(vm, chunk_get_const(&frame->closure->fn->chunk, idx));
 }
 
-static void __vm_proc_negate_in_place(vm_t *vm)
+static void vm_proc_negate_in_place(vm_t *vm)
 {
 	assert(("value stack can not be empty", vm->stack.cap));
 
 	VM_PEEK_NUM(vm, 0) = -VM_PEEK_NUM(vm, 0);
 }
 
-static lox_val_t __vm_peek_const(vm_t *vm, size_t dist)
+static lox_val_t vm_peek_const(vm_t *vm, size_t dist)
 {
-	return *(__vm_peek_const_ptr(vm, dist));
+	return *(vm_peek_const_ptr(vm, dist));
 }
 
-static lox_val_t *__vm_peek_const_ptr(vm_t *vm, size_t dist)
+static lox_val_t *vm_peek_const_ptr(vm_t *vm, size_t dist)
 {
 	return (lox_val_t *)(list_peek_offset(&vm->stack, dist));
 }
 
-static lox_val_t __vm_pop_const(vm_t *vm)
+static lox_val_t vm_pop_const(vm_t *vm)
 {
 	assert(("Stack cannot be empty on pop", vm->stack.cnt));
 
 	return *((lox_val_t *)list_pop(&vm->stack));
 }
 
-static void __vm_push_const(vm_t *vm, lox_val_t val)
+static void vm_push_const(vm_t *vm, lox_val_t val)
 {
 	list_push(&vm->stack, &val);
 }
 
-static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
+static void vm_runtime_error(vm_t *vm, const char *fmt, ...)
 {
 	va_list args;
 	va_start(args, fmt);
@@ -876,7 +875,7 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 		vm_call_frame_t *cur_frame = list_get(&vm->frames, i);
 		lox_closure_t *closure = cur_frame->closure;
 
-		size_t offset = ((size_t)__frame_instr_offset(cur_frame)) - 1;
+		size_t offset = ((size_t)frame_instr_offset(cur_frame)) - 1;
 		int line = chunk_get_line(&closure->fn->chunk, offset);
 
 		fprintf(stderr, "[line %d] in %s()\n", line,
@@ -884,10 +883,10 @@ static void __vm_runtime_error(vm_t *vm, const char *fmt, ...)
 					    "script");
 	}
 
-	__vm_reset(vm);
+	vm_reset(vm);
 }
 
-static inline void __frame_assert_inst_ptr_valid(const vm_call_frame_t *frame)
+static inline void frame_assert_inst_ptr_valid(const vm_call_frame_t *frame)
 {
 	assert(("Instruction pointer has passed code end",
 		frame->ip < frame->closure->fn->chunk.code.data +
@@ -895,31 +894,31 @@ static inline void __frame_assert_inst_ptr_valid(const vm_call_frame_t *frame)
 				     frame->closure->fn->chunk.code.type_sz)));
 }
 
-static inline char __frame_read_byte(vm_call_frame_t *frame)
+static inline char frame_read_byte(vm_call_frame_t *frame)
 {
 	return *frame->ip++;
 }
 
-static inline int __frame_instr_offset(const vm_call_frame_t *frame)
+static inline int frame_instr_offset(const vm_call_frame_t *frame)
 {
 	return (int)(frame->ip - frame->closure->fn->chunk.code.data);
 }
 
-static void __vm_str_concat(vm_t *vm)
+static void vm_str_concat(vm_t *vm)
 {
-	const lox_str_t *b_str = OBJECT_AS_STRING(__vm_pop_const(vm));
-	const lox_str_t *a_str = OBJECT_AS_STRING(__vm_pop_const(vm));
+	const lox_str_t *b_str = OBJECT_AS_STRING(vm_pop_const(vm));
+	const lox_str_t *a_str = OBJECT_AS_STRING(vm_pop_const(vm));
 	lox_str_t *concat_str = object_str_concat(a_str, b_str);
 
-	__vm_push_const(vm, VAL_CREATE_OBJ(concat_str));
+	vm_push_const(vm, VAL_CREATE_OBJ(concat_str));
 }
 
-static void __vm_discard(vm_t *vm, uint32_t discard_cnt)
+static void vm_discard(vm_t *vm, uint32_t discard_cnt)
 {
 	list_pop_bulk(&vm->stack, discard_cnt);
 }
 
-static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
+static bool vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 {
 	if (VAL_IS_OBJ(callee)) {
 		switch (OBJECT_TYPE(callee)) {
@@ -927,7 +926,7 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 			lox_closure_t *closure = OBJECT_AS_CLOSURE(callee);
 
 			if (closure->fn->arity != call_arity) {
-				__vm_runtime_error(
+				vm_runtime_error(
 					vm,
 					"Too %s arguments to function call, expected %d, have %d",
 					closure->fn->arity > call_arity ?
@@ -938,22 +937,22 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 			}
 
 			if (list_size(&vm->frames) == CALL_FRAMES_MAX) {
-				__vm_runtime_error(
+				vm_runtime_error(
 					vm,
 					"Stack overflow. Recursion depth of %d was reached",
 					CALL_FRAMES_MAX);
 				return false;
 			}
 
-			return __vm_call(vm, closure);
+			return vm_call(vm, closure);
 		}
 
 		case OBJ_CLASS: {
 			lox_class_t *cls = OBJECT_AS_CLASS(callee);
 
-			__vm_pop_const(vm);
-			__vm_push_const(
-				vm, VAL_CREATE_OBJ(object_instance_new(cls)));
+			vm_pop_const(vm);
+			vm_push_const(vm,
+				      VAL_CREATE_OBJ(object_instance_new(cls)));
 
 			return true;
 		}
@@ -969,12 +968,12 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 
 			if (VAL_IS_ERR(res)) {
 				lox_val_t str = val_to_string(res);
-				__vm_runtime_error(vm, OBJECT_AS_CSTRING(str));
+				vm_runtime_error(vm, OBJECT_AS_CSTRING(str));
 				return false;
 			}
 
-			__vm_discard(vm, call_arity + 1);
-			__vm_push_const(vm, res);
+			vm_discard(vm, call_arity + 1);
+			vm_push_const(vm, res);
 
 			return true;
 		}
@@ -984,12 +983,12 @@ static bool __vm_call_val(vm_t *vm, lox_val_t callee, uint8_t call_arity)
 			break;
 		}
 	}
-	__vm_runtime_error(vm, "Can only call functions and classes");
+	vm_runtime_error(vm, "Can only call functions and classes");
 
 	return false;
 }
 
-static bool __vm_call(vm_t *vm, lox_closure_t *closure)
+static bool vm_call(vm_t *vm, lox_closure_t *closure)
 {
 	vm_call_frame_t frame = {
 		.closure = closure,
@@ -1001,7 +1000,7 @@ static bool __vm_call(vm_t *vm, lox_closure_t *closure)
 	return true;
 }
 
-static lox_upval_t *__vm_capture_upval(vm_t *vm, size_t idx)
+static lox_upval_t *vm_capture_upval(vm_t *vm, size_t idx)
 {
 	list_t *stack = &vm->stack;
 	lox_val_t *slot = list_get(stack, idx);
@@ -1025,7 +1024,7 @@ static lox_upval_t *__vm_capture_upval(vm_t *vm, size_t idx)
 	return new_upval;
 }
 
-static void __vm_close_upvalues(vm_t *vm, size_t frame_idx)
+static void vm_close_upvalues(vm_t *vm, size_t frame_idx)
 {
 	lox_val_t *last = list_get(&vm->stack, frame_idx);
 

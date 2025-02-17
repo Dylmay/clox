@@ -9,9 +9,9 @@ struct line_encode {
 	uint32_t count;
 };
 
-static struct line_encode __chunk_get_line_encode(chunk_t *chunk, size_t idx);
-static struct line_encode __line_encode_diff(uint32_t begin_pos,
-					     uint32_t end_pos);
+static struct line_encode chunk_get_line_encode(chunk_t *chunk, size_t idx);
+static struct line_encode line_encode_diff(uint32_t begin_pos,
+					   uint32_t end_pos);
 
 chunk_t chunk_new()
 {
@@ -49,7 +49,7 @@ size_t chunk_write_code(chunk_t *chunk, code_t code, uint32_t line)
 
 	if (chunk->prev_line != line) {
 		struct line_encode encoding =
-			__line_encode_diff(chunk->prev_line, line);
+			line_encode_diff(chunk->prev_line, line);
 
 		list_push(&chunk->lines, &encoding);
 
@@ -96,7 +96,7 @@ size_t chunk_get_line(chunk_t *chunk, size_t offset)
 		assert(("Offset is not valid", cur_idx < chunk->lines.cnt));
 
 		struct line_encode encoding =
-			__chunk_get_line_encode(chunk, cur_idx);
+			chunk_get_line_encode(chunk, cur_idx);
 
 		line_cnt += encoding.offset;
 		counted_code += encoding.count;
@@ -119,13 +119,12 @@ void chunk_free(chunk_t *chunk)
 	list_free(&chunk->consts);
 	chunk->prev_line = 0;
 }
-static struct line_encode __chunk_get_line_encode(chunk_t *chunk, size_t idx)
+static struct line_encode chunk_get_line_encode(chunk_t *chunk, size_t idx)
 {
 	return *((struct line_encode *)list_get(&chunk->lines, idx));
 }
 
-static struct line_encode __line_encode_diff(uint32_t begin_pos,
-					     uint32_t end_pos)
+static struct line_encode line_encode_diff(uint32_t begin_pos, uint32_t end_pos)
 {
 	assert(("end_pos must be greater than begin_pos", end_pos > begin_pos));
 

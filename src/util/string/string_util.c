@@ -6,7 +6,7 @@
 
 #define SIZEOF_STRING(len) (sizeof(string_t) + (sizeof(char) * (len)))
 
-static size_t __c_str_count_len(const char *c_str, size_t max_len)
+static size_t c_str_count_len(const char *c_str, size_t max_len)
 {
 	if (!c_str) {
 		return 0;
@@ -24,7 +24,7 @@ static size_t __c_str_count_len(const char *c_str, size_t max_len)
 string_t *string_new(const char *c_str, size_t len)
 {
 	assert(("string cannot have a null c_string", c_str));
-	size_t max_len = __c_str_count_len(c_str, len);
+	size_t max_len = c_str_count_len(c_str, len);
 
 	string_t *str_ptr = malloc(SIZEOF_STRING(max_len) + sizeof(char));
 
@@ -87,7 +87,7 @@ string_t *string_c_append(string_t *str, const char *chars, size_t c_len)
 		return string_new(chars, c_len);
 	}
 
-	size_t c_max_len = __c_str_count_len(chars, c_len);
+	size_t c_max_len = c_str_count_len(chars, c_len);
 	size_t len = str->len + c_max_len;
 	string_t *str_ptr = malloc(SIZEOF_STRING(len) + sizeof(char));
 	str_ptr->len = len;

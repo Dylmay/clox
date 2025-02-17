@@ -350,7 +350,7 @@ void map_test_find_by_key()
 	free(vals);
 }
 
-struct timespec __map_bench_insert()
+struct timespec map_bench_insert()
 {
 	struct timespec timer;
 
@@ -366,7 +366,7 @@ struct timespec __map_bench_insert()
 	return timer;
 }
 
-struct timespec __map_bench_insert_rand()
+struct timespec map_bench_insert_rand()
 {
 	struct timespec timer;
 
@@ -383,7 +383,7 @@ struct timespec __map_bench_insert_rand()
 	return timer;
 }
 
-struct timespec __map_bench_insert_clash()
+struct timespec map_bench_insert_clash()
 {
 	struct timespec timer;
 
@@ -405,18 +405,18 @@ struct timespec __map_bench_insert_clash()
 
 void map_bench_insert()
 {
-	struct timespec avg_time_i = __map_bench_insert();
-	struct timespec avg_time_ir = __map_bench_insert_rand();
-	struct timespec avg_time_ic = __map_bench_insert_clash();
+	struct timespec avg_time_i = map_bench_insert();
+	struct timespec avg_time_ir = map_bench_insert_rand();
+	struct timespec avg_time_ic = map_bench_insert_clash();
 
 	for (size_t iter = 1; iter < BENCHMARK_ITERATIONS; iter++) {
-		struct timespec time_taken = __map_bench_insert();
+		struct timespec time_taken = map_bench_insert();
 		avg_time_i = timespec_avg(avg_time_i, time_taken);
 
-		time_taken = __map_bench_insert_rand();
+		time_taken = map_bench_insert_rand();
 		avg_time_ir = timespec_avg(avg_time_ir, time_taken);
 
-		time_taken = __map_bench_insert_clash();
+		time_taken = map_bench_insert_clash();
 		avg_time_ic = timespec_avg(avg_time_ic, time_taken);
 	}
 
@@ -431,7 +431,7 @@ void map_bench_insert()
 	puts("");
 }
 
-struct timespec __map_bench_remove()
+struct timespec map_bench_remove()
 {
 	struct timespec timer;
 
@@ -447,7 +447,7 @@ struct timespec __map_bench_remove()
 	return timer;
 }
 
-struct timespec __map_bench_remove_rand()
+struct timespec map_bench_remove_rand()
 {
 	struct timespec timer;
 
@@ -466,7 +466,7 @@ struct timespec __map_bench_remove_rand()
 	return timer;
 }
 
-struct timespec __map_bench_remove_clash()
+struct timespec map_bench_remove_clash()
 {
 	struct timespec timer;
 
@@ -489,14 +489,14 @@ struct timespec __map_bench_remove_clash()
 
 void map_bench_remove()
 {
-	struct timespec avg_time_r = __map_bench_remove();
-	struct timespec avg_time_rc = __map_bench_remove_clash();
+	struct timespec avg_time_r = map_bench_remove();
+	struct timespec avg_time_rc = map_bench_remove_clash();
 
 	for (size_t iter = 1; iter < BENCHMARK_ITERATIONS; iter++) {
-		struct timespec time_taken = __map_bench_remove();
+		struct timespec time_taken = map_bench_remove();
 		avg_time_r = timespec_avg(avg_time_r, time_taken);
 
-		time_taken = __map_bench_remove_clash();
+		time_taken = map_bench_remove_clash();
 		avg_time_rc = timespec_avg(avg_time_rc, time_taken);
 	}
 
@@ -508,7 +508,7 @@ void map_bench_remove()
 	puts("");
 }
 
-struct timespec __map_bench_traffic()
+struct timespec map_bench_traffic()
 {
 	struct timespec timer;
 
@@ -545,10 +545,10 @@ struct timespec __map_bench_traffic()
 
 void map_bench_traffic()
 {
-	struct timespec avg_time = __map_bench_traffic();
+	struct timespec avg_time = map_bench_traffic();
 
 	for (size_t iter = 0; iter < BENCHMARK_ITERATIONS; iter++) {
-		struct timespec time_taken = __map_bench_traffic();
+		struct timespec time_taken = map_bench_traffic();
 		avg_time = timespec_avg(avg_time, time_taken);
 	}
 
@@ -557,7 +557,7 @@ void map_bench_traffic()
 	puts("");
 }
 
-struct timespec __map_bench_get()
+struct timespec map_bench_get()
 {
 	struct timespec timer;
 
@@ -582,10 +582,10 @@ struct timespec __map_bench_get()
 
 void map_bench_get()
 {
-	struct timespec avg_time = __map_bench_traffic();
+	struct timespec avg_time = map_bench_traffic();
 
 	for (size_t iter = 0; iter < BENCHMARK_ITERATIONS; iter++) {
-		struct timespec time_taken = __map_bench_get();
+		struct timespec time_taken = map_bench_get();
 		avg_time = timespec_avg(avg_time, time_taken);
 	}
 
@@ -594,7 +594,7 @@ void map_bench_get()
 	puts("");
 }
 
-struct timespec __map_test_find()
+struct timespec map_test_find()
 {
 	struct timespec timer;
 
@@ -627,10 +627,10 @@ struct timespec __map_test_find()
 
 void map_bench_find_by_key()
 {
-	struct timespec avg_time = __map_test_find();
+	struct timespec avg_time = map_test_find();
 
 	for (size_t i = 1; i < BENCHMARK_ITERATIONS; i++) {
-		struct timespec time_taken = __map_test_find();
+		struct timespec time_taken = map_test_find();
 
 		avg_time = timespec_avg(avg_time, time_taken);
 	}

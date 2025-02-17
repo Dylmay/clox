@@ -61,8 +61,8 @@ struct timespec timespec_avg(struct timespec a, struct timespec b);
  * @brief prints the time to stdout
  *
  * @param time the time to print
- * @param formatTime whether to format the time as ss,sss,sss(s) nn,nnn,nnn(ns)
+ * @param should_fmt_time whether to format the time as ss,sss,sss(s) nn,nnn,nnn(ns)
  */
-void timespec_print(struct timespec time, bool formatTime);
+void timespec_print(struct timespec time, bool should_fmt_time);
 
 #endif // __CLOX_DEBUG_TIMER_H__

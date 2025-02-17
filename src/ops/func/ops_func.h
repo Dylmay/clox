@@ -13,9 +13,9 @@
 #include "chunk/chunk.h"
 #include "chunk/func/chunk_func.h"
 
-static inline void __extended_op(chunk_t *chunk, op_code_t short_op,
-				 op_code_t long_op, uint32_t offset,
-				 uint32_t line)
+static inline void extended_op(chunk_t *chunk, op_code_t short_op,
+			       op_code_t long_op, uint32_t offset,
+			       uint32_t line)
 {
 	if (offset <= UINT8_MAX) {
 		chunk_write_code(chunk, (code_t)short_op, line);
@@ -28,8 +28,8 @@ static inline void __extended_op(chunk_t *chunk, op_code_t short_op,
 	}
 }
 
-static inline long __jump_instr_write(chunk_t *chunk, code_t jump_code,
-				      uint32_t line)
+static inline long jump_instr_write(chunk_t *chunk, code_t jump_code,
+				    uint32_t line)
 {
 	chunk_write_code(chunk, jump_code, line);
 	chunk_reserve_code(chunk, 2);
@@ -55,16 +55,16 @@ static inline void OP_CONST_WRITE(lox_fn_t *fn, lox_val_t const_val,
 {
 	uint32_t const_offset =
 		(uint32_t)chunk_write_const(&fn->chunk, const_val);
-	__extended_op(&fn->chunk, OP_CONSTANT, OP_CONSTANT_LONG, const_offset,
-		      line);
+	extended_op(&fn->chunk, OP_CONSTANT, OP_CONSTANT_LONG, const_offset,
+		    line);
 }
 
 static inline void OP_CLOSURE_WRITE(lox_fn_t *fn, lox_val_t const_val,
 				    uint32_t line)
 {
 	uint32_t const_offset = chunk_write_const(&fn->chunk, const_val);
-	__extended_op(&fn->chunk, OP_CLOSURE, OP_CLOSURE_LONG, const_offset,
-		      line);
+	extended_op(&fn->chunk, OP_CLOSURE, OP_CLOSURE_LONG, const_offset,
+		    line);
 }
 
 static inline void OP_CALL_WRITE(lox_fn_t *fn, uint8_t arg_cnt, uint32_t line)
@@ -97,16 +97,16 @@ static inline void OP_PROPERTY_GET_WRITE(lox_fn_t *fn, lox_val_t prop_name,
 					 uint32_t line)
 {
 	size_t const_offset = chunk_write_const(&fn->chunk, prop_name);
-	__extended_op(&fn->chunk, OP_PROPERTY_GET, OP_PROPERTY_GET_LONG,
-		      const_offset, line);
+	extended_op(&fn->chunk, OP_PROPERTY_GET, OP_PROPERTY_GET_LONG,
+		    const_offset, line);
 }
 
 static inline void OP_PROPERTY_SET_WRITE(lox_fn_t *fn, lox_val_t prop_name,
 					 uint32_t line)
 {
 	size_t const_offset = chunk_write_const(&fn->chunk, prop_name);
-	__extended_op(&fn->chunk, OP_PROPERTY_SET, OP_PROPERTY_SET_LONG,
-		      const_offset, line);
+	extended_op(&fn->chunk, OP_PROPERTY_SET, OP_PROPERTY_SET_LONG,
+		    const_offset, line);
 }
 
 #define FUNC_NAME_OF(op) op##_WRITE
@@ -119,14 +119,14 @@ static inline void OP_PROPERTY_SET_WRITE(lox_fn_t *fn, lox_val_t prop_name,
 #define CREATE_JUMP_FUNC(instr)                                                \
 	static inline size_t instr##_WRITE(lox_fn_t *fn, uint32_t line)        \
 	{                                                                      \
-		return __jump_instr_write(&fn->chunk, instr, line);            \
+		return jump_instr_write(&fn->chunk, instr, line);              \
 	}
 
 #define CREATE_EXTENDED_WRITE_FUNC(short_op, long_op)                          \
 	static inline void short_op##_WRITE(lox_fn_t *fn, uint32_t glbl_idx,   \
 					    uint32_t line)                     \
 	{                                                                      \
-		__extended_op(&fn->chunk, short_op, long_op, glbl_idx, line);  \
+		extended_op(&fn->chunk, short_op, long_op, glbl_idx, line);    \
 	}
 
 CREATE_JUMP_FUNC(OP_JUMP)
@@ -162,8 +162,8 @@ CREATE_EXTENDED_WRITE_FUNC(OP_UPVALUE_SET, OP_UPVALUE_SET_LONG)
 static inline void OP_UPVALUE_DEFINE_WRITE(lox_fn_t *fn, uint32_t idx,
 					   uint8_t flags, uint32_t line)
 {
-	__extended_op(&fn->chunk, OP_UPVALUE_DEFINE, OP_UPVALUE_DEFINE_LONG,
-		      idx, line);
+	extended_op(&fn->chunk, OP_UPVALUE_DEFINE, OP_UPVALUE_DEFINE_LONG, idx,
+		    line);
 	chunk_write_code(&fn->chunk, (code_t)flags, line);
 }
 

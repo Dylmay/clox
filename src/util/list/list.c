@@ -3,14 +3,14 @@
 #include <assert.h>
 
 #define GROW_LIST(data_sz, pointer, old_cnt, new_cnt)                          \
-	(reallocate(pointer, (data_sz)*old_cnt, (data_sz)*new_cnt))
+	(reallocate(pointer, (data_sz) * old_cnt, (data_sz) * new_cnt))
 
 #define FREE_LIST(data_sz, pointer, old_cnt)                                   \
-	(reallocate(pointer, (data_sz)*old_cnt, 0))
+	(reallocate(pointer, (data_sz) * old_cnt, 0))
 
-static void __list_init(list_t *);
-static void __list_inc_head(list_t *lst, size_t cnt);
-static void __list_dec_head(list_t *lst, size_t cnt);
+static void list_init(list_t *);
+static void list_inc_head(list_t *lst, size_t cnt);
+static void list_dec_head(list_t *lst, size_t cnt);
 
 size_t list_push_bulk(list_t *lst, const void *restrict val, size_t cnt)
 {
@@ -27,14 +27,14 @@ size_t list_push_bulk(list_t *lst, const void *restrict val, size_t cnt)
 		memset(lst->head, 0, lst->type_sz * cnt);
 	}
 
-	__list_inc_head(lst, cnt);
+	list_inc_head(lst, cnt);
 
 	return idx;
 }
 
 void *list_pop_bulk(list_t *lst, size_t cnt)
 {
-	__list_dec_head(lst, cnt);
+	list_dec_head(lst, cnt);
 
 	return lst->head;
 }
@@ -59,7 +59,7 @@ void list_reset(list_t *lst)
 void list_free(list_t *lst)
 {
 	FREE_LIST(lst->type_sz, lst->data, lst->cap);
-	__list_init(lst);
+	list_init(lst);
 }
 
 void *list_get(list_t *lst, size_t idx)
@@ -95,7 +95,7 @@ void list_for_each(list_t *lst, for_each_fn func)
 	}
 }
 
-static void __list_init(list_t *lst)
+static void list_init(list_t *lst)
 {
 	lst->cap = 0;
 	lst->cnt = 0;
@@ -103,7 +103,7 @@ static void __list_init(list_t *lst)
 	lst->head = NULL;
 }
 
-static void __list_inc_head(list_t *lst, size_t cnt)
+static void list_inc_head(list_t *lst, size_t cnt)
 {
 	assert(("head will be outside of list alloc",
 		lst->cnt + cnt <= lst->cap));
@@ -112,7 +112,7 @@ static void __list_inc_head(list_t *lst, size_t cnt)
 	lst->head += lst->type_sz * cnt;
 }
 
-static void __list_dec_head(list_t *lst, size_t cnt)
+static void list_dec_head(list_t *lst, size_t cnt)
 {
 	assert(("adjustment will cause overflow error", cnt <= lst->cnt));
 

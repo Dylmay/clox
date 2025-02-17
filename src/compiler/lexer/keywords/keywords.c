@@ -2,15 +2,15 @@
 
 #include <string.h>
 
-static enum tkn_type __keyword_check(const char *start, size_t start_len,
-				     const char *match, size_t match_len,
-				     enum tkn_type tkn);
+static enum tkn_type keyword_check(const char *start, size_t start_len,
+				   const char *match, size_t match_len,
+				   enum tkn_type tkn);
 
 enum tkn_type keyword_traverse(const char *identifier, size_t id_len)
 {
 #define MATCH(id, offset, match, tkn)                                          \
-	(__keyword_check(id + offset, id_len - offset, match,                  \
-			 sizeof(match) - 1, tkn))
+	(keyword_check(id + offset, id_len - offset, match, sizeof(match) - 1, \
+		       tkn))
 
 	switch (*identifier) {
 	case 'a':
@@ -104,9 +104,9 @@ enum tkn_type keyword_traverse(const char *identifier, size_t id_len)
 #undef MATCH
 }
 
-static enum tkn_type __keyword_check(const char *start, size_t start_len,
-				     const char *match, size_t len,
-				     enum tkn_type tkn)
+static enum tkn_type keyword_check(const char *start, size_t start_len,
+				   const char *match, size_t len,
+				   enum tkn_type tkn)
 {
 	if (start_len == len && memcmp(start, match, len) == 0) {
 		return tkn;

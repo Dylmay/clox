@@ -41,119 +41,117 @@ struct compiler {
 	enum define_state define_state;
 };
 
-typedef void (*parse_fn)(struct compiler *);
+typedef void (*parsing_fn)(struct compiler *);
 
 struct parse_rule {
-	parse_fn prefix;
-	parse_fn infix;
+	parsing_fn prefix;
+	parsing_fn infix;
 	enum precedence prec;
 };
 
 /* Forwards */
-static lox_fn_t *__compiler_run(struct compiler *, bool);
-static const struct parse_rule *__compiler_get_rule(enum tkn_type);
-static void __compiler_begin_scope(struct compiler *);
-static void __compiler_end_scope(struct compiler *);
-static lookup_var_t __compiler_define_var(struct compiler *, const char *,
-					  size_t, uint32_t, bool);
-static void __compiler_set_var(struct compiler *, lookup_var_t);
-static void __compiler_get_var(struct compiler *, lookup_var_t);
-static void __parse_block(struct compiler *);
-static void __parse_expr(struct compiler *);
-static void __parse_precedence(struct compiler *, enum precedence);
-static void __parse_unary(struct compiler *);
-static void __parse_binary(struct compiler *);
-static void __parse_grouping(struct compiler *);
-static double __parse_number(struct compiler *);
-static void __parse_lit(struct compiler *);
-static void __parse_string(struct compiler *);
-static void __parse_class_decl(struct compiler *);
-static void __parse_decl(struct compiler *);
-static void __parse_var_decl(struct compiler *);
-static void __parse_stmnt(struct compiler *);
-static void __parse_expr_stmt(struct compiler *);
-static void __parse_var(struct compiler *);
-static void __parse_if_stmt(struct compiler *);
-static void __parse_while_stmt(struct compiler *);
-static void __parse_and(struct compiler *);
-static void __parse_or(struct compiler *);
-static void __parse_for_stmt(struct compiler *);
-static void __parse_fn_decl(struct compiler *);
-static void __parse_fn(struct compiler *, lox_str_t *);
-static void __parse_call(struct compiler *);
-static void __parse_return_stmt(struct compiler *);
-static void __parse_dot(struct compiler *);
-static uint8_t __parse_arglist(struct compiler *);
-static bool __compiler_has_defined(struct compiler *, const char *, size_t);
-static void __compiler_import(struct compiler *, native_import_list_t);
-static lookup_var_t __compiler_find_name(struct compiler *compiler,
-					 const char *name, size_t name_sz);
-static lookup_var_t __compiler_find_name_local(struct compiler *compiler,
-					       const char *name,
-					       size_t name_sz);
-static lookup_t *__compiler_cur_scope(struct compiler *);
-static lookup_var_t __compiler_resolve_upval(struct compiler *compiler,
+static lox_fn_t *compiler_run(struct compiler *, bool);
+static const struct parse_rule *compiler_get_rule(enum tkn_type);
+static void compiler_begin_scope(struct compiler *);
+static void compiler_end_scope(struct compiler *);
+static lookup_var_t compiler_define_var(struct compiler *, const char *, size_t,
+					uint32_t, bool);
+static void compiler_set_var(struct compiler *, lookup_var_t);
+static void compiler_get_var(struct compiler *, lookup_var_t);
+static void parse_block(struct compiler *);
+static void parse_expr(struct compiler *);
+static void parse_precedence(struct compiler *, enum precedence);
+static void parse_unary(struct compiler *);
+static void parse_binary(struct compiler *);
+static void parse_grouping(struct compiler *);
+static double parse_number(struct compiler *);
+static void parse_lit(struct compiler *);
+static void parse_string(struct compiler *);
+static void parse_class_decl(struct compiler *);
+static void parse_decl(struct compiler *);
+static void parse_var_decl(struct compiler *);
+static void parse_stmnt(struct compiler *);
+static void parse_expr_stmt(struct compiler *);
+static void parse_var(struct compiler *);
+static void parse_if_stmt(struct compiler *);
+static void parse_while_stmt(struct compiler *);
+static void parse_and(struct compiler *);
+static void parse_or(struct compiler *);
+static void parse_for_stmt(struct compiler *);
+static void parse_fn_decl(struct compiler *);
+static void parse_fn(struct compiler *, lox_str_t *);
+static void parse_call(struct compiler *);
+static void parse_return_stmt(struct compiler *);
+static void parse_dot(struct compiler *);
+static uint8_t parse_arglist(struct compiler *);
+static bool compiler_has_defined(struct compiler *, const char *, size_t);
+static void compiler_import(struct compiler *, native_import_list_t);
+static lookup_var_t compiler_find_name(struct compiler *compiler,
+				       const char *name, size_t name_sz);
+static lookup_var_t compiler_find_name_local(struct compiler *compiler,
 					     const char *name, size_t name_sz);
-static lookup_var_t __compiler_add_upvalue(struct compiler *compiler,
-					   lookup_var_t upval);
+static lookup_t *compiler_cur_scope(struct compiler *);
+static lookup_var_t compiler_resolve_upval(struct compiler *compiler,
+					   const char *name, size_t name_sz);
+static lookup_var_t compiler_add_upvalue(struct compiler *compiler,
+					 lookup_var_t upval);
 /* Forwards */
 
 static struct parse_rule PARSE_RULES[] = {
 	// single char tokens
-	[TKN_LEFT_PAREN] = { __parse_grouping, __parse_call, PREC_CALL },
+	[TKN_LEFT_PAREN] = { parse_grouping, parse_call, PREC_CALL },
 	[TKN_RIGHT_PAREN] = { NULL, NULL, PREC_NONE },
 	[TKN_LEFT_BRACE] = { NULL, NULL, PREC_NONE },
 	[TKN_RIGHT_BRACE] = { NULL, NULL, PREC_NONE },
 	[TKN_COMMA] = { NULL, NULL, PREC_NONE },
-	[TKN_DOT] = { NULL, __parse_dot, PREC_CALL },
-	[TKN_MINUS] = { __parse_unary, __parse_binary, PREC_TERM },
-	[TKN_PLUS] = { __parse_unary, __parse_binary, PREC_TERM },
-	[TKN_MOD] = { NULL, __parse_binary, PREC_FACTOR },
+	[TKN_DOT] = { NULL, parse_dot, PREC_CALL },
+	[TKN_MINUS] = { parse_unary, parse_binary, PREC_TERM },
+	[TKN_PLUS] = { parse_unary, parse_binary, PREC_TERM },
+	[TKN_MOD] = { NULL, parse_binary, PREC_FACTOR },
 	[TKN_SEMICOLON] = { NULL, NULL, PREC_NONE },
-	[TKN_SLASH] = { NULL, __parse_binary, PREC_FACTOR },
-	[TKN_STAR] = { NULL, __parse_binary, PREC_FACTOR },
-	[TKN_BANG] = { __parse_unary, NULL, PREC_NONE },
-	[TKN_LESS] = { NULL, __parse_binary, PREC_COMPARISON },
-	[TKN_GREATER] = { NULL, __parse_binary, PREC_COMPARISON },
+	[TKN_SLASH] = { NULL, parse_binary, PREC_FACTOR },
+	[TKN_STAR] = { NULL, parse_binary, PREC_FACTOR },
+	[TKN_BANG] = { parse_unary, NULL, PREC_NONE },
+	[TKN_LESS] = { NULL, parse_binary, PREC_COMPARISON },
+	[TKN_GREATER] = { NULL, parse_binary, PREC_COMPARISON },
 	[TKN_EQ] = { NULL, NULL, PREC_NONE },
 	// multi-char tokens
-	[TKN_BANG_EQ] = { NULL, __parse_binary, PREC_EQUALITY },
-	[TKN_EQ_EQ] = { NULL, __parse_binary, PREC_EQUALITY },
-	[TKN_GREATER_EQ] = { NULL, __parse_binary, PREC_COMPARISON },
-	[TKN_LESS_EQ] = { NULL, __parse_binary, PREC_COMPARISON },
+	[TKN_BANG_EQ] = { NULL, parse_binary, PREC_EQUALITY },
+	[TKN_EQ_EQ] = { NULL, parse_binary, PREC_EQUALITY },
+	[TKN_GREATER_EQ] = { NULL, parse_binary, PREC_COMPARISON },
+	[TKN_LESS_EQ] = { NULL, parse_binary, PREC_COMPARISON },
 	// Literals
-	[TKN_ID] = { __parse_var, NULL, PREC_NONE },
-	[TKN_STR] = { __parse_string, NULL, PREC_NONE },
-	[TKN_NUM] = { (void (*)(struct compiler *))__parse_number, NULL,
+	[TKN_ID] = { parse_var, NULL, PREC_NONE },
+	[TKN_STR] = { parse_string, NULL, PREC_NONE },
+	[TKN_NUM] = { (void (*)(struct compiler *))parse_number, NULL,
 		      PREC_NONE },
 	// Keywords - 1
-	[TKN_AND] = { NULL, __parse_and, PREC_AND },
+	[TKN_AND] = { NULL, parse_and, PREC_AND },
 	[TKN_CLS] = { NULL, NULL, PREC_NONE },
 	[TKN_ELSE] = { NULL, NULL, PREC_NONE },
 	[TKN_FOR] = { NULL, NULL, PREC_NONE },
 	[TKN_FN] = { NULL, NULL, PREC_NONE },
 	[TKN_IF] = { NULL, NULL, PREC_NONE },
-	[TKN_NIL] = { __parse_lit, NULL, PREC_NONE },
-	[TKN_OR] = { NULL, __parse_or, PREC_OR },
+	[TKN_NIL] = { parse_lit, NULL, PREC_NONE },
+	[TKN_OR] = { NULL, parse_or, PREC_OR },
 	[TKN_RETURN] = { NULL, NULL, PREC_NONE },
 	[TKN_SUPER] = { NULL, NULL, PREC_NONE },
 	[TKN_THIS] = { NULL, NULL, PREC_NONE },
-	[TKN_TRUE] = { __parse_lit, NULL, PREC_NONE },
-	[TKN_FALSE] = { __parse_lit, NULL, PREC_NONE },
+	[TKN_TRUE] = { parse_lit, NULL, PREC_NONE },
+	[TKN_FALSE] = { parse_lit, NULL, PREC_NONE },
 	[TKN_LET] = { NULL, NULL, PREC_NONE },
 	[TKN_WHILE] = { NULL, NULL, PREC_NONE },
 	[TKN_ERR] = { NULL, NULL, PREC_NONE },
 	[TKN_EOF] = { NULL, NULL, PREC_NONE },
 };
 
-static const struct parse_rule *__compiler_get_rule(enum tkn_type tkn)
+static const struct parse_rule *compiler_get_rule(enum tkn_type tkn)
 {
 	return &PARSE_RULES[tkn];
 }
 
-static struct compiler __compiler_new(struct compiler *enclosing,
-				      parser_t *prsr, vm_state_t *state,
-				      lox_str_t *name)
+static struct compiler compiler_new(struct compiler *enclosing, parser_t *prsr,
+				    vm_state_t *state, lox_str_t *name)
 {
 	lox_fn_t *fn = object_fn_new(name);
 
@@ -173,7 +171,7 @@ static struct compiler __compiler_new(struct compiler *enclosing,
 	};
 }
 
-static lox_fn_t *__compiler_run(struct compiler *compiler, bool is_main)
+static lox_fn_t *compiler_run(struct compiler *compiler, bool is_main)
 {
 #ifdef DEBUG_BENCH
 	struct timespec timer;
@@ -181,13 +179,13 @@ static lox_fn_t *__compiler_run(struct compiler *compiler, bool is_main)
 #endif
 
 	if (is_main) {
-		__compiler_import(compiler, sys_get_import_list());
+		compiler_import(compiler, sys_get_import_list());
 
 		while (!parser_match(compiler->prsr, TKN_EOF)) {
-			__parse_decl(compiler);
+			parse_decl(compiler);
 		}
 	} else {
-		__parse_block(compiler);
+		parse_block(compiler);
 	}
 
 	// TODO: only push if no return was found - call to return leaves this as
@@ -221,9 +219,9 @@ lox_fn_t *compile(const char *src, vm_state_t *state)
 	parser_t prsr = parser_new(src);
 	uint32_t global_sz = lookup_get_size(&state->globals);
 
-	struct compiler compiler = __compiler_new(NULL, &prsr, state, NULL);
+	struct compiler compiler = compiler_new(NULL, &prsr, state, NULL);
 
-	lox_fn_t *fn = __compiler_run(&compiler, true);
+	lox_fn_t *fn = compiler_run(&compiler, true);
 
 	if (!fn) {
 		uint32_t new_global_sz = lookup_get_size(&state->globals);
@@ -236,12 +234,12 @@ lox_fn_t *compile(const char *src, vm_state_t *state)
 	return fn;
 }
 
-static void __parse_expr(struct compiler *compiler)
+static void parse_expr(struct compiler *compiler)
 {
-	__parse_precedence(compiler, PREC_ASSIGNMENT);
+	parse_precedence(compiler, PREC_ASSIGNMENT);
 }
 
-static double __parse_number(struct compiler *compiler)
+static double parse_number(struct compiler *compiler)
 {
 	char *end_ptr = NULL;
 	errno = 0; // Reset errno before calling strtod
@@ -265,20 +263,20 @@ static double __parse_number(struct compiler *compiler)
 	return val;
 }
 
-static void __parse_grouping(struct compiler *compiler)
+static void parse_grouping(struct compiler *compiler)
 {
-	__parse_expr(compiler);
+	parse_expr(compiler);
 	parser_consume(compiler->prsr, TKN_RIGHT_PAREN,
 		       "Expect ')' after expression.");
 }
 
-static void __parse_unary(struct compiler *compiler)
+static void parse_unary(struct compiler *compiler)
 {
 	enum tkn_type tkn_type = compiler->prsr->previous.type;
 	uint32_t line_num = compiler->prsr->previous.line;
 
 	// compile operand
-	__parse_precedence(compiler, PREC_UNARY);
+	parse_precedence(compiler, PREC_UNARY);
 
 	switch (tkn_type) {
 	case TKN_MINUS:
@@ -300,11 +298,11 @@ static void __parse_unary(struct compiler *compiler)
 	}
 }
 
-static void __parse_binary(struct compiler *compiler)
+static void parse_binary(struct compiler *compiler)
 {
 	enum tkn_type tkn_type = compiler->prsr->previous.type;
-	const struct parse_rule *rule = __compiler_get_rule(tkn_type);
-	__parse_precedence(compiler, (enum precedence)(rule->prec + 1));
+	const struct parse_rule *rule = compiler_get_rule(tkn_type);
+	parse_precedence(compiler, (enum precedence)(rule->prec + 1));
 
 	switch (tkn_type) {
 	case TKN_BANG_EQ:
@@ -348,11 +346,11 @@ static void __parse_binary(struct compiler *compiler)
 	}
 }
 
-static void __parse_precedence(struct compiler *compiler, enum precedence prec)
+static void parse_precedence(struct compiler *compiler, enum precedence prec)
 {
 	parser_advance(compiler->prsr);
-	parse_fn prefix_rule =
-		__compiler_get_rule(compiler->prsr->previous.type)->prefix;
+	parsing_fn prefix_rule =
+		compiler_get_rule(compiler->prsr->previous.type)->prefix;
 
 	if (!prefix_rule) {
 		parser_error(compiler->prsr, compiler->prsr->previous,
@@ -363,12 +361,10 @@ static void __parse_precedence(struct compiler *compiler, enum precedence prec)
 	compiler->can_assign = prec <= PREC_ASSIGNMENT;
 	prefix_rule(compiler);
 
-	while (prec <=
-	       __compiler_get_rule(compiler->prsr->current.type)->prec) {
+	while (prec <= compiler_get_rule(compiler->prsr->current.type)->prec) {
 		parser_advance(compiler->prsr);
-		parse_fn infix_rule =
-			__compiler_get_rule(compiler->prsr->previous.type)
-				->infix;
+		parsing_fn infix_rule =
+			compiler_get_rule(compiler->prsr->previous.type)->infix;
 
 		infix_rule(compiler);
 	}
@@ -379,7 +375,7 @@ static void __parse_precedence(struct compiler *compiler, enum precedence prec)
 	}
 }
 
-static void __parse_lit(struct compiler *compiler)
+static void parse_lit(struct compiler *compiler)
 {
 	switch (compiler->prsr->previous.type) {
 	case TKN_FALSE:
@@ -401,7 +397,7 @@ static void __parse_lit(struct compiler *compiler)
 	}
 }
 
-static void __parse_string(struct compiler *compiler)
+static void parse_string(struct compiler *compiler)
 {
 	lox_str_t *string = object_str_new(compiler->prsr->previous.start + 1,
 					   compiler->prsr->previous.len - 2);
@@ -409,16 +405,16 @@ static void __parse_string(struct compiler *compiler)
 		       compiler->prsr->previous.line);
 }
 
-static void __parse_decl(struct compiler *compiler)
+static void parse_decl(struct compiler *compiler)
 {
 	if (parser_match(compiler->prsr, TKN_CLS)) {
-		__parse_class_decl(compiler);
+		parse_class_decl(compiler);
 	} else if (parser_match(compiler->prsr, TKN_LET)) {
-		__parse_var_decl(compiler);
+		parse_var_decl(compiler);
 	} else if (parser_match(compiler->prsr, TKN_FN)) {
-		__parse_fn_decl(compiler);
+		parse_fn_decl(compiler);
 	} else {
-		__parse_stmnt(compiler);
+		parse_stmnt(compiler);
 	}
 
 	if (parser_in_panic_mode(compiler->prsr)) {
@@ -426,7 +422,7 @@ static void __parse_decl(struct compiler *compiler)
 	}
 }
 
-static void __parse_var_decl(struct compiler *compiler)
+static void parse_var_decl(struct compiler *compiler)
 {
 	bool is_mutable = parser_match(compiler->prsr, TKN_MUT);
 	parser_consume(compiler->prsr, TKN_ID, "Expected variable name");
@@ -435,13 +431,13 @@ static void __parse_var_decl(struct compiler *compiler)
 	const char *name = compiler->prsr->previous.start;
 	size_t len = compiler->prsr->previous.len;
 
-	if (__compiler_has_defined(compiler, name, len)) {
+	if (compiler_has_defined(compiler, name, len)) {
 		parser_error_at_previous(compiler->prsr,
 					 "Variables cannot be redefined.");
 	}
 
 	if (parser_match(compiler->prsr, TKN_EQ)) {
-		__parse_expr(compiler);
+		parse_expr(compiler);
 	} else {
 		OP_NIL_WRITE(compiler->fn, compiler->prsr->previous.line);
 	}
@@ -454,54 +450,54 @@ static void __parse_var_decl(struct compiler *compiler)
 	if (parser_had_error(compiler->prsr)) {
 		OP_VAR_DEFINE_WRITE(compiler->fn, 0, def_ln);
 	} else {
-		__compiler_define_var(compiler, name, len, def_ln, is_mutable);
+		compiler_define_var(compiler, name, len, def_ln, is_mutable);
 	}
 	// OP_POP_WRITE(compiler->fn, def_ln);
 }
 
-static void __parse_stmnt(struct compiler *compiler)
+static void parse_stmnt(struct compiler *compiler)
 {
 	if (parser_match(compiler->prsr, TKN_IF)) {
-		__parse_if_stmt(compiler);
+		parse_if_stmt(compiler);
 	} else if (parser_match(compiler->prsr, TKN_RETURN)) {
-		__parse_return_stmt(compiler);
+		parse_return_stmt(compiler);
 	} else if (parser_match(compiler->prsr, TKN_WHILE)) {
-		__parse_while_stmt(compiler);
+		parse_while_stmt(compiler);
 	} else if (parser_match(compiler->prsr, TKN_FOR)) {
-		__parse_for_stmt(compiler);
+		parse_for_stmt(compiler);
 	} else if (parser_match(compiler->prsr, TKN_LEFT_BRACE)) {
-		__compiler_begin_scope(compiler);
-		__parse_block(compiler);
-		__compiler_end_scope(compiler);
+		compiler_begin_scope(compiler);
+		parse_block(compiler);
+		compiler_end_scope(compiler);
 	} else {
-		__parse_expr_stmt(compiler);
+		parse_expr_stmt(compiler);
 	}
 }
 
-static void __parse_block(struct compiler *compiler)
+static void parse_block(struct compiler *compiler)
 {
 	while (!parser_check(compiler->prsr, TKN_RIGHT_BRACE) &&
 	       !parser_check(compiler->prsr, TKN_EOF)) {
-		__parse_decl(compiler);
+		parse_decl(compiler);
 	}
 
 	parser_consume(compiler->prsr, TKN_RIGHT_BRACE,
 		       "Expected '}' after block.");
 }
 
-static void __parse_expr_stmt(struct compiler *compiler)
+static void parse_expr_stmt(struct compiler *compiler)
 {
-	__parse_expr(compiler);
+	parse_expr(compiler);
 	parser_consume(compiler->prsr, TKN_SEMICOLON,
 		       "Expected ';' after expression.");
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
 }
 
-static void __parse_var(struct compiler *compiler)
+static void parse_var(struct compiler *compiler)
 {
 	token_t name_tkn = compiler->prsr->previous;
 	lookup_var_t var =
-		__compiler_find_name(compiler, name_tkn.start, name_tkn.len);
+		compiler_find_name(compiler, name_tkn.start, name_tkn.len);
 
 	if (!lookup_var_is_declared(var)) {
 		var = lookup_declare(
@@ -512,22 +508,22 @@ static void __parse_var(struct compiler *compiler)
 	}
 
 	if (compiler->can_assign && parser_match(compiler->prsr, TKN_EQ)) {
-		__parse_expr(compiler);
+		parse_expr(compiler);
 
 		if (!lookup_var_is_mutable(var)) {
 			parser_error(compiler->prsr, name_tkn,
 				     "Variable isn't mutable");
 		}
 
-		__compiler_set_var(compiler, var);
+		compiler_set_var(compiler, var);
 	} else {
-		__compiler_get_var(compiler, var);
+		compiler_get_var(compiler, var);
 	}
 }
 
-static void __parse_if_stmt(struct compiler *compiler)
+static void parse_if_stmt(struct compiler *compiler)
 {
-	__parse_expr(compiler);
+	parse_expr(compiler);
 
 	if (!parser_check(compiler->prsr, TKN_LEFT_BRACE)) {
 		parser_error_at_current(compiler->prsr,
@@ -538,7 +534,7 @@ static void __parse_if_stmt(struct compiler *compiler)
 						compiler->prsr->previous.line);
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
 
-	__parse_decl(compiler);
+	parse_decl(compiler);
 
 	size_t else_jump =
 		OP_JUMP_WRITE(compiler->fn, compiler->prsr->previous.line);
@@ -557,7 +553,7 @@ static void __parse_if_stmt(struct compiler *compiler)
 				"Expected '{' after condition.");
 		}
 
-		__parse_decl(compiler);
+		parse_decl(compiler);
 	}
 
 	if (!op_patch_jump(compiler->fn, else_jump)) {
@@ -566,17 +562,17 @@ static void __parse_if_stmt(struct compiler *compiler)
 	}
 }
 
-static void __parse_and(struct compiler *compiler)
+static void parse_and(struct compiler *compiler)
 {
 	size_t end_jump = OP_JUMP_IF_FALSE_WRITE(compiler->fn,
 						 compiler->prsr->previous.line);
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
 
-	__parse_precedence(compiler, PREC_AND);
+	parse_precedence(compiler, PREC_AND);
 	op_patch_jump(compiler->fn, end_jump);
 }
 
-static void __parse_or(struct compiler *compiler)
+static void parse_or(struct compiler *compiler)
 {
 	size_t else_jump = OP_JUMP_IF_FALSE_WRITE(
 		compiler->fn, compiler->prsr->previous.line);
@@ -586,14 +582,14 @@ static void __parse_or(struct compiler *compiler)
 	op_patch_jump(compiler->fn, else_jump);
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
 
-	__parse_precedence(compiler, PREC_OR);
+	parse_precedence(compiler, PREC_OR);
 	op_patch_jump(compiler->fn, end_jump);
 }
 
-static void __parse_while_stmt(struct compiler *compiler)
+static void parse_while_stmt(struct compiler *compiler)
 {
 	size_t loop_begin = chunk_cur_instr(&compiler->fn->chunk);
-	__parse_expr(compiler);
+	parse_expr(compiler);
 
 	if (!parser_check(compiler->prsr, TKN_LEFT_BRACE)) {
 		parser_error_at_current(compiler->prsr,
@@ -604,7 +600,7 @@ static void __parse_while_stmt(struct compiler *compiler)
 		compiler->fn, compiler->prsr->previous.line);
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
 
-	__parse_decl(compiler);
+	parse_decl(compiler);
 
 	OP_LOOP_WRITE(compiler->fn, loop_begin, compiler->prsr->previous.line);
 
@@ -615,20 +611,20 @@ static void __parse_while_stmt(struct compiler *compiler)
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
 
 	if (parser_match(compiler->prsr, TKN_ELSE)) {
-		__parse_stmnt(compiler);
+		parse_stmnt(compiler);
 	}
 }
 
-static void __parse_for_stmt(struct compiler *compiler)
+static void parse_for_stmt(struct compiler *compiler)
 {
-	__compiler_begin_scope(compiler);
+	compiler_begin_scope(compiler);
 	parser_consume(compiler->prsr, TKN_ID, "Expected variable name");
 
 	uint32_t def_ln = compiler->prsr->previous.line;
 	const char *name = compiler->prsr->previous.start;
 	size_t len = compiler->prsr->previous.len;
 
-	if (__compiler_has_defined(compiler, name, len)) {
+	if (compiler_has_defined(compiler, name, len)) {
 		parser_error_at_previous(compiler->prsr,
 					 "Variable has already been defined.");
 	}
@@ -638,7 +634,7 @@ static void __parse_for_stmt(struct compiler *compiler)
 	// write start of range
 
 	// TODO(dmayor): add support for statements
-	double start_val = __parse_number(compiler);
+	double start_val = parse_number(compiler);
 
 	if (start_val != floor(start_val)) {
 		parser_error_at_previous(compiler->prsr,
@@ -646,7 +642,7 @@ static void __parse_for_stmt(struct compiler *compiler)
 	}
 
 	lookup_var_t glbl_idx =
-		__compiler_define_var(compiler, name, len, def_ln, false);
+		compiler_define_var(compiler, name, len, def_ln, false);
 
 	parser_consume(compiler->prsr, TKN_DOT, "Expected range '..'");
 	parser_consume(compiler->prsr, TKN_DOT, "Expected range '..'");
@@ -656,7 +652,7 @@ static void __parse_for_stmt(struct compiler *compiler)
 
 	size_t inc_start = chunk_cur_instr(&compiler->fn->chunk);
 	OP_VAR_GET_WRITE(compiler->fn, glbl_idx.idx, def_ln);
-	double end_val = __parse_number(compiler);
+	double end_val = parse_number(compiler);
 
 	if (start_val != floor(start_val)) {
 		parser_error_at_previous(compiler->prsr,
@@ -671,28 +667,28 @@ static void __parse_for_stmt(struct compiler *compiler)
 		parser_error_at_current(compiler->prsr, "Expected left brace");
 	}
 	// TODO: stop new var from being created and use old var
-	__compiler_begin_scope(compiler);
+	compiler_begin_scope(compiler);
 	OP_VAR_GET_WRITE(compiler->fn, glbl_idx.idx,
 			 compiler->prsr->previous.line);
-	__compiler_define_var(compiler, name, len, def_ln, false);
-	__parse_decl(compiler);
-	__compiler_end_scope(compiler);
+	compiler_define_var(compiler, name, len, def_ln, false);
+	parse_decl(compiler);
+	compiler_end_scope(compiler);
 
 	OP_VAR_GET_WRITE(compiler->fn, glbl_idx.idx,
 			 compiler->prsr->previous.line);
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_NUMBER(1),
 		       compiler->prsr->previous.line);
 	OP_ADD_WRITE(compiler->fn, compiler->prsr->previous.line);
-	__compiler_set_var(compiler, glbl_idx);
+	compiler_set_var(compiler, glbl_idx);
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
 	OP_LOOP_WRITE(compiler->fn, inc_start, compiler->prsr->previous.line);
 
 	op_patch_jump(compiler->fn, exit_jump);
 	OP_POP_WRITE(compiler->fn, compiler->prsr->previous.line);
-	__compiler_end_scope(compiler);
+	compiler_end_scope(compiler);
 }
 
-static void __parse_fn_decl(struct compiler *compiler)
+static void parse_fn_decl(struct compiler *compiler)
 {
 	bool is_mutable = parser_match(compiler->prsr, TKN_MUT);
 
@@ -701,19 +697,18 @@ static void __parse_fn_decl(struct compiler *compiler)
 	const char *name = compiler->prsr->previous.start;
 	size_t len = compiler->prsr->previous.len;
 
-	if (__compiler_has_defined(compiler, name, len)) {
+	if (compiler_has_defined(compiler, name, len)) {
 		parser_error_at_previous(
 			compiler->prsr,
 			"Variables/functions cannot be redefined.");
 	}
 
 	lox_str_t *fn_name = object_str_new(name, len);
-	__parse_fn(compiler, fn_name);
+	parse_fn(compiler, fn_name);
 
 	if (!parser_had_error(compiler->prsr)) {
-		__compiler_define_var(compiler, name, len,
-				      compiler->prsr->previous.line,
-				      is_mutable);
+		compiler_define_var(compiler, name, len,
+				    compiler->prsr->previous.line, is_mutable);
 
 		lox_fn_t *fn = OBJECT_AS_FN(
 			*(lox_val_t *)list_peek(&compiler->fn->chunk.consts));
@@ -721,13 +716,13 @@ static void __parse_fn_decl(struct compiler *compiler)
 	}
 }
 
-static void __parse_fn(struct compiler *compiler, lox_str_t *name)
+static void parse_fn(struct compiler *compiler, lox_str_t *name)
 {
 	uint8_t arity = 0;
-	struct compiler new_comp = __compiler_new(compiler, compiler->prsr,
-						  compiler->global_state, name);
+	struct compiler new_comp = compiler_new(compiler, compiler->prsr,
+						compiler->global_state, name);
 
-	__compiler_begin_scope(&new_comp);
+	compiler_begin_scope(&new_comp);
 	parser_consume(new_comp.prsr, TKN_LEFT_PAREN,
 		       "Expected '(' after function name.");
 
@@ -747,15 +742,15 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 		const char *var_name = new_comp.prsr->previous.start;
 		size_t len = new_comp.prsr->previous.len;
 
-		if (__compiler_has_defined(&new_comp, var_name, len)) {
+		if (compiler_has_defined(&new_comp, var_name, len)) {
 			parser_error_at_previous(
 				new_comp.prsr,
 				"Variables cannot be redefined.");
 		}
 
 		if (!parser_had_error(new_comp.prsr)) {
-			__compiler_define_var(&new_comp, var_name, len, def_ln,
-					      is_mutable);
+			compiler_define_var(&new_comp, var_name, len, def_ln,
+					    is_mutable);
 		}
 
 		if (!parser_match(new_comp.prsr, TKN_COMMA)) {
@@ -767,7 +762,7 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 	parser_consume(new_comp.prsr, TKN_RIGHT_PAREN,
 		       "Expected ')' after function params.");
 	parser_consume(new_comp.prsr, TKN_LEFT_BRACE, "Expected block start.");
-	lox_fn_t *comp_res = __compiler_run(&new_comp, false);
+	lox_fn_t *comp_res = compiler_run(&new_comp, false);
 
 	if (comp_res == NULL || parser_had_error(new_comp.prsr)) {
 		return;
@@ -789,14 +784,14 @@ static void __parse_fn(struct compiler *compiler, lox_str_t *name)
 	}
 }
 
-static void __parse_call(struct compiler *compiler)
+static void parse_call(struct compiler *compiler)
 {
-	uint8_t args = __parse_arglist(compiler);
+	uint8_t args = parse_arglist(compiler);
 	OP_CALL_WRITE(compiler->fn, args, compiler->prsr->previous.line);
 }
 
 // TODO: as soon as reached, exit function compile
-static void __parse_return_stmt(struct compiler *compiler)
+static void parse_return_stmt(struct compiler *compiler)
 {
 	if (parser_match(compiler->prsr, TKN_SEMICOLON)) {
 		//return nil
@@ -804,22 +799,22 @@ static void __parse_return_stmt(struct compiler *compiler)
 			       compiler->prsr->current.line);
 	} else {
 		// TODO: only allow number in top level
-		__parse_expr(compiler);
+		parse_expr(compiler);
 		parser_consume(compiler->prsr, TKN_SEMICOLON,
 			       "Expected ';' after return value.");
 	}
 	OP_RETURN_WRITE(compiler->fn, compiler->prsr->current.line);
 }
 
-static void __compiler_begin_scope(struct compiler *compiler)
+static void compiler_begin_scope(struct compiler *compiler)
 {
 	lookup_t new_scope = lookup_new();
 	list_push(&compiler->lookup.scopes, &new_scope);
 }
 
-static void __compiler_end_scope(struct compiler *compiler)
+static void compiler_end_scope(struct compiler *compiler)
 {
-	lookup_t *cur_scope = __compiler_cur_scope(compiler);
+	lookup_t *cur_scope = compiler_cur_scope(compiler);
 	uint32_t scope_sz = lookup_get_size(cur_scope);
 
 	for (uint32_t i = compiler->lookup.idx - 1;
@@ -847,9 +842,9 @@ static void __compiler_end_scope(struct compiler *compiler)
 	list_pop(&compiler->lookup.scopes);
 }
 
-static lookup_var_t __compiler_define_var(struct compiler *compiler,
-					  const char *name, size_t len,
-					  uint32_t line, bool mutable)
+static lookup_var_t compiler_define_var(struct compiler *compiler,
+					const char *name, size_t len,
+					uint32_t line, bool mutable)
 {
 	// TODO: split in to two functions
 	var_flags_t flags = mutable ? LOOKUP_VAR_MUTABLE : LOOKUP_VAR_IMMUTABLE;
@@ -869,7 +864,7 @@ static lookup_var_t __compiler_define_var(struct compiler *compiler,
 						"Failed to define variable.");
 		}
 	} else {
-		lookup_t *cur_scope = __compiler_cur_scope(compiler);
+		lookup_t *cur_scope = compiler_cur_scope(compiler);
 		uint32_t prev_sz = lookup_get_size(cur_scope);
 
 		new_var = lookup_define(cur_scope, name, len,
@@ -895,7 +890,7 @@ static lookup_var_t __compiler_define_var(struct compiler *compiler,
 	return new_var;
 }
 
-static void __compiler_set_var(struct compiler *compiler, lookup_var_t var)
+static void compiler_set_var(struct compiler *compiler, lookup_var_t var)
 {
 	if (lookup_var_is_upval(var)) {
 		OP_UPVALUE_SET_WRITE(compiler->fn, var.idx,
@@ -909,7 +904,7 @@ static void __compiler_set_var(struct compiler *compiler, lookup_var_t var)
 	}
 }
 
-static void __compiler_get_var(struct compiler *compiler, lookup_var_t var)
+static void compiler_get_var(struct compiler *compiler, lookup_var_t var)
 {
 	if (lookup_var_is_upval(var)) {
 		OP_UPVALUE_GET_WRITE(compiler->fn, var.idx,
@@ -923,26 +918,26 @@ static void __compiler_get_var(struct compiler *compiler, lookup_var_t var)
 	}
 }
 
-static bool __compiler_has_defined(struct compiler *compiler, const char *name,
-				   size_t len)
+static bool compiler_has_defined(struct compiler *compiler, const char *name,
+				 size_t len)
 {
 	if (list_size(&compiler->lookup.scopes) == 0) {
 		return lookup_has_name(&compiler->global_state->globals, name,
 				       len);
 	}
 
-	const lookup_t *cur_scope = __compiler_cur_scope(compiler);
+	const lookup_t *cur_scope = compiler_cur_scope(compiler);
 	return lookup_has_name(cur_scope, name, len);
 }
 
-static void __parse_class_decl(struct compiler *compiler)
+static void parse_class_decl(struct compiler *compiler)
 {
 	parser_consume(compiler->prsr, TKN_ID, "Expected class name");
 
 	const char *name = compiler->prsr->previous.start;
 	size_t len = compiler->prsr->previous.len;
 
-	if (__compiler_has_defined(compiler, name, len)) {
+	if (compiler_has_defined(compiler, name, len)) {
 		parser_error_at_previous(
 			compiler->prsr,
 			"Variables/functions cannot be redefined.");
@@ -954,7 +949,7 @@ static void __parse_class_decl(struct compiler *compiler)
 	OP_CONST_WRITE(compiler->fn, VAL_CREATE_OBJ(cls),
 		       compiler->prsr->previous.line);
 	// TODO: we don't define the var?
-	/*lookup_var_t var =*/__compiler_define_var(
+	/*lookup_var_t var =*/compiler_define_var(
 		compiler, name, len, compiler->prsr->previous.line, false);
 	list_push(&compiler->lookup.scopes, &cls->field_lookup);
 
@@ -965,9 +960,9 @@ static void __parse_class_decl(struct compiler *compiler)
 	while (!parser_check(compiler->prsr, TKN_RIGHT_BRACE) &&
 	       !parser_check(compiler->prsr, TKN_EOF)) {
 		if (parser_match(compiler->prsr, TKN_LET)) {
-			__parse_var_decl(compiler);
+			parse_var_decl(compiler);
 		} else if (parser_match(compiler->prsr, TKN_FN)) {
-			__parse_fn_decl(compiler);
+			parse_fn_decl(compiler);
 		} else {
 			parser_error_at_current(compiler->prsr,
 						"Unknown class item");
@@ -978,12 +973,12 @@ static void __parse_class_decl(struct compiler *compiler)
 	parser_consume(compiler->prsr, TKN_RIGHT_BRACE,
 		       "Expected '}' after class body");
 	compiler->define_state = DEFAULT_DEFINE;
-	cls->field_lookup.table = *__compiler_cur_scope(compiler);
+	cls->field_lookup.table = *compiler_cur_scope(compiler);
 	compiler->lookup.idx = 0;
 	list_pop(&compiler->lookup.scopes);
 }
 
-static void __parse_dot(struct compiler *compiler)
+static void parse_dot(struct compiler *compiler)
 {
 	parser_consume(compiler->prsr, TKN_ID, "Expecting a property name");
 	token_t name_tkn = compiler->prsr->previous;
@@ -991,7 +986,7 @@ static void __parse_dot(struct compiler *compiler)
 
 	// TODO: need to make this compile-time - Currently fails will be runtime
 	if (compiler->can_assign && parser_match(compiler->prsr, TKN_EQ)) {
-		__parse_expr(compiler);
+		parse_expr(compiler);
 
 		// TODO: check for mutability - This is done at runtime currently
 		// TODO: add ability to set defaults
@@ -1009,12 +1004,12 @@ static void __parse_dot(struct compiler *compiler)
 	}
 }
 
-static uint8_t __parse_arglist(struct compiler *compiler)
+static uint8_t parse_arglist(struct compiler *compiler)
 {
 	uint8_t arg_cnt = 0;
 
 	while (!parser_check(compiler->prsr, TKN_RIGHT_PAREN)) {
-		__parse_expr(compiler);
+		parse_expr(compiler);
 		arg_cnt++;
 
 		if (!parser_match(compiler->prsr, TKN_COMMA)) {
@@ -1028,14 +1023,14 @@ static uint8_t __parse_arglist(struct compiler *compiler)
 	return arg_cnt;
 }
 
-static void __compiler_import(struct compiler *compiler,
-			      native_import_list_t imports)
+static void compiler_import(struct compiler *compiler,
+			    native_import_list_t imports)
 {
 	for (size_t i = 0; i < imports.import_cnt; i++) {
 		native_import_t native_fn = imports.import_arr[i];
 
-		if (__compiler_has_defined(compiler, native_fn.fn_name,
-					   native_fn.name_sz)) {
+		if (compiler_has_defined(compiler, native_fn.fn_name,
+					 native_fn.name_sz)) {
 			// TODO: make it an error to overwrite an import
 			// or properly support it
 			continue;
@@ -1049,20 +1044,20 @@ static void __compiler_import(struct compiler *compiler,
 			       VAL_CREATE_OBJ(object_native_fn_new(native_fn)),
 			       line);
 
-		__compiler_define_var(compiler, native_fn.fn_name,
-				      native_fn.name_sz, line, false);
+		compiler_define_var(compiler, native_fn.fn_name,
+				    native_fn.name_sz, line, false);
 	}
 }
 
-static lookup_var_t __compiler_find_name(struct compiler *compiler,
-					 const char *name, size_t name_sz)
+static lookup_var_t compiler_find_name(struct compiler *compiler,
+				       const char *name, size_t name_sz)
 {
-	lookup_var_t var = __compiler_find_name_local(compiler, name, name_sz);
+	lookup_var_t var = compiler_find_name_local(compiler, name, name_sz);
 	if (lookup_var_is_valid(var)) {
 		return var;
 	}
 
-	var = __compiler_resolve_upval(compiler, name, name_sz);
+	var = compiler_resolve_upval(compiler, name, name_sz);
 	if (lookup_var_is_valid(var)) {
 		return var;
 	}
@@ -1071,8 +1066,8 @@ static lookup_var_t __compiler_find_name(struct compiler *compiler,
 				name_sz);
 }
 
-static lookup_var_t __compiler_find_name_local(struct compiler *compiler,
-					       const char *name, size_t name_sz)
+static lookup_var_t compiler_find_name_local(struct compiler *compiler,
+					     const char *name, size_t name_sz)
 {
 	lookup_var_t var = LOOKUP_VAR_TYPE_INVALID;
 
@@ -1094,31 +1089,31 @@ static lookup_var_t __compiler_find_name_local(struct compiler *compiler,
 	return var;
 }
 
-static lookup_var_t __compiler_resolve_upval(struct compiler *compiler,
-					     const char *name, size_t name_sz)
+static lookup_var_t compiler_resolve_upval(struct compiler *compiler,
+					   const char *name, size_t name_sz)
 {
 	if (compiler->enclosing == NULL) {
 		return LOOKUP_VAR_TYPE_INVALID;
 	}
 
 	lookup_var_t local =
-		__compiler_find_name_local(compiler->enclosing, name, name_sz);
+		compiler_find_name_local(compiler->enclosing, name, name_sz);
 	if (lookup_var_is_valid(local)) {
 		list_push(&compiler->enclosing->captured_vals, &local.idx);
-		return __compiler_add_upvalue(compiler, local);
+		return compiler_add_upvalue(compiler, local);
 	}
 
 	lookup_var_t upval =
-		__compiler_resolve_upval(compiler->enclosing, name, name_sz);
+		compiler_resolve_upval(compiler->enclosing, name, name_sz);
 	if (lookup_var_is_valid(upval)) {
-		return __compiler_add_upvalue(compiler, upval);
+		return compiler_add_upvalue(compiler, upval);
 	}
 
 	return LOOKUP_VAR_TYPE_INVALID;
 }
 
-static lookup_var_t __compiler_add_upvalue(struct compiler *compiler,
-					   lookup_var_t upval)
+static lookup_var_t compiler_add_upvalue(struct compiler *compiler,
+					 lookup_var_t upval)
 {
 	upval.var_flags |= LOOKUP_VAR_UPVAL;
 	upval.var_flags |= LOOKUP_VAR_LOCAL;
@@ -1145,7 +1140,7 @@ static lookup_var_t __compiler_add_upvalue(struct compiler *compiler,
 	return upval;
 }
 
-static lookup_t *__compiler_cur_scope(struct compiler *compiler)
+static lookup_t *compiler_cur_scope(struct compiler *compiler)
 {
 	return (lookup_t *)list_peek(&compiler->lookup.scopes);
 }

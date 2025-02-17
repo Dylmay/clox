@@ -9,7 +9,7 @@
 #include "timer.h"
 #include "util/list/list.h"
 
-static void __print_fmtd_time(time_t time);
+static void print_fmtd_time(time_t time);
 
 static void clock_get(struct timespec *timer)
 {
@@ -60,19 +60,19 @@ struct timespec time_function_mean(void (*func)(void), size_t run_cnt)
 	return avg_time;
 }
 
-void timespec_print(struct timespec time, bool formatTime)
+void timespec_print(struct timespec time, bool should_fmt_time)
 {
-	if (formatTime) {
-		__print_fmtd_time(time.tv_sec);
+	if (should_fmt_time) {
+		print_fmtd_time(time.tv_sec);
 		printf(" (s), ");
-		__print_fmtd_time(time.tv_nsec);
+		print_fmtd_time(time.tv_nsec);
 		printf(" (ns)");
 	} else {
 		printf("%lu (s), %lu (ns)", time.tv_sec, time.tv_nsec);
 	}
 }
 
-static void __print_fmtd_time(time_t time)
+static void print_fmtd_time(time_t time)
 {
 	list_t time_list = list_of_type(uint8_t);
 	do {

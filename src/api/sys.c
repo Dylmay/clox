@@ -10,27 +10,27 @@
 #include "util/string/string_util.h"
 
 /* Natives */
-static lox_val_t __clock_native(int arg_cnt, lox_val_t *args);
-static lox_val_t __print_native(int arg_cnt, lox_val_t *args);
-static lox_val_t __to_str(int arg_cnt, lox_val_t *args);
-static lox_val_t __to_num(int arg_cnt, lox_val_t *args);
-static lox_val_t __assert(int arg_cnt, lox_val_t *args);
-static lox_val_t __read(int arg_cnt, lox_val_t *args);
-static lox_val_t __round_val(int arg_cnt, lox_val_t *args);
-static lox_val_t __len(int arg_cnt, lox_val_t *args);
+static lox_val_t clock_native(int arg_cnt, lox_val_t *args);
+static lox_val_t print_native(int arg_cnt, lox_val_t *args);
+static lox_val_t to_str(int arg_cnt, lox_val_t *args);
+static lox_val_t to_num(int arg_cnt, lox_val_t *args);
+static lox_val_t assert(int arg_cnt, lox_val_t *args);
+static lox_val_t read(int arg_cnt, lox_val_t *args);
+static lox_val_t round_val(int arg_cnt, lox_val_t *args);
+static lox_val_t len(int arg_cnt, lox_val_t *args);
 /* Helpers */
-static lox_val_t __round_double(double value, int round_to);
-static lox_val_t __str_to_num(const lox_str_t *str);
+static lox_val_t round_double(double value, int round_to);
+static lox_val_t str_to_num(const lox_str_t *str);
 
 static native_import_t imports[] = {
-	CREATE_FUNC_DEF("clock", __clock_native),
-	CREATE_FUNC_DEF("print", __print_native),
-	CREATE_FUNC_DEF("str", __to_str),
-	CREATE_FUNC_DEF("num", __to_num),
-	CREATE_FUNC_DEF("assert", __assert),
-	CREATE_FUNC_DEF("read", __read),
-	CREATE_FUNC_DEF("round", __round_val),
-	CREATE_FUNC_DEF("len", __len),
+	CREATE_FUNC_DEF("clock", clock_native),
+	CREATE_FUNC_DEF("print", print_native),
+	CREATE_FUNC_DEF("str", to_str),
+	CREATE_FUNC_DEF("num", to_num),
+	CREATE_FUNC_DEF("assert", assert),
+	CREATE_FUNC_DEF("read", read),
+	CREATE_FUNC_DEF("round", round_val),
+	CREATE_FUNC_DEF("len", len),
 };
 
 #undef CREATE_FUNC_DEF
@@ -48,12 +48,12 @@ native_import_list_t sys_get_import_list()
 	return import_list;
 }
 
-static lox_val_t __clock_native(int arg_cnt, lox_val_t *args)
+static lox_val_t clock_native(int arg_cnt, lox_val_t *args)
 {
 	return VAL_CREATE_NUMBER((double)clock() / CLOCKS_PER_SEC);
 }
 
-static lox_val_t __print_native(int arg_cnt, lox_val_t *args)
+static lox_val_t print_native(int arg_cnt, lox_val_t *args)
 {
 	if (arg_cnt) {
 		val_print(args[0]);
@@ -64,7 +64,7 @@ static lox_val_t __print_native(int arg_cnt, lox_val_t *args)
 	return VAL_CREATE_NIL;
 }
 
-static lox_val_t __to_str(int arg_cnt, lox_val_t *args)
+static lox_val_t to_str(int arg_cnt, lox_val_t *args)
 {
 	if (arg_cnt) {
 		return val_to_string(args[0]);
@@ -73,7 +73,7 @@ static lox_val_t __to_str(int arg_cnt, lox_val_t *args)
 	}
 }
 
-static lox_val_t __len(int arg_cnt, lox_val_t *args)
+static lox_val_t len(int arg_cnt, lox_val_t *args)
 {
 	if (arg_cnt != 1) {
 		return VAL_CREATE_ERR(
@@ -89,11 +89,11 @@ static lox_val_t __len(int arg_cnt, lox_val_t *args)
 	return VAL_CREATE_NUMBER(str->len);
 }
 
-static lox_val_t __assert(int arg_cnt, lox_val_t *args)
+static lox_val_t assert(int arg_cnt, lox_val_t *args)
 {
 	if (!arg_cnt || val_is_falsey(args[0])) {
 		if (arg_cnt > 1) {
-			lox_val_t err_msg = __to_str(1, &args[1]);
+			lox_val_t err_msg = to_str(1, &args[1]);
 			err_msg.type = VAL_ERR;
 			return err_msg;
 		}
@@ -104,7 +104,7 @@ static lox_val_t __assert(int arg_cnt, lox_val_t *args)
 	return VAL_CREATE_NIL;
 }
 
-static lox_val_t __read(int arg_cnt, lox_val_t *args)
+static lox_val_t read(int arg_cnt, lox_val_t *args)
 {
 	char buf[INPUT_BUF_SZ];
 	string_t *read_input = NULL;
@@ -140,7 +140,7 @@ static lox_val_t __read(int arg_cnt, lox_val_t *args)
 	return str_obj;
 }
 
-static lox_val_t __round_val(int arg_cnt, lox_val_t *args)
+static lox_val_t round_val(int arg_cnt, lox_val_t *args)
 {
 	if (arg_cnt) {
 		lox_val_t val_to_round = args[0];
@@ -174,14 +174,14 @@ static lox_val_t __round_val(int arg_cnt, lox_val_t *args)
 				round(VAL_AS_NUMBER(val_to_round)));
 		}
 
-		return __round_double(VAL_AS_NUMBER(val_to_round), round_amt);
+		return round_double(VAL_AS_NUMBER(val_to_round), round_amt);
 	}
 
 	return VAL_CREATE_ERR(
 		LITERAL_OBJECT_STRING("round() requires a number"));
 }
 
-static lox_val_t __to_num(int arg_cnt, lox_val_t *args)
+static lox_val_t to_num(int arg_cnt, lox_val_t *args)
 {
 	if (arg_cnt) {
 		lox_val_t arg = args[0];
@@ -195,7 +195,7 @@ static lox_val_t __to_num(int arg_cnt, lox_val_t *args)
 		}
 
 		if (OBJECT_IS_STRING(arg)) {
-			return __str_to_num(OBJECT_AS_STRING(arg));
+			return str_to_num(OBJECT_AS_STRING(arg));
 		}
 	}
 
@@ -203,7 +203,7 @@ static lox_val_t __to_num(int arg_cnt, lox_val_t *args)
 		LITERAL_OBJECT_STRING("invalid literal for num()"));
 }
 
-static lox_val_t __round_double(double value, int round_to)
+static lox_val_t round_double(double value, int round_to)
 {
 #define SMALL_BUF_LEN 100
 	char *buf, *buf_end;
@@ -233,7 +233,7 @@ static lox_val_t __round_double(double value, int round_to)
 #undef SMALL_BUF_LEN
 }
 
-static lox_val_t __str_to_num(const lox_str_t *str)
+static lox_val_t str_to_num(const lox_str_t *str)
 {
 	char *read_end = NULL;
 	double val = strtod(str->chars, &read_end);

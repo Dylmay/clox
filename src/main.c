@@ -15,30 +15,30 @@ enum exit_code {
 	EXIT_RUNTIME_ERROR = 70,
 };
 
-static void __run_repl(vm_t *vm);
-static void __run_file(vm_t *vm, const char *path);
-static char *__read_file(const char *path);
-static void __proc_cmd(const char *cmd, const size_t cmd_sz, vm_t *vm);
-static void __program_quit(enum exit_code);
+static void run_repl(vm_t *vm);
+static void run_file(vm_t *vm, const char *path);
+static char *read_file(const char *path);
+static void proc_cmd(const char *cmd, const size_t cmd_sz, vm_t *vm);
+static void program_quit(enum exit_code);
 
 int main(int argc, const char *argv[])
 {
 	vm_t virt = vm_init();
 
 	if (argc == 1) {
-		__run_repl(&virt);
+		run_repl(&virt);
 	} else if (argc == 2) {
-		__run_file(&virt, argv[1]);
+		run_file(&virt, argv[1]);
 	} else {
 		fprintf(stderr, "Usage: clox[path]\n");
-		__program_quit(EXIT_HELP);
+		program_quit(EXIT_HELP);
 	}
 
 	vm_free(&virt);
 	return 0;
 }
 
-static void __run_repl(vm_t *vm)
+static void run_repl(vm_t *vm)
 {
 	char line_buf[1024];
 	string_t *source = NULL;
@@ -53,7 +53,7 @@ static void __run_repl(vm_t *vm)
 		}
 
 		if (line_buf[0] == '.') {
-			__proc_cmd(line_buf + 1, sizeof(line_buf), vm);
+			proc_cmd(line_buf + 1, sizeof(line_buf), vm);
 			continue;
 		}
 
@@ -120,7 +120,7 @@ static void __run_repl(vm_t *vm)
 				vm_interpret(vm, string_get_cstring(source));
 
 			if (result == INTERPRET_RUNTIME_ERROR) {
-				__program_quit(EXIT_RUNTIME_ERROR);
+				program_quit(EXIT_RUNTIME_ERROR);
 			}
 
 			string_free(source);
@@ -132,14 +132,14 @@ static void __run_repl(vm_t *vm)
 	list_free(&scope_stack);
 }
 
-static void __proc_cmd(const char *cmd, const size_t cmd_sz, vm_t *vm)
+static void proc_cmd(const char *cmd, const size_t cmd_sz, vm_t *vm)
 {
 	assert(("No VM passed", vm));
 	assert(("No cmd passed", cmd));
 
 	if (strncmp(cmd, "exit\n", cmd_sz) == 0) {
 		puts("Exiting");
-		__program_quit(EXIT_OK);
+		program_quit(EXIT_OK);
 	} else if (strncmp(cmd, "vars\n", cmd_sz) == 0) {
 		vm_print_vars(vm);
 	} else {
@@ -148,30 +148,30 @@ static void __proc_cmd(const char *cmd, const size_t cmd_sz, vm_t *vm)
 	}
 }
 
-static void __run_file(vm_t *vm, const char *path)
+static void run_file(vm_t *vm, const char *path)
 {
-	char *src = __read_file(path);
+	char *src = read_file(path);
 
 	enum vm_res result = vm_interpret(vm, src);
 
 	if (result == INTERPRET_COMPILE_ERROR) {
-		__program_quit(EXIT_COMPILE_ERROR);
+		program_quit(EXIT_COMPILE_ERROR);
 	}
 
 	if (result == INTERPRET_RUNTIME_ERROR) {
-		__program_quit(EXIT_RUNTIME_ERROR);
+		program_quit(EXIT_RUNTIME_ERROR);
 	}
 
 	free(src);
 }
 
-static char *__read_file(const char *path)
+static char *read_file(const char *path)
 {
 	FILE *file = fopen(path, "rb");
 
 	if (file == NULL) {
 		fprintf(stderr, "Could not open file \"%s\".\n", path);
-		__program_quit(EXIT_FILE_ERROR);
+		program_quit(EXIT_FILE_ERROR);
 	}
 
 	fseek(file, 0L, SEEK_END);
@@ -183,7 +183,7 @@ static char *__read_file(const char *path)
 
 	if (bytes_rd < file_sz) {
 		fprintf(stderr, "Could not read file \"%s\".\n", path);
-		__program_quit(EXIT_FILE_ERROR);
+		program_quit(EXIT_FILE_ERROR);
 	}
 
 	file_buf[bytes_rd] = '\0';
@@ -193,7 +193,7 @@ static char *__read_file(const char *path)
 	return file_buf;
 }
 
-static void __program_quit(enum exit_code code)
+static void program_quit(enum exit_code code)
 {
 	exit(code);
 }

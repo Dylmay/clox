@@ -28,8 +28,8 @@ bool mem_is_marked(struct mem_metadata *meta)
 
 #pragma endregion
 
-void _collect_garbage();
-void _mark_roots();
+void collect_garbage();
+void mark_roots();
 
 void *reallocate(void *pointer, size_t old_sz, size_t new_sz)
 {
@@ -86,15 +86,15 @@ void *reallocate(void *pointer, size_t old_sz, size_t new_sz)
 	return (result + sizeof(struct mem_metadata));
 }
 
-void _collect_garbage()
+void collect_garbage()
 {
 	log_debug("GC: begin\n");
 
-	_mark_roots();
+	mark_roots();
 
 	log_debug("GC: end\n");
 }
 
-void _mark_roots()
+void mark_roots()
 {
 }

@@ -17,10 +17,10 @@ struct idx_matcher {
 	uint32_t idx;
 };
 
-static struct name_matcher __create_name_matcher(const char *name, size_t len);
-static struct idx_matcher __create_idx_matcher(uint32_t idx);
-static lookup_var_t *__lookup_find_name_ptr(const lookup_t *lookup,
-					    const char *name, size_t len);
+static struct name_matcher create_name_matcher(const char *name, size_t len);
+static struct idx_matcher create_idx_matcher(uint32_t idx);
+static lookup_var_t *lookup_find_name_ptr(const lookup_t *lookup,
+					  const char *name, size_t len);
 
 bool match_key(const void *key, struct key_matcher *m)
 {
@@ -75,7 +75,7 @@ lookup_var_t lookup_declare(lookup_t *lookup, const char *chars, size_t len,
 
 bool lookup_remove(lookup_t *lookup, uint32_t idx)
 {
-	struct idx_matcher matcher = __create_idx_matcher(idx);
+	struct idx_matcher matcher = create_idx_matcher(idx);
 
 	map_entry_t entry = map_find_by_value(&lookup->table,
 					      (struct val_matcher *)&matcher);
@@ -92,7 +92,7 @@ lookup_var_t lookup_define(lookup_t *lookup, const char *chars, size_t len,
 {
 	string_t *name = string_new(chars, len);
 
-	lookup_var_t *reserved = __lookup_find_name_ptr(lookup, chars, len);
+	lookup_var_t *reserved = lookup_find_name_ptr(lookup, chars, len);
 
 	if (reserved) {
 		if (lookup_var_is_defined(*reserved)) {
@@ -118,7 +118,7 @@ lookup_var_t lookup_define(lookup_t *lookup, const char *chars, size_t len,
 
 bool lookup_has_name(const lookup_t *lookup, const char *name, size_t len)
 {
-	struct name_matcher matcher = __create_name_matcher(name, len);
+	struct name_matcher matcher = create_name_matcher(name, len);
 	const lookup_var_t *var =
 		map_find_by_key(&lookup->table, (struct key_matcher *)&matcher)
 			.value;
@@ -129,13 +129,13 @@ bool lookup_has_name(const lookup_t *lookup, const char *name, size_t len)
 lookup_var_t lookup_find_name(const lookup_t *lookup, const char *name,
 			      size_t len)
 {
-	const lookup_var_t *var = __lookup_find_name_ptr(lookup, name, len);
+	const lookup_var_t *var = lookup_find_name_ptr(lookup, name, len);
 
 	return var ? *var :
 		     (lookup_var_t){ .var_flags = LOOKUP_VAR_NOT_DECLARED };
 }
 
-static struct name_matcher __create_name_matcher(const char *name, size_t len)
+static struct name_matcher create_name_matcher(const char *name, size_t len)
 {
 	return (struct name_matcher){
 		.m = {
@@ -147,7 +147,7 @@ static struct name_matcher __create_name_matcher(const char *name, size_t len)
 	};
 }
 
-static struct idx_matcher __create_idx_matcher(uint32_t idx)
+static struct idx_matcher create_idx_matcher(uint32_t idx)
 {
 	return (struct idx_matcher){
 		.v = { .is_match = &match_value },
@@ -155,10 +155,10 @@ static struct idx_matcher __create_idx_matcher(uint32_t idx)
 	};
 }
 
-static lookup_var_t *__lookup_find_name_ptr(const lookup_t *lookup,
-					    const char *name, size_t len)
+static lookup_var_t *lookup_find_name_ptr(const lookup_t *lookup,
+					  const char *name, size_t len)
 {
-	struct name_matcher matcher = __create_name_matcher(name, len);
+	struct name_matcher matcher = create_name_matcher(name, len);
 	lookup_var_t *found =
 		map_find_by_key(&lookup->table, (struct key_matcher *)&matcher)
 			.value;

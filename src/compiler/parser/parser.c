@@ -3,7 +3,7 @@
 #include <stdio.h>
 
 /* Forwards */
-static void __parser_unescape_string(parser_t *prsr);
+static void parser_unescape_string(parser_t *prsr);
 /* Forwards */
 
 bool parser_check(const parser_t *prsr, enum tkn_type type)
@@ -25,7 +25,7 @@ void parser_advance(parser_t *prsr)
 			parser_error_at_current(prsr, prsr->current.start);
 			break;
 		case TKN_STR:
-			__parser_unescape_string(prsr);
+			parser_unescape_string(prsr);
 			return;
 		default:
 			return;
@@ -106,7 +106,7 @@ void parser_sync(parser_t *prsr)
 // string should not be present in the vm at runtime
 // NOTE: also does not update the string token length so
 // the string token will be out-of-sync for any escaped character strings
-static void __parser_unescape_string(parser_t *prsr)
+static void parser_unescape_string(parser_t *prsr)
 {
 	size_t idx = 0;
 	int offset = 0;
