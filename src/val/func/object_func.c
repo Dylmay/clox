@@ -12,10 +12,11 @@
 #define ALLOCATE_OBJECT(type, type_id)                                         \
 	((type *)allocate_object(sizeof(type), type_id))
 
+#define SIZEOF_OBJECT_STR(str_sz)                                              \
+	(sizeof(lox_str_t) + (sizeof(char) * (str_sz + 1)))
+
 #define ALLOCATE_OBJECT_STR(str_sz)                                            \
-	((lox_str_t *)allocate_object(sizeof(lox_str_t) +                      \
-					      (sizeof(char) * (str_sz + 1)),   \
-				      OBJ_STRING))
+	((lox_str_t *)allocate_object(SIZEOF_OBJECT_STR(str_sz), OBJ_STRING))
 
 #define UNKNOWN_STR "<unknown>"
 #define SCRIPT_STR "<script>"
@@ -128,13 +129,12 @@ lox_upval_t *object_upval_new(lox_val_t *slot)
 	return upval;
 }
 
-void object_free(struct object *obj)
+void object_free(lox_obj_t *obj)
 {
 	switch (obj->type) {
 	case OBJ_STRING: {
 		lox_str_t *str = (lox_str_t *)obj;
-		reallocate(str, sizeof(lox_str_t) + (sizeof(char) * str->len),
-			   0);
+		reallocate(str, SIZEOF_OBJECT_STR(str->len), 0);
 	} break;
 
 	case OBJ_FN: {
@@ -275,7 +275,7 @@ lox_val_t object_to_string(lox_val_t val)
 	}
 }
 
-bool object_equals(const struct object *a, const struct object *b)
+bool object_equals(const lox_obj_t *a, const lox_obj_t *b)
 {
 	if (a->type != b->type) {
 		return false;
@@ -309,9 +309,9 @@ static lox_str_t *create_object_str(const char *chars, size_t str_sz)
 	return string;
 }
 
-static struct object *allocate_object(size_t obj_sz, enum object_type obj_type)
+static lox_obj_t *allocate_object(size_t obj_sz, enum object_type obj_type)
 {
-	struct object *obj = (struct object *)reallocate(NULL, 0, obj_sz);
+	lox_obj_t *obj = (lox_obj_t *)reallocate(NULL, 0, obj_sz);
 	obj->type = obj_type;
 
 	return obj;

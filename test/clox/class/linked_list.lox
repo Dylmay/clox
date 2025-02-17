@@ -34,9 +34,6 @@ fn is_empty(list) {
 
 fn add(list, content) {
     let new_node = LinkedListNode();
-    // TODO(dmayor): need to figure this out. It's causing the index to be off
-    // due to clean up not being done properly
-    // added a pop afterwards, need to confirm side effects
     new_node.data = content;
 
     if is_empty(list) {

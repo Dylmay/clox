@@ -21,7 +21,7 @@ typedef double lox_num_t;
 typedef bool lox_bool_t;
 
 //! @brief base lox object
-typedef struct object {
+typedef struct {
 	enum object_type type;
 } lox_obj_t;
 
@@ -37,14 +37,14 @@ typedef struct {
 
 //! @brief lox string object
 typedef struct {
-	struct object obj;
+	lox_obj_t obj;
 	size_t len;
 	char chars[];
 } lox_str_t;
 
 //! @brief lox function object
 typedef struct {
-	struct object obj;
+	lox_obj_t obj;
 	int arity;
 	uint32_t upval_cnt;
 	chunk_t chunk;
@@ -61,18 +61,18 @@ typedef struct {
 } native_import_t;
 
 typedef struct {
-	struct object obj;
+	lox_obj_t obj;
 	native_import_t import;
 } lox_native_t;
 
 typedef struct {
-	struct object obj;
+	lox_obj_t obj;
 	list_t upvalues;
 	lox_fn_t *fn;
 } lox_closure_t;
 
 typedef struct {
-	struct object obj;
+	lox_obj_t obj;
 	lox_str_t *name;
 	struct {
 		lookup_t table;
@@ -86,13 +86,13 @@ typedef struct {
 } lox_class_t;
 
 typedef struct {
-	struct object obj;
+	lox_obj_t obj;
 	lox_class_t *cls;
 	list_t fields;
 } lox_instance_t;
 
 typedef struct lox_upval_t {
-	struct object obj;
+	lox_obj_t obj;
 	lox_val_t *location;
 	lox_val_t closed;
 	struct lox_upval_t *next;

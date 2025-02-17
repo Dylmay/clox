@@ -128,7 +128,7 @@ enum vm_res vm_interpret(vm_t *vm, const char *src)
 	puts("}");
 #endif
 
-	//object_free((struct object *)vm->fn);
+	//object_free(( lox_obj_t *)vm->fn);
 
 #ifdef DEBUG_TRACE_EXECUTION
 	if (res == INTERPRET_OK) {

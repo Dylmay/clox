@@ -225,7 +225,7 @@ static inline bool object_is_type(lox_val_t value, enum object_type type)
  *
  * @param obj the object to free
  */
-void object_free(struct object *obj);
+void object_free(lox_obj_t *obj);
 
 /**
  * @brief creates a new lox function object
@@ -347,7 +347,7 @@ lox_upval_t *object_upval_new(lox_val_t *slot);
  * @return true they are equal
  * @return false they are not equal
  */
-bool object_equals(const struct object *a, const struct object *b);
+bool object_equals(const lox_obj_t *a, const lox_obj_t *b);
 
 /**
  * @brief prints the passed object
